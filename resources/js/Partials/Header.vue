@@ -1,0 +1,71 @@
+<script setup>
+import { usePage } from '@inertiajs/vue3';
+import { Menu } from 'lucide-vue-next';
+import Dropdown from '@/Components/Dropdown.vue';
+import DropdownLink from '@/Components/DropdownLink.vue';
+
+defineProps({
+    title: {
+        type: String,
+        default: 'Dashboard',
+    },
+});
+
+defineEmits(['open-mobile-sidebar']);
+
+const page = usePage();
+</script>
+
+<template>
+    <header class="sticky top-0 z-30 border-b border-gray-200 bg-white shadow-sm">
+        <div class="flex h-16 items-center justify-between px-4 sm:h-20 sm:px-6 lg:px-8">
+            <div class="flex items-center gap-4">
+                <!-- Botón menú móvil -->
+                <button type="button"
+                    class="rounded-xl border border-gray-200 p-2 text-gray-600 transition hover:bg-gray-100 lg:hidden"
+                    @click="$emit('open-mobile-sidebar')">
+                    <Menu class="h-5 w-5" />
+                </button>
+
+                <div>
+                    <h2 class="text-lg font-bold text-gray-800 sm:text-2xl">
+                        {{ title }}
+                    </h2>
+                    <p class="hidden text-sm text-gray-500 sm:block">
+                        Industria Molinera San Vicente SRL
+                    </p>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-4">
+                <div class="hidden text-right md:block">
+                    <p class="text-sm font-semibold text-gray-700">
+                        {{ page.props.auth?.user?.name ?? 'Usuario' }}
+                    </p>
+                    <p class="text-xs text-gray-500">
+                        Usuario del sistema
+                    </p>
+                </div>
+
+                <Dropdown align="right" width="48">
+                    <template #trigger>
+                        <button
+                            class="flex h-10 w-10 items-center justify-center rounded-full bg-primary text-sm font-bold text-white shadow-sm transition hover:bg-primary-dark sm:h-11 sm:w-11">
+                            {{ (page.props.auth?.user?.name ?? 'U').charAt(0).toUpperCase() }}
+                        </button>
+                    </template>
+
+                    <template #content>
+                        <DropdownLink :href="route('profile.edit')">
+                            Perfil
+                        </DropdownLink>
+
+                        <DropdownLink :href="route('logout')" method="post" as="button">
+                            Cerrar sesión
+                        </DropdownLink>
+                    </template>
+                </Dropdown>
+            </div>
+        </div>
+    </header>
+</template>
