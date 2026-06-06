@@ -33,12 +33,12 @@ const page = usePage();
 const menuItems = [
     { name: 'Dashboard', routeName: 'dashboard', icon: LayoutDashboard },
     { name: 'Catálogos', routeName: 'catalogs.index', icon: ListChecks },
-    /* { name: 'Trabajadores', routeName: 'workers.index', icon: Users },
+    { name: 'Trabajadores', routeName: 'workers.index', icon: Users },
     { name: 'Asistencia', routeName: 'attendance.index', icon: CalendarDays },
     { name: 'Planillas', routeName: 'payrolls.index', icon: FileSpreadsheet },
     { name: 'Boletas', routeName: 'payment-slips.index', icon: ReceiptText },
     { name: 'Reportes', routeName: 'reports.index', icon: BarChart3 },
-    { name: 'Usuarios', routeName: 'users.index', icon: ShieldCheck }, */
+    { name: 'Usuarios', routeName: 'users.index', icon: ShieldCheck }, 
 ];
 
 /**
