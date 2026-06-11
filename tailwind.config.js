@@ -19,7 +19,8 @@ export default {
                 danger: "#B52A22",
             },
             fontFamily: {
-                sans: ["Poppins", "sans-serif"],
+                rajdhani: ["Rajdhani", "sans-serif"],
+                sans: ["Inter", "sans-serif"],
             },
         },
     },

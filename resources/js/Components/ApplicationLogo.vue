@@ -13,13 +13,13 @@ defineProps({
 
 <template>
     <div class="flex items-center gap-3">
-        <div class="flex h-11 w-11 items-center justify-center rounded-xl shadow-sm"
-            :class="dark ? 'bg-primary text-white' : 'bg-white text-primary'">
-            <span class="text-xl font-black">M</span>
+        <div class="flex h-14 w-14 items-center justify-center rounded-2xl bg-white shadow-lg ring-1 ring-primary/10">
+            <img src="/images/molicente-icon.png" alt="MOLICENTE" class="h-9 w-9 object-contain" />
         </div>
 
         <div v-if="!collapsed" class="leading-tight">
-            <h1 class="text-lg font-extrabold tracking-wide" :class="dark ? 'text-primary' : 'text-white'">
+            <h1 class="font-rajdhani text-lg font-extrabold tracking-wide"
+                :class="dark ? 'text-primary' : 'text-white'">
                 MOLICENTE
             </h1>
 

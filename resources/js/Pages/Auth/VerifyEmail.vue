@@ -47,13 +47,10 @@ const verificationLinkSent = computed(
             <div class="relative z-10 flex flex-col justify-between p-10">
                 <div>
                     <div class="flex items-center gap-4">
-                        <div
-                            class="flex h-16 w-16 items-center justify-center rounded-2xl bg-white text-primary shadow-lg">
-                            <span class="text-3xl font-black">M</span>
-                        </div>
-
+                        <img src="/images/molicente-icon.png" alt="MOLICENTE"
+                            class="h-24 w-auto rounded-xl bg-white p-3 shadow-xl" />
                         <div>
-                            <h1 class="text-3xl font-black">
+                            <h1 class="font-rajdhani text-3xl font-black text-white">
                                 MOLICENTE
                             </h1>
 
@@ -107,10 +104,11 @@ const verificationLinkSent = computed(
                     <div class="text-center">
                         <div
                             class="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-primary text-white shadow-lg">
-                            <span class="text-3xl font-black">M</span>
+                            <img src="/images/molicente-icon.png" alt="MOLICENTE"
+                                class="w-auto rounded-xl bg-white p-3 shadow-xl" />
                         </div>
 
-                        <h1 class="mt-3 text-2xl font-black text-primary">
+                        <h1 class="font-rajdhani mt-3 text-2xl font-black text-primary">
                             MOLICENTE
                         </h1>
 
