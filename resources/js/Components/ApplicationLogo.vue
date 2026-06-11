@@ -18,14 +18,14 @@ defineProps({
         </div>
 
         <div v-if="!collapsed" class="leading-tight">
-            <h1 class="font-rajdhani text-lg font-extrabold tracking-wide"
+            <h1 class="font-rajdhani text-3xl font-extrabold tracking-wide"
                 :class="dark ? 'text-primary' : 'text-white'">
                 MOLICENTE
             </h1>
 
-            <p class="text-xs font-medium" :class="dark ? 'text-gray-500' : 'text-white/80'">
+            <!-- <p class="text-xs font-medium" :class="dark ? 'text-gray-500' : 'text-white/80'">
                 Industria Molinera San Vicente SRL
-            </p>
+            </p> -->
         </div>
     </div>
 </template>

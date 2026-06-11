@@ -1,8 +1,8 @@
 <?php
 namespace App\Http\Controllers;
 
-use App\Http\Requests\StoreCatalogRequest;
-use App\Http\Requests\UpdateCatalogRequest;
+use App\Http\Requests\Catalog\StoreCatalogRequest;
+use App\Http\Requests\Catalog\UpdateCatalogRequest;
 use App\Models\Catalog;
 use App\Services\CatalogService;
 use Illuminate\Http\RedirectResponse;

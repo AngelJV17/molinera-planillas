@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\BankController;
 use App\Http\Controllers\CatalogController;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Foundation\Application;
@@ -18,6 +19,17 @@ Route::get('/', function () {
 Route::get('/dashboard', function () {
     return Inertia::render('Dashboard');
 })->middleware(['auth', 'verified'])->name('dashboard');
+
+Route::resource(
+    'banks',
+    BankController::class
+);
+
+Route::patch(
+    'banks/{bank}/toggle-status',
+    [BankController::class, 'toggleStatus']
+)->name('banks.toggle-status');
+
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::resource('catalogs', CatalogController::class)
@@ -48,7 +60,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::get('/users', function () {
         return Inertia::render('Users/Index');
-    })->name('users.index');    
+    })->name('users.index');
 });
 
 Route::middleware('auth')->group(function () {

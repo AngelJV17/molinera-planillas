@@ -2,10 +2,16 @@
 import { Head, Link, router } from '@inertiajs/vue3';
 import { ref, watch } from 'vue';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
+import PageHeader from '@/Components/Common/PageHeader.vue';
+import PrimaryActionButton from '@/Components/Common/PrimaryActionButton.vue';
 import DataTable from '@/Components/Table/DataTable.vue';
+import EmptyState from '@/Components/Common/EmptyState.vue';
 import Pagination from '@/Components/Table/Pagination.vue';
 import SearchInput from '@/Components/Table/SearchInput.vue';
 import StatusBadge from '@/Components/Table/StatusBadge.vue';
+import FilterPanel from '@/Components/Filters/FilterPanel.vue';
+import StatusFilter from '@/Components/Filters/StatusFilter.vue';
+import PerPageFilter from '@/Components/Filters/PerPageFilter.vue';
 import {
     Plus,
     Edit,
@@ -80,82 +86,39 @@ const toggleStatus = (catalog) => {
 
 <template>
 
-    <Head title="Catálogos" />
+    <Head title="Configuraciones Generales" />
 
-    <AuthenticatedLayout title="Catálogos">
+    <AuthenticatedLayout title="Configuraciones Generales">
         <section class="space-y-6">
-            <!-- Encabezado principal del módulo -->
-            <div class="overflow-hidden rounded-3xl border border-primary/20 bg-white shadow-lg">
-                <div class="h-1.5 bg-primary"></div>
+            <!-- Encabezado -->
+            <PageHeader title="Gestión de Configuraciones Generales"
+                description="Administra listas y opciones utilizadas por el sistema, como tipos de documento, regímenes pensionarios, estados de asistencia y estados de planilla.">
+                <template #icon>
+                    <ListChecks class="h-7 w-7" />
+                </template>
 
-                <div class="flex flex-col justify-between gap-5 p-6 lg:flex-row lg:items-center">
-                    <div class="flex gap-4">
-                        <div
-                            class="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-primary/15 text-primary">
-                            <ListChecks class="h-7 w-7" />
-                        </div>
-
-                        <div>
-                            <h1 class="text-2xl font-black text-gray-900">
-                                Gestión de catálogos
-                            </h1>
-
-                            <p class="mt-1 max-w-3xl text-sm leading-relaxed text-gray-600">
-                                Administra opciones reutilizables como tipos de documento,
-                                regímenes pensionarios, estados de asistencia y estados de planilla.
-                            </p>
-                        </div>
-                    </div>
-
-                    <Link :href="route('catalogs.create')"
-                        class="inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-5 py-3 text-sm font-bold text-white shadow-md transition hover:bg-primary-dark hover:shadow-lg">
+                <template #actions>
+                    <PrimaryActionButton :href="route('catalogs.create')">
                         <Plus class="h-4 w-4" />
-                        Nuevo catálogo
-                    </Link>
-                </div>
-            </div>
+                        Nuevo Registro
+                    </PrimaryActionButton>
+                </template>
+            </PageHeader>
 
             <!-- Filtros -->
-            <div class="rounded-3xl border border-slate-300 bg-white shadow-lg">
-                <div class="flex items-center gap-3 border-b border-slate-200 bg-slate-100 px-6 py-4">
-                    <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/15 text-primary">
-                        <SlidersHorizontal class="h-5 w-5" />
-                    </div>
+            <FilterPanel>
+                <SearchInput v-model="search" placeholder="Buscar por tipo, código, nombre o descripción..." />
 
-                    <div>
-                        <h2 class="text-sm font-black uppercase tracking-wide text-gray-800">
-                            Filtros de búsqueda
-                        </h2>
-                        <p class="text-xs text-gray-500">
-                            Refina los resultados del listado.
-                        </p>
-                    </div>
-                </div>
+                <StatusFilter v-model="status" />
 
-                <div class="grid gap-4 p-6 md:grid-cols-3">
-                    <SearchInput v-model="search" placeholder="Buscar por tipo, código, nombre o descripción..." />
-
-                    <select v-model="status"
-                        class="rounded-xl border-slate-300 bg-white text-sm font-medium text-gray-700 shadow-sm focus:border-primary focus:ring-primary">
-                        <option value="">Todos los estados</option>
-                        <option value="1">Activos</option>
-                        <option value="0">Inactivos</option>
-                    </select>
-
-                    <select v-model="perPage"
-                        class="rounded-xl border-slate-300 bg-white text-sm font-medium text-gray-700 shadow-sm focus:border-primary focus:ring-primary">
-                        <option value="10">10 por página</option>
-                        <option value="25">25 por página</option>
-                        <option value="50">50 por página</option>
-                    </select>
-                </div>
-            </div>
+                <PerPageFilter v-model="perPage" />
+            </FilterPanel>
 
             <!-- Resumen del listado -->
             <div class="grid gap-4 lg:grid-cols-[1fr_auto] lg:items-center">
                 <div>
                     <h2 class="text-lg font-black text-gray-900">
-                        Catálogos registrados
+                        Configuraciones registradas
                     </h2>
 
                     <p class="text-sm text-gray-500">
@@ -225,8 +188,18 @@ const toggleStatus = (catalog) => {
                 </tr>
 
                 <template v-if="catalogs.data.length === 0" #empty>
-                    <td colspan="6" class="px-6 py-14 text-center text-sm font-medium text-gray-500">
-                        No se encontraron catálogos con los filtros aplicados.
+                    <td colspan="6">
+                        <EmptyState title="No se encontraron catálogos"
+                            description="Intenta modificar los filtros o registra un nuevo catálogo.">
+                            <template #action>
+
+                                <PrimaryActionButton :href="route('catalogs.create')">
+                                    <Plus class="h-4 w-4" />
+                                    Nuevo catálogo
+                                </PrimaryActionButton>
+
+                            </template>
+                        </EmptyState>
                     </td>
                 </template>
             </DataTable>

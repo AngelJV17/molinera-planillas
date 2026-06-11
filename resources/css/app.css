@@ -10,3 +10,18 @@
         font-family: 'Rajdhani', sans-serif;
     }
 }
+
+/**
+|--------------------------------------------------------------------------
+| Sidebar Scroll Invisible
+|--------------------------------------------------------------------------
+*/
+
+.sidebar-scroll {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+
+.sidebar-scroll::-webkit-scrollbar {
+    display: none;
+}
