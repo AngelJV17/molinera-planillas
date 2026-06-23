@@ -1,28 +1,22 @@
 <script setup>
 import { Head, Link, router } from '@inertiajs/vue3';
 import { ref, watch } from 'vue';
+import { Building2, Database, Edit, Plus, Power } from 'lucide-vue-next';
 
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
+import EmptyState from '@/Components/Common/EmptyState.vue';
+import FilterCard from '@/Components/Common/FilterCard.vue';
 import PageHeader from '@/Components/Common/PageHeader.vue';
 import PrimaryActionButton from '@/Components/Common/PrimaryActionButton.vue';
+import PerPageFilter from '@/Components/Filters/PerPageFilter.vue';
+import StatusFilter from '@/Components/Filters/StatusFilter.vue';
 import DataTable from '@/Components/Table/DataTable.vue';
-import EmptyState from '@/Components/Common/EmptyState.vue';
 import Pagination from '@/Components/Table/Pagination.vue';
 import SearchInput from '@/Components/Table/SearchInput.vue';
 import StatusBadge from '@/Components/Table/StatusBadge.vue';
-import FilterCard from '@/Components/Common/FilterCard.vue';
-import StatusFilter from '@/Components/Filters/StatusFilter.vue';
-import PerPageFilter from '@/Components/Filters/PerPageFilter.vue';
-import {
-    Plus,
-    Edit,
-    Power,
-    ListChecks,
-    Database,
-} from 'lucide-vue-next';
 
 const props = defineProps({
-    catalogs: {
+    banks: {
         type: Object,
         required: true,
     },
@@ -37,21 +31,15 @@ const status = ref(props.filters.status ?? '');
 const perPage = ref(props.filters.per_page ?? 10);
 
 const columns = [
-    { key: 'type', label: 'Tipo' },
+    { key: 'name', label: 'Banco' },
     { key: 'code', label: 'Código' },
-    { key: 'name', label: 'Nombre' },
-    { key: 'description', label: 'Descripción' },
     { key: 'status', label: 'Estado' },
     { key: 'actions', label: 'Acciones', align: 'right' },
 ];
 
-/**
- * Aplica filtros al listado de catálogos.
- * Mantiene el estado visual de la página usando Inertia.
- */
 const applyFilters = () => {
     router.get(
-        route('catalogs.index'),
+        route('banks.index'),
         {
             search: search.value,
             status: status.value,
@@ -69,13 +57,9 @@ watch([search, status, perPage], () => {
     applyFilters();
 });
 
-/**
- * Cambia el estado de un catálogo.
- * No se elimina el registro para conservar integridad histórica.
- */
-const toggleStatus = (catalog) => {
+const toggleStatus = (bank) => {
     router.patch(
-        route('catalogs.toggle-status', catalog.id),
+        route('banks.toggle-status', bank.id),
         {},
         {
             preserveScroll: true,
@@ -85,46 +69,42 @@ const toggleStatus = (catalog) => {
 </script>
 
 <template>
+    <Head title="Bancos" />
 
-    <Head title="Configuraciones Generales" />
-
-    <AuthenticatedLayout title="Configuraciones Generales">
+    <AuthenticatedLayout title="Bancos">
         <section class="space-y-6">
-            <!-- Encabezado -->
-            <PageHeader title="Gestión de Configuraciones Generales"
-                description="Administra listas y opciones utilizadas por el sistema, como tipos de documento, regímenes pensionarios, estados de asistencia y estados de planilla.">
+            <PageHeader
+                title="Bancos"
+                description="Administra las entidades financieras utilizadas por los trabajadores."
+            >
                 <template #icon>
-                    <ListChecks class="h-7 w-7" />
+                    <Building2 class="h-7 w-7" />
                 </template>
 
                 <template #actions>
-                    <PrimaryActionButton :href="route('catalogs.create')">
+                    <PrimaryActionButton :href="route('banks.create')">
                         <Plus class="h-4 w-4" />
-                        Nuevo Registro
+                        Nuevo registro
                     </PrimaryActionButton>
                 </template>
             </PageHeader>
 
-            <!-- Filtros -->
             <FilterCard>
                 <template #filters>
-                    <SearchInput v-model="search" placeholder="Buscar por tipo, código, nombre o descripción..." />
-
+                    <SearchInput v-model="search" placeholder="Buscar por nombre o código..." />
                     <StatusFilter v-model="status" />
-
                     <PerPageFilter v-model="perPage" />
                 </template>
             </FilterCard>
 
-            <!-- Resumen del listado -->
             <div class="grid gap-4 lg:grid-cols-[1fr_auto] lg:items-center">
                 <div>
                     <h2 class="text-lg font-black text-gray-900">
-                        Configuraciones registradas
+                        Bancos registrados
                     </h2>
 
                     <p class="text-sm text-gray-500">
-                        Opciones globales utilizadas por los diferentes módulos del sistema.
+                        Entidades financieras utilizadas por los trabajadores.
                     </p>
                 </div>
 
@@ -139,77 +119,70 @@ const toggleStatus = (catalog) => {
                         </p>
 
                         <p class="text-2xl font-black leading-none text-primary">
-                            {{ catalogs.total ?? catalogs.data.length }}
+                            {{ banks.total ?? banks.data.length }}
                         </p>
                     </div>
                 </div>
             </div>
 
-            <!-- Tabla de catálogos -->
             <DataTable :columns="columns">
-                <tr v-for="catalog in catalogs.data" :key="catalog.id" class="text-sm transition hover:bg-primary/5">
-                    <td class="px-6 py-4">
-                        <span class="rounded-lg bg-primary/10 px-3 py-1.5 text-xs font-black text-primary">
-                            {{ catalog.type }}
-                        </span>
+                <tr v-for="bank in banks.data" :key="bank.id" class="text-sm transition hover:bg-primary/5">
+                    <td class="px-6 py-4 font-semibold">
+                        {{ bank.name }}
                     </td>
 
                     <td class="px-6 py-4">
-                        <span class="font-mono text-xs font-bold text-gray-700">
-                            {{ catalog.code }}
-                        </span>
-                    </td>
-
-                    <td class="px-6 py-4 font-bold text-gray-800">
-                        {{ catalog.name }}
-                    </td>
-
-                    <td class="px-6 py-4 text-gray-600">
-                        {{ catalog.description ?? '—' }}
+                        {{ bank.code ?? '-' }}
                     </td>
 
                     <td class="px-6 py-4">
-                        <StatusBadge :status="catalog.status" />
+                        <StatusBadge :status="bank.status" />
                     </td>
 
                     <td class="px-6 py-4">
                         <div class="flex justify-end gap-2">
-                            <Link :href="route('catalogs.edit', catalog.id)"
+                            <Link
+                                :href="route('banks.edit', bank.id)"
                                 class="rounded-xl border border-slate-300 bg-white p-2 text-gray-700 shadow-sm transition hover:border-primary hover:bg-primary/10 hover:text-primary"
-                                title="Editar">
+                                title="Editar"
+                            >
                                 <Edit class="h-4 w-4" />
                             </Link>
 
-                            <button type="button"
+                            <button
+                                type="button"
                                 class="rounded-xl border border-slate-300 bg-white p-2 text-gray-700 shadow-sm transition hover:border-danger hover:bg-danger/10 hover:text-danger"
-                                title="Cambiar estado" @click="toggleStatus(catalog)">
+                                title="Cambiar estado"
+                                @click="toggleStatus(bank)"
+                            >
                                 <Power class="h-4 w-4" />
                             </button>
                         </div>
                     </td>
                 </tr>
 
-                <template v-if="catalogs.data.length === 0" #empty>
-                    <td colspan="6">
-                        <EmptyState title="No se encontraron catálogos"
-                            description="Intenta modificar los filtros o registra un nuevo catálogo.">
+                <template v-if="banks.data.length === 0" #empty>
+                    <td colspan="4">
+                        <EmptyState
+                            title="No se encontraron bancos registrados"
+                            description="Intenta modificar los filtros o registra un nuevo banco."
+                        >
                             <template #action>
-
-                                <PrimaryActionButton :href="route('catalogs.create')">
+                                <PrimaryActionButton :href="route('banks.create')">
                                     <Plus class="h-4 w-4" />
-                                    Nuevo catálogo
+                                    Nuevo banco
                                 </PrimaryActionButton>
-
                             </template>
                         </EmptyState>
                     </td>
                 </template>
             </DataTable>
 
-            <!-- Paginación -->
-            <div v-if="catalogs.links?.length > 3"
-                class="rounded-3xl border border-slate-300 bg-white px-6 py-4 shadow-lg">
-                <Pagination :links="catalogs.links" />
+            <div
+                v-if="banks.links?.length > 3"
+                class="rounded-3xl border border-slate-300 bg-white px-6 py-4 shadow-lg"
+            >
+                <Pagination :links="banks.links" />
             </div>
         </section>
     </AuthenticatedLayout>

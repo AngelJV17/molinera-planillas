@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Services;
 
 use App\Models\Bank;
@@ -14,11 +15,8 @@ class BankService
     /**
      * Listado paginado.
      */
-    public function paginate(
-        ?string $search,
-        ?string $status,
-        int $perPage
-    ): LengthAwarePaginator {
+    public function paginate(?string $search, ?string $status, int $perPage): LengthAwarePaginator
+    {
 
         return Bank::query()
 
@@ -39,31 +37,43 @@ class BankService
                 });
             })
 
-            ->when(
-                $status !== null &&
-                $status !== '',
-                fn($query) => $query->where(
-                    'status',
-                    $status
-                )
-            )
+            ->when($status !== null && $status !== '', fn ($query) => $query->where('status', (bool) $status))
 
             ->latest()
 
-            ->paginate($perPage)
+            ->paginate(min($perPage, 100))
 
             ->withQueryString();
     }
 
     /**
+     * Registra una entidad bancaria.
+     */
+    public function create(array $data): Bank
+    {
+        return Bank::create($data);
+    }
+
+    /**
+     * Actualiza una entidad bancaria existente.
+     */
+    public function update(Bank $bank, array $data): Bank
+    {
+        $bank->update($data);
+
+        return $bank;
+    }
+
+    /**
      * Cambiar estado.
      */
-    public function toggleStatus(
-        Bank $bank
-    ): void {
+    public function toggleStatus(Bank $bank): Bank
+    {
 
         $bank->update([
             'status' => ! $bank->status,
         ]);
+
+        return $bank;
     }
 }

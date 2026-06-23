@@ -13,14 +13,30 @@ return new class extends Migration
     {
         Schema::create('banks', function (Blueprint $table) {
             $table->id();
-            // Nombre del banco
-            $table->string('name');
 
-            // Código interno o SBS
-            $table->string('code')->nullable();
+            /**
+             * Nombre comercial del banco.
+             *
+             * Ejemplo:
+             * - BCP
+             * - BBVA
+             * - Interbank
+             * - Scotiabank
+             */
+            $table->string('name')->index();
 
-            // Estado
-            $table->boolean('status')->default(true);
+            /**
+             * Código interno o SBS.
+             */
+            $table->string('code')
+                ->nullable()
+                ->unique();
+
+            /**
+             * Estado del registro.
+             */
+            $table->boolean('status')
+                ->default(true);
 
             $table->timestamps();
             $table->softDeletes();

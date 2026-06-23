@@ -1,28 +1,22 @@
 <script setup>
 import { Head, Link, router } from '@inertiajs/vue3';
 import { ref, watch } from 'vue';
+import { Clock3, Database, Edit, Moon, Plus, Power } from 'lucide-vue-next';
 
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
+import EmptyState from '@/Components/Common/EmptyState.vue';
+import FilterCard from '@/Components/Common/FilterCard.vue';
 import PageHeader from '@/Components/Common/PageHeader.vue';
 import PrimaryActionButton from '@/Components/Common/PrimaryActionButton.vue';
+import PerPageFilter from '@/Components/Filters/PerPageFilter.vue';
+import StatusFilter from '@/Components/Filters/StatusFilter.vue';
 import DataTable from '@/Components/Table/DataTable.vue';
-import EmptyState from '@/Components/Common/EmptyState.vue';
 import Pagination from '@/Components/Table/Pagination.vue';
 import SearchInput from '@/Components/Table/SearchInput.vue';
 import StatusBadge from '@/Components/Table/StatusBadge.vue';
-import FilterCard from '@/Components/Common/FilterCard.vue';
-import StatusFilter from '@/Components/Filters/StatusFilter.vue';
-import PerPageFilter from '@/Components/Filters/PerPageFilter.vue';
-import {
-    Plus,
-    Edit,
-    Power,
-    ListChecks,
-    Database,
-} from 'lucide-vue-next';
 
 const props = defineProps({
-    catalogs: {
+    workShifts: {
         type: Object,
         required: true,
     },
@@ -37,21 +31,17 @@ const status = ref(props.filters.status ?? '');
 const perPage = ref(props.filters.per_page ?? 10);
 
 const columns = [
-    { key: 'type', label: 'Tipo' },
-    { key: 'code', label: 'Código' },
-    { key: 'name', label: 'Nombre' },
-    { key: 'description', label: 'Descripción' },
+    { key: 'name', label: 'Turno' },
+    { key: 'schedule', label: 'Horario' },
+    { key: 'daily_hours', label: 'Jornada' },
+    { key: 'employees', label: 'Trabajadores' },
     { key: 'status', label: 'Estado' },
     { key: 'actions', label: 'Acciones', align: 'right' },
 ];
 
-/**
- * Aplica filtros al listado de catálogos.
- * Mantiene el estado visual de la página usando Inertia.
- */
 const applyFilters = () => {
     router.get(
-        route('catalogs.index'),
+        route('work-shifts.index'),
         {
             search: search.value,
             status: status.value,
@@ -69,63 +59,52 @@ watch([search, status, perPage], () => {
     applyFilters();
 });
 
-/**
- * Cambia el estado de un catálogo.
- * No se elimina el registro para conservar integridad histórica.
- */
-const toggleStatus = (catalog) => {
+const toggleStatus = (workShift) => {
     router.patch(
-        route('catalogs.toggle-status', catalog.id),
+        route('work-shifts.toggle-status', workShift.id),
         {},
         {
             preserveScroll: true,
         },
     );
 };
+
+const formatTime = (time) => time?.slice(0, 5) ?? '--:--';
+const formatHours = (hours) => `${Number(hours).toLocaleString('es-PE', { minimumFractionDigits: 2 })} h`;
 </script>
 
 <template>
 
-    <Head title="Configuraciones Generales" />
+    <Head title="Turnos" />
 
-    <AuthenticatedLayout title="Configuraciones Generales">
+    <AuthenticatedLayout title="Turnos">
         <section class="space-y-6">
-            <!-- Encabezado -->
-            <PageHeader title="Gestión de Configuraciones Generales"
-                description="Administra listas y opciones utilizadas por el sistema, como tipos de documento, regímenes pensionarios, estados de asistencia y estados de planilla.">
+            <PageHeader title="Turnos laborales"
+                description="Administra los horarios de trabajo utilizados para asistencia y planillas.">
                 <template #icon>
-                    <ListChecks class="h-7 w-7" />
+                    <Clock3 class="h-7 w-7" />
                 </template>
 
                 <template #actions>
-                    <PrimaryActionButton :href="route('catalogs.create')">
+                    <PrimaryActionButton :href="route('work-shifts.create')">
                         <Plus class="h-4 w-4" />
-                        Nuevo Registro
+                        Nuevo turno
                     </PrimaryActionButton>
                 </template>
             </PageHeader>
 
-            <!-- Filtros -->
             <FilterCard>
                 <template #filters>
-                    <SearchInput v-model="search" placeholder="Buscar por tipo, código, nombre o descripción..." />
-
+                    <SearchInput v-model="search" placeholder="Buscar por nombre o descripción..." />
                     <StatusFilter v-model="status" />
-
                     <PerPageFilter v-model="perPage" />
                 </template>
             </FilterCard>
 
-            <!-- Resumen del listado -->
             <div class="grid gap-4 lg:grid-cols-[1fr_auto] lg:items-center">
                 <div>
-                    <h2 class="text-lg font-black text-gray-900">
-                        Configuraciones registradas
-                    </h2>
-
-                    <p class="text-sm text-gray-500">
-                        Opciones globales utilizadas por los diferentes módulos del sistema.
-                    </p>
+                    <h2 class="text-lg font-black text-gray-900">Turnos registrados</h2>
+                    <p class="text-sm text-gray-500">Horarios disponibles para asignación laboral.</p>
                 </div>
 
                 <div class="flex items-center gap-4 rounded-2xl border border-primary/20 bg-white px-5 py-3 shadow-md">
@@ -134,47 +113,53 @@ const toggleStatus = (catalog) => {
                     </div>
 
                     <div>
-                        <p class="text-xs font-bold uppercase tracking-wide text-gray-500">
-                            Total registros
-                        </p>
-
+                        <p class="text-xs font-bold uppercase tracking-wide text-gray-500">Total registros</p>
                         <p class="text-2xl font-black leading-none text-primary">
-                            {{ catalogs.total ?? catalogs.data.length }}
+                            {{ workShifts.total ?? workShifts.data.length }}
                         </p>
                     </div>
                 </div>
             </div>
 
-            <!-- Tabla de catálogos -->
             <DataTable :columns="columns">
-                <tr v-for="catalog in catalogs.data" :key="catalog.id" class="text-sm transition hover:bg-primary/5">
+                <tr v-for="workShift in workShifts.data" :key="workShift.id"
+                    class="text-sm transition hover:bg-primary/5">
                     <td class="px-6 py-4">
-                        <span class="rounded-lg bg-primary/10 px-3 py-1.5 text-xs font-black text-primary">
-                            {{ catalog.type }}
-                        </span>
+                        <div>
+                            <p class="font-bold text-gray-800">{{ workShift.name }}</p>
+                            <p v-if="workShift.break_start_time && workShift.break_end_time"
+                                class="text-xs text-primary font-medium">
+                                Almuerzo:
+                                {{ formatTime(workShift.break_start_time) }}
+                                -
+                                {{ formatTime(workShift.break_end_time) }}
+                            </p>
+                        </div>
                     </td>
 
                     <td class="px-6 py-4">
-                        <span class="font-mono text-xs font-bold text-gray-700">
-                            {{ catalog.code }}
-                        </span>
+                        <div class="flex items-center gap-2 font-semibold text-gray-700">
+                            {{ formatTime(workShift.start_time) }} - {{ formatTime(workShift.end_time) }}
+                            <Moon v-if="workShift.crosses_midnight" class="h-4 w-4 text-secondary" />
+                        </div>
+                        <p class="text-xs text-gray-500">{{ workShift.tolerance_minutes }} min. tolerancia</p>
                     </td>
 
                     <td class="px-6 py-4 font-bold text-gray-800">
-                        {{ catalog.name }}
+                        {{ formatHours(workShift.daily_hours) }}
                     </td>
 
                     <td class="px-6 py-4 text-gray-600">
-                        {{ catalog.description ?? '—' }}
+                        {{ workShift.employees_count ?? 0 }}
                     </td>
 
                     <td class="px-6 py-4">
-                        <StatusBadge :status="catalog.status" />
+                        <StatusBadge :status="workShift.status" />
                     </td>
 
                     <td class="px-6 py-4">
                         <div class="flex justify-end gap-2">
-                            <Link :href="route('catalogs.edit', catalog.id)"
+                            <Link :href="route('work-shifts.edit', workShift.id)"
                                 class="rounded-xl border border-slate-300 bg-white p-2 text-gray-700 shadow-sm transition hover:border-primary hover:bg-primary/10 hover:text-primary"
                                 title="Editar">
                                 <Edit class="h-4 w-4" />
@@ -182,34 +167,31 @@ const toggleStatus = (catalog) => {
 
                             <button type="button"
                                 class="rounded-xl border border-slate-300 bg-white p-2 text-gray-700 shadow-sm transition hover:border-danger hover:bg-danger/10 hover:text-danger"
-                                title="Cambiar estado" @click="toggleStatus(catalog)">
+                                title="Cambiar estado" @click="toggleStatus(workShift)">
                                 <Power class="h-4 w-4" />
                             </button>
                         </div>
                     </td>
                 </tr>
 
-                <template v-if="catalogs.data.length === 0" #empty>
+                <template v-if="workShifts.data.length === 0" #empty>
                     <td colspan="6">
-                        <EmptyState title="No se encontraron catálogos"
-                            description="Intenta modificar los filtros o registra un nuevo catálogo.">
+                        <EmptyState title="No se encontraron turnos registrados"
+                            description="Intenta modificar los filtros o registra un nuevo turno.">
                             <template #action>
-
-                                <PrimaryActionButton :href="route('catalogs.create')">
+                                <PrimaryActionButton :href="route('work-shifts.create')">
                                     <Plus class="h-4 w-4" />
-                                    Nuevo catálogo
+                                    Nuevo turno
                                 </PrimaryActionButton>
-
                             </template>
                         </EmptyState>
                     </td>
                 </template>
             </DataTable>
 
-            <!-- Paginación -->
-            <div v-if="catalogs.links?.length > 3"
+            <div v-if="workShifts.links?.length > 3"
                 class="rounded-3xl border border-slate-300 bg-white px-6 py-4 shadow-lg">
-                <Pagination :links="catalogs.links" />
+                <Pagination :links="workShifts.links" />
             </div>
         </section>
     </AuthenticatedLayout>

@@ -4,11 +4,12 @@ namespace App\Http\Requests\Bank;
 
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class StoreBankRequest extends FormRequest
 {
     /**
-     * Determine if the user is authorized to make this request.
+     * Determina si el usuario puede ejecutar esta solicitud.
      */
     public function authorize(): bool
     {
@@ -16,26 +17,41 @@ class StoreBankRequest extends FormRequest
     }
 
     /**
-     * Get the validation rules that apply to the request.
+     * Reglas de validación para registrar un banco.
      *
      * @return array<string, ValidationRule|array<mixed>|string>
      */
     public function rules(): array
     {
         return [
-
             'name' => [
                 'required',
                 'string',
                 'max:100',
-                'unique:banks,name',
+                Rule::unique('banks', 'name')->withoutTrashed(),
             ],
 
             'code' => [
                 'nullable',
                 'string',
                 'max:20',
+                Rule::unique('banks', 'code')->withoutTrashed(),
             ],
+
+            'status' => [
+                'required',
+                'boolean',
+            ],
+        ];
+    }
+
+    public function messages(): array
+    {
+        return [
+            'name.required' => 'El nombre es obligatorio.',
+            'name.unique' => 'Ya existe un banco con este nombre.',
+            'code.unique' => 'Ya existe un banco con este código.',
+            'status.required' => 'El estado es obligatorio.',
         ];
     }
 }

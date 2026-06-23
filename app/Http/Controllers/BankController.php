@@ -1,14 +1,15 @@
 <?php
+
 namespace App\Http\Controllers;
 
 use App\Http\Requests\Bank\StoreBankRequest;
 use App\Http\Requests\Bank\UpdateBankRequest;
-use Inertia\Response;
 use App\Models\Bank;
 use App\Services\BankService;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
-use Illuminate\Http\RedirectResponse;
+use Inertia\Response;
 
 /**
  * ==========================================================================
@@ -17,7 +18,6 @@ use Illuminate\Http\RedirectResponse;
  *
  * Gestiona las entidades bancarias utilizadas por el sistema.
  */
-
 class BankController extends Controller
 {
     public function __construct(
@@ -30,15 +30,15 @@ class BankController extends Controller
     public function index(Request $request): Response
     {
         return Inertia::render('Banks/Index', [
-            'banks'   => $this->service->paginate(
+            'banks' => $this->service->paginate(
                 search: $request->search,
                 status: $request->status,
                 perPage: $request->integer('per_page', 10)
             ),
 
             'filters' => [
-                'search'   => $request->search,
-                'status'   => $request->status,
+                'search' => $request->search,
+                'status' => $request->status,
                 'per_page' => $request->per_page,
             ],
         ]);
@@ -59,9 +59,7 @@ class BankController extends Controller
         StoreBankRequest $request
     ): RedirectResponse {
 
-        Bank::create(
-            $request->validated()
-        );
+        $this->service->create($request->validated());
 
         return redirect()
             ->route('banks.index')
@@ -89,9 +87,7 @@ class BankController extends Controller
         Bank $bank
     ): RedirectResponse {
 
-        $bank->update(
-            $request->validated()
-        );
+        $this->service->update($bank, $request->validated());
 
         return redirect()
             ->route('banks.index')
@@ -110,6 +106,9 @@ class BankController extends Controller
 
         $this->service->toggleStatus($bank);
 
-        return back();
+        return back()->with(
+            'success',
+            'Estado del banco actualizado.'
+        );
     }
 }

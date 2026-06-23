@@ -21,7 +21,7 @@ return new class extends Migration
             */
             $table->string('name', 100);
 
-            $table->string('description')->nullable();
+            $table->text('description')->nullable();
 
             /*
             |--------------------------------------------------------------------------
@@ -29,7 +29,8 @@ return new class extends Migration
             |--------------------------------------------------------------------------
             */
             $table->time('start_time');
-
+            $table->time('break_start_time')->nullable();
+            $table->time('break_end_time')->nullable();
             $table->time('end_time');
 
             /*
@@ -38,7 +39,7 @@ return new class extends Migration
             |--------------------------------------------------------------------------
             | Minutos permitidos antes de registrar tardanza.
             */
-            $table->unsignedInteger('grace_minutes')->default(0);
+            $table->unsignedInteger('tolerance_minutes')->default(0);
 
             /*
             |--------------------------------------------------------------------------
@@ -53,7 +54,7 @@ return new class extends Migration
             |--------------------------------------------------------------------------
             | Indica si el turno termina al día siguiente.
             */
-            $table->boolean('cross_midnight')->default(false);
+            $table->boolean('crosses_midnight')->default(false);
 
             $table->boolean('status')->default(true);
 
