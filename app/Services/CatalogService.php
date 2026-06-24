@@ -7,26 +7,69 @@ use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 class CatalogService
 {
     /**
-     * Lista los catálogos con filtros básicos.
-     *
-     * Esta lógica se separa del controlador para mantenerlo limpio
-     * y facilitar futuras mejoras como filtros avanzados.
+     * Lista los catálogos filtrados por categoría.
      */
     public function paginate(array $filters = []): LengthAwarePaginator
     {
         return Catalog::query()
+
+        /*
+        |--------------------------------------------------------------------------
+        | Categoría
+        |--------------------------------------------------------------------------
+        | DOCUMENT_TYPE
+        | GENDER
+        | MARITAL_STATUS
+        | WORK_AREA
+        | POSITION
+        | WORKER_STATUS
+        | PENSION_SYSTEM
+        | ACCOUNT_TYPE
+        */
+            ->when(
+                ! empty($filters['type']),
+                fn($query) => $query->where('type', $filters['type'])
+            )
+
+        /*
+        |--------------------------------------------------------------------------
+        | Búsqueda
+        |--------------------------------------------------------------------------
+        */
             ->when($filters['search'] ?? null, function ($query, string $search) {
                 $query->where(function ($query) use ($search) {
-                    $query->where('type', 'like', "%{$search}%")
-                        ->orWhere('code', 'like', "%{$search}%")
+                    $query->where('code', 'like', "%{$search}%")
                         ->orWhere('name', 'like', "%{$search}%")
                         ->orWhere('description', 'like', "%{$search}%");
                 });
             })
-            ->when(isset($filters['status']) && $filters['status'] !== '', function ($query) use ($filters) {
-                $query->where('status', (bool) $filters['status']);
-            })
-            ->latest()
+
+        /*
+        |--------------------------------------------------------------------------
+        | Estado
+        |--------------------------------------------------------------------------
+        */
+            ->when(
+                isset($filters['status']) &&
+                $filters['status'] !== '',
+                fn($query) => $query->where(
+                    'status',
+                    (bool) $filters['status']
+                )
+            )
+
+        /*
+        |--------------------------------------------------------------------------
+        | Ordenamiento
+        |--------------------------------------------------------------------------
+        */
+            ->orderBy('name')
+
+        /*
+        |--------------------------------------------------------------------------
+        | Paginación
+        |--------------------------------------------------------------------------
+        */
             ->paginate($filters['per_page'] ?? 10)
             ->withQueryString();
     }

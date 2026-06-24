@@ -79,6 +79,23 @@ return new class extends Migration
 
             /*
             |--------------------------------------------------------------------------
+            | ACCESO AL SISTEMA
+            |--------------------------------------------------------------------------
+            | Relación opcional con la tabla users.
+            |
+            | Casos contemplados:
+            | - Super admin: existe en users, pero no en employees.
+            | - Trabajador sin acceso: existe en employees, pero user_id es null.
+            | - Trabajador con acceso: existe en employees y se vincula a users.
+            */
+            $table->foreignId('user_id')
+                ->nullable()
+                ->unique()
+                ->constrained('users')
+                ->nullOnDelete();
+
+            /*
+            |--------------------------------------------------------------------------
             | DATOS LABORALES
             |--------------------------------------------------------------------------
             */

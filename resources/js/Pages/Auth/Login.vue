@@ -5,7 +5,7 @@ import InputLabel from '@/Components/InputLabel.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import TextInput from '@/Components/TextInput.vue';
 import { Head, Link, useForm } from '@inertiajs/vue3';
-import { Leaf, LockKeyhole, Mail, ShieldCheck } from 'lucide-vue-next';
+import { Leaf, LockKeyhole, ShieldCheck, UserRound } from 'lucide-vue-next';
 
 defineProps({
     canResetPassword: {
@@ -17,15 +17,11 @@ defineProps({
 });
 
 const form = useForm({
-    email: '',
+    username: '',
     password: '',
     remember: false,
 });
 
-/**
- * Envía las credenciales al backend.
- * Al finalizar, limpia únicamente el campo contraseña por seguridad.
- */
 const submit = () => {
     form.post(route('login'), {
         onFinish: () => form.reset('password'),
@@ -38,7 +34,6 @@ const submit = () => {
     <Head title="Iniciar sesión" />
 
     <div class="flex min-h-screen bg-slate-100">
-        <!-- Panel izquierdo -->
         <section
             class="relative hidden w-1/2 overflow-hidden bg-gradient-to-br from-primary via-primary to-primary-dark text-white lg:flex">
             <div class="absolute -left-20 -top-20 h-72 w-72 rounded-full bg-white/10"></div>
@@ -47,18 +42,17 @@ const submit = () => {
             <div class="relative z-10 flex flex-col justify-between p-12">
                 <div>
                     <div class="flex items-center gap-4">
-                        <div class="flex items-center gap-4">
-                            <img src="/images/molicente-icon.png" alt="MOLICENTE"
-                                class="h-24 w-auto rounded-xl bg-white p-3 shadow-xl" />
-                            <div>
-                                <h1 class="font-rajdhani text-3xl font-black text-white">
-                                    MOLICENTE
-                                </h1>
+                        <img src="/images/molicente-icon.png" alt="MOLICENTE"
+                            class="h-24 w-auto rounded-xl bg-white p-3 shadow-xl" />
 
-                                <p class="text-sm text-white/80">
-                                    Industria Molinera San Vicente SRL
-                                </p>
-                            </div>
+                        <div>
+                            <h1 class="font-rajdhani text-3xl font-black text-white">
+                                MOLICENTE
+                            </h1>
+
+                            <p class="text-sm text-white/80">
+                                Industria Molinera San Vicente SRL
+                            </p>
                         </div>
                     </div>
 
@@ -97,10 +91,8 @@ const submit = () => {
             </div>
         </section>
 
-        <!-- Panel derecho -->
         <section class="flex w-full items-center justify-center px-4 py-10 lg:w-1/2">
             <div class="w-full max-w-md">
-                <!-- Logo móvil -->
                 <div class="mb-8 flex justify-center lg:hidden">
                     <div class="text-center">
                         <div
@@ -112,7 +104,7 @@ const submit = () => {
                         <h1 class="font-rajdhani mt-3 text-2xl font-black text-primary">
                             MOLICENTE
                         </h1>
-                        
+
                         <p class="text-sm text-gray-500">
                             Industria Molinera San Vicente SRL
                         </p>
@@ -129,7 +121,7 @@ const submit = () => {
                             </h2>
 
                             <p class="mt-2 text-sm text-gray-500">
-                                Ingresa tus credenciales para acceder al sistema.
+                                Ingresa tu usuario y contraseña para acceder al sistema.
                             </p>
                         </div>
 
@@ -139,39 +131,34 @@ const submit = () => {
                         </div>
 
                         <form @submit.prevent="submit" class="space-y-5">
-                            <!-- Email -->
                             <div>
-                                <InputLabel for="email" value="Correo electrónico" />
+                                <InputLabel for="username" value="Usuario" />
 
                                 <div class="relative mt-2">
-                                    <Mail class="absolute left-3 top-3 h-5 w-5 text-gray-400" />
+                                    <UserRound class="absolute left-3 top-3 h-5 w-5 text-gray-400" />
 
-                                    <TextInput id="email" type="email"
+                                    <TextInput id="username" v-model="form.username" type="text"
                                         class="block w-full rounded-xl border-slate-300 pl-11 text-sm shadow-sm focus:border-primary focus:ring-primary"
-                                        v-model="form.email" required autofocus autocomplete="username"
-                                        placeholder="usuario@empresa.com" />
+                                        required autofocus autocomplete="username" placeholder="Ej: superadmin" />
                                 </div>
 
-                                <InputError class="mt-2" :message="form.errors.email" />
+                                <InputError class="mt-2" :message="form.errors.username" />
                             </div>
 
-                            <!-- Password -->
                             <div>
                                 <InputLabel for="password" value="Contraseña" />
 
                                 <div class="relative mt-2">
                                     <LockKeyhole class="absolute left-3 top-3 h-5 w-5 text-gray-400" />
 
-                                    <TextInput id="password" type="password"
+                                    <TextInput id="password" v-model="form.password" type="password"
                                         class="block w-full rounded-xl border-slate-300 pl-11 text-sm shadow-sm focus:border-primary focus:ring-primary"
-                                        v-model="form.password" required autocomplete="current-password"
-                                        placeholder="••••••••" />
+                                        required autocomplete="current-password" placeholder="••••••••" />
                                 </div>
 
                                 <InputError class="mt-2" :message="form.errors.password" />
                             </div>
 
-                            <!-- Remember + forgot -->
                             <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                                 <label class="flex items-center">
                                     <Checkbox name="remember" v-model:checked="form.remember" />
@@ -187,7 +174,6 @@ const submit = () => {
                                 </Link>
                             </div>
 
-                            <!-- Button -->
                             <PrimaryButton
                                 class="flex w-full justify-center rounded-xl bg-primary py-3 text-sm font-bold uppercase tracking-wide text-white shadow-md transition hover:bg-primary-dark"
                                 :class="{ 'opacity-60': form.processing }" :disabled="form.processing">

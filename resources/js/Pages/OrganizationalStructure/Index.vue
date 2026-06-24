@@ -16,14 +16,13 @@ import StatusFilter from '@/Components/Filters/StatusFilter.vue';
 import PerPageFilter from '@/Components/Filters/PerPageFilter.vue';
 
 import {
-    BriefcaseBusiness,
     Building2,
     Clock3,
     Database,
     Edit,
     Plus,
     Power,
-    UsersRound,
+    SlidersHorizontal,
 } from 'lucide-vue-next';
 
 const props = defineProps({
@@ -31,58 +30,54 @@ const props = defineProps({
         type: Array,
         default: () => [],
     },
+
     workShifts: {
-        type: Array,
-        default: () => [],
-    },
-    areas: {
-        type: Array,
-        default: () => [],
-    },
-    positions: {
         type: Array,
         default: () => [],
     },
 });
 
+/**
+ * Controla la pestaña activa.
+ */
 const activeTab = ref('banks');
 
+/**
+ * Filtros locales.
+ */
 const search = ref('');
 const status = ref('');
 const perPage = ref(10);
 const currentPage = ref(1);
 
+/**
+ * Pestañas del módulo.
+ *
+ * Áreas y cargos ya no se manejan aquí.
+ * Esos datos se administran como catálogos:
+ * - WORK_AREA
+ * - POSITION
+ */
 const tabs = [
     {
         key: 'banks',
         label: 'Bancos',
-        description: 'Entidades financieras utilizadas por los trabajadores.',
+        description: 'Entidades financieras utilizadas para pagos y cuentas de trabajadores.',
         icon: Building2,
         createRoute: 'banks.create',
     },
     {
         key: 'workShifts',
         label: 'Turnos',
-        description: 'Horarios laborales utilizados para asistencia y planillas.',
+        description: 'Horarios laborales utilizados para asistencia, planillas y control interno.',
         icon: Clock3,
         createRoute: 'work-shifts.create',
     },
-    {
-        key: 'areas',
-        label: 'Áreas',
-        description: 'Áreas internas de la empresa.',
-        icon: UsersRound,
-        createRoute: null,
-    },
-    {
-        key: 'positions',
-        label: 'Cargos',
-        description: 'Cargos laborales asignados a los trabajadores.',
-        icon: BriefcaseBusiness,
-        createRoute: null,
-    },
 ];
 
+/**
+ * Columnas dinámicas según la pestaña seleccionada.
+ */
 const columns = computed(() => {
     if (activeTab.value === 'banks') {
         return [
@@ -93,37 +88,35 @@ const columns = computed(() => {
         ];
     }
 
-    if (activeTab.value === 'workShifts') {
-        return [
-            { key: 'name', label: 'Turno' },
-            { key: 'schedule', label: 'Horario' },
-            { key: 'daily_hours', label: 'Jornada' },
-            { key: 'status', label: 'Estado' },
-            { key: 'actions', label: 'Acciones', align: 'right' },
-        ];
-    }
-
     return [
-        { key: 'name', label: 'Nombre' },
-        { key: 'description', label: 'Descripción' },
+        { key: 'name', label: 'Turno' },
+        { key: 'schedule', label: 'Horario' },
+        { key: 'daily_hours', label: 'Jornada' },
         { key: 'status', label: 'Estado' },
         { key: 'actions', label: 'Acciones', align: 'right' },
     ];
 });
 
+/**
+ * Información de la pestaña actual.
+ */
 const currentTab = computed(() => {
     return tabs.find((tab) => tab.key === activeTab.value);
 });
 
+/**
+ * Registros según pestaña.
+ */
 const currentRecords = computed(() => {
     if (activeTab.value === 'banks') return props.banks;
     if (activeTab.value === 'workShifts') return props.workShifts;
-    if (activeTab.value === 'areas') return props.areas;
-    if (activeTab.value === 'positions') return props.positions;
 
     return [];
 });
 
+/**
+ * Filtro local por búsqueda y estado.
+ */
 const filteredRecords = computed(() => {
     return currentRecords.value.filter((record) => {
         const searchText = search.value.toLowerCase();
@@ -142,10 +135,16 @@ const filteredRecords = computed(() => {
     });
 });
 
+/**
+ * Total de páginas.
+ */
 const totalPages = computed(() => {
     return Math.ceil(filteredRecords.value.length / Number(perPage.value)) || 1;
 });
 
+/**
+ * Registros visibles según paginación local.
+ */
 const visibleRecords = computed(() => {
     const start = (currentPage.value - 1) * Number(perPage.value);
     const end = start + Number(perPage.value);
@@ -153,6 +152,9 @@ const visibleRecords = computed(() => {
     return filteredRecords.value.slice(start, end);
 });
 
+/**
+ * Cambia la pestaña y reinicia filtros.
+ */
 const changeTab = (tabKey) => {
     activeTab.value = tabKey;
     search.value = '';
@@ -165,22 +167,34 @@ watch([search, status, perPage], () => {
     currentPage.value = 1;
 });
 
+/**
+ * Navegación de páginas.
+ */
 const goToPage = (page) => {
     if (page < 1 || page > totalPages.value) return;
 
     currentPage.value = page;
 };
 
+/**
+ * Formatea hora HH:mm:ss a HH:mm.
+ */
 const formatTime = (time) => {
     return time ? time.slice(0, 5) : '--:--';
 };
 
+/**
+ * Formatea horas de jornada.
+ */
 const formatHours = (hours) => {
     return `${Number(hours ?? 0).toLocaleString('es-PE', {
         minimumFractionDigits: 2,
     })} h`;
 };
 
+/**
+ * Activa o desactiva registros.
+ */
 const toggleStatus = (record) => {
     if (activeTab.value === 'banks') {
         router.patch(route('banks.toggle-status', record.id), {}, {
@@ -198,14 +212,14 @@ const toggleStatus = (record) => {
 
 <template>
 
-    <Head title="Estructura Organizacional" />
+    <Head title="Parámetros Laborales" />
 
-    <AuthenticatedLayout title="Estructura Organizacional">
+    <AuthenticatedLayout title="Parámetros Laborales">
         <section class="space-y-6">
-            <PageHeader title="Estructura Organizacional"
-                description="Administra datos base de la empresa como bancos, turnos, áreas y cargos.">
+            <PageHeader title="Parámetros Laborales"
+                description="Administra datos operativos del sistema como bancos y turnos de trabajo.">
                 <template #icon>
-                    <BriefcaseBusiness class="h-7 w-7" />
+                    <SlidersHorizontal class="h-7 w-7" />
                 </template>
 
                 <template #actions>
@@ -218,7 +232,7 @@ const toggleStatus = (record) => {
 
             <!-- Pestañas -->
             <div class="rounded-3xl border border-slate-300 bg-white p-4 shadow-lg">
-                <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+                <div class="grid gap-3 md:grid-cols-2">
                     <button v-for="tab in tabs" :key="tab.key" type="button"
                         class="flex h-24 items-center gap-4 rounded-2xl border px-4 py-4 text-left transition" :class="[
                             activeTab === tab.key
@@ -247,6 +261,7 @@ const toggleStatus = (record) => {
                 </div>
             </div>
 
+            <!-- Filtros -->
             <FilterCard>
                 <template #filters>
                     <SearchInput v-model="search" placeholder="Buscar por nombre, código o descripción..." />
@@ -257,6 +272,7 @@ const toggleStatus = (record) => {
                 </template>
             </FilterCard>
 
+            <!-- Resumen -->
             <div class="grid gap-4 lg:grid-cols-[1fr_auto] lg:items-center">
                 <div>
                     <h2 class="text-lg font-black text-gray-900">
@@ -285,7 +301,9 @@ const toggleStatus = (record) => {
                 </div>
             </div>
 
+            <!-- Tabla -->
             <DataTable :columns="columns">
+                <!-- Bancos -->
                 <template v-if="activeTab === 'banks'">
                     <tr v-for="bank in visibleRecords" :key="bank.id" class="text-sm transition hover:bg-primary/5">
                         <td class="px-6 py-4 font-semibold text-gray-800">
@@ -318,6 +336,7 @@ const toggleStatus = (record) => {
                     </tr>
                 </template>
 
+                <!-- Turnos -->
                 <template v-if="activeTab === 'workShifts'">
                     <tr v-for="shift in visibleRecords" :key="shift.id" class="text-sm transition hover:bg-primary/5">
                         <td class="px-6 py-4">
@@ -368,26 +387,7 @@ const toggleStatus = (record) => {
                     </tr>
                 </template>
 
-                <template v-if="activeTab === 'areas' || activeTab === 'positions'">
-                    <tr v-for="record in visibleRecords" :key="record.id" class="text-sm transition hover:bg-primary/5">
-                        <td class="px-6 py-4 font-semibold text-gray-800">
-                            {{ record.name }}
-                        </td>
-
-                        <td class="px-6 py-4 text-gray-600">
-                            {{ record.description ?? '-' }}
-                        </td>
-
-                        <td class="px-6 py-4">
-                            <StatusBadge :status="record.status" />
-                        </td>
-
-                        <td class="px-6 py-4 text-right text-gray-400">
-                            —
-                        </td>
-                    </tr>
-                </template>
-
+                <!-- Estado vacío -->
                 <template v-if="visibleRecords.length === 0" #empty>
                     <td :colspan="columns.length">
                         <EmptyState :title="`No se encontraron ${currentTab?.label.toLowerCase()}`"
@@ -403,6 +403,7 @@ const toggleStatus = (record) => {
                 </template>
             </DataTable>
 
+            <!-- Paginación local -->
             <div v-if="filteredRecords.length > Number(perPage)"
                 class="flex flex-col gap-4 rounded-3xl border border-slate-300 bg-white px-6 py-4 shadow-lg sm:flex-row sm:items-center sm:justify-between">
                 <p class="text-sm font-medium text-gray-500">

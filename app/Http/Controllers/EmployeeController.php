@@ -1,5 +1,4 @@
 <?php
-
 namespace App\Http\Controllers;
 
 use App\Http\Requests\Employee\StoreEmployeeRequest;
@@ -18,26 +17,33 @@ class EmployeeController extends Controller
 {
     public function __construct(
         protected EmployeeService $service
-    ) {}
+    ) {
+    }
 
     /**
      * Lista trabajadores registrados.
      */
     public function index(Request $request): Response
     {
+        $options = $this->service->formOptions();
+
         return Inertia::render('Workers/Index', [
-            'workers' => $this->service->paginate(
-                search: $request->search,
-                status: $request->status,
-                workShiftId: $request->integer('work_shift_id') ?: null,
-                perPage: $request->integer('per_page', 10)
+            'workers'    => $this->service->paginate(
+                $request->search,
+                $request->status,
+                $request->integer('work_shift_id') ?: null,
+                $request->integer('work_area_id') ?: null,
+                $request->integer('per_page', 10),
             ),
-            'workShifts' => $this->service->formOptions()['workShifts'],
-            'filters' => [
-                'search' => $request->search,
-                'status' => $request->status,
+
+            'workShifts' => $options['workShifts'],
+
+            'filters'    => [
+                'search'        => $request->search,
+                'status'        => $request->status,
                 'work_shift_id' => $request->work_shift_id,
-                'per_page' => $request->per_page,
+                'per_page'      => $request->per_page,
+                'work_area_id' => $request->work_area_id,
             ],
         ]);
     }
@@ -70,7 +76,10 @@ class EmployeeController extends Controller
     public function edit(Employee $worker): Response
     {
         return Inertia::render('Workers/Edit', [
-            'worker' => $worker->load('district.province.department'),
+            'worker'  => $worker->load([
+                'district.province.department',
+            ]),
+
             'options' => $this->service->formOptions(),
         ]);
     }

@@ -14,11 +14,28 @@ const props = defineProps({
     },
 });
 
+/**
+ * Categorías visibles para el usuario.
+ */
+const categoryLabels = {
+    DOCUMENT_TYPE: 'Tipo de documento',
+    GENDER: 'Género',
+    MARITAL_STATUS: 'Estado civil',
+    WORK_AREA: 'Área de trabajo',
+    POSITION: 'Cargo',
+    WORKER_STATUS: 'Estado laboral',
+    PENSION_SYSTEM: 'Sistema pensionario',
+    ACCOUNT_TYPE: 'Tipo de cuenta',
+};
+
+const categoryLabel =
+    categoryLabels[props.catalog.type] ?? 'Configuración';
+
 const form = useForm({
     type: props.catalog.type,
     code: props.catalog.code,
     name: props.catalog.name,
-    description: props.catalog.description,
+    description: props.catalog.description ?? '',
     status: props.catalog.status,
 });
 
@@ -28,42 +45,35 @@ const submit = () => {
 </script>
 
 <template>
-    <Head title="Editar catálogo" />
 
-    <AuthenticatedLayout title="Editar catálogo">
+    <Head :title="`Editar ${categoryLabel}`" />
+
+    <AuthenticatedLayout :title="`Editar ${categoryLabel}`">
         <section class="mx-auto max-w-3xl space-y-6">
-            <PageHeader
-                title="Editar catálogo"
-                description="Actualiza la información de la configuración seleccionada."
-            >
+            <PageHeader :title="`Editar ${categoryLabel}`"
+                description="Actualiza la información del registro seleccionado.">
                 <template #icon>
                     <ListChecks class="h-7 w-7" />
                 </template>
 
                 <template #actions>
-                    <Link
-                        :href="route('catalogs.index')"
-                        class="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-gray-600 shadow-sm transition hover:bg-slate-50"
-                    >
+                    <Link :href="route('catalogs.index', { type: form.type })"
+                        class="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-gray-600 shadow-sm transition hover:bg-slate-50">
                         <ArrowLeft class="h-4 w-4" />
                         Volver
                     </Link>
                 </template>
             </PageHeader>
 
-            <SectionCard
-                title="Datos del catálogo"
-                description="Revisa los campos antes de guardar los cambios."
-            >
+            <SectionCard :title="`Datos de ${categoryLabel}`"
+                description="Revisa los campos antes de guardar los cambios.">
                 <form @submit.prevent="submit">
-                    <Form :form="form" />
+                    <Form :form="form" :category-label="categoryLabel" />
 
                     <div class="mt-6 flex justify-end">
-                        <button
-                            type="submit"
+                        <button type="submit"
                             class="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-white shadow transition hover:bg-primary-dark disabled:opacity-60"
-                            :disabled="form.processing"
-                        >
+                            :disabled="form.processing">
                             <Save class="h-4 w-4" />
                             Actualizar
                         </button>

@@ -7,7 +7,7 @@
     },
     {
         "id": "010102",
-        "name": "Asunci\u00f3n",
+        "name": "Asunción",
         "province_id": "0101",
         "department_id": "01"
     },
@@ -247,7 +247,7 @@
     },
     {
         "id": "010403",
-        "name": "R\u00edo Santiago",
+        "name": "Río Santiago",
         "province_id": "0104",
         "department_id": "01"
     },
@@ -313,7 +313,7 @@
     },
     {
         "id": "010511",
-        "name": "Mar\u00eda",
+        "name": "María",
         "province_id": "0105",
         "department_id": "01"
     },
@@ -343,7 +343,7 @@
     },
     {
         "id": "010516",
-        "name": "San Crist\u00f3bal",
+        "name": "San Cristóbal",
         "province_id": "0105",
         "department_id": "01"
     },
@@ -355,7 +355,7 @@
     },
     {
         "id": "010518",
-        "name": "San Jer\u00f3nimo",
+        "name": "San Jerónimo",
         "province_id": "0105",
         "department_id": "01"
     },
@@ -391,7 +391,7 @@
     },
     {
         "id": "010601",
-        "name": "San Nicol\u00e1s",
+        "name": "San Nicolás",
         "province_id": "0106",
         "department_id": "01"
     },
@@ -817,7 +817,7 @@
     },
     {
         "id": "020702",
-        "name": "San Nicol\u00e1s",
+        "name": "San Nicolás",
         "province_id": "0207",
         "department_id": "02"
     },
@@ -1093,7 +1093,7 @@
     },
     {
         "id": "021303",
-        "name": "Eleazar Guzm\u00e1n Barron",
+        "name": "Eleazar Guzmán Barron",
         "province_id": "0213",
         "department_id": "02"
     },
@@ -1171,7 +1171,7 @@
     },
     {
         "id": "021408",
-        "name": "San Crist\u00f3bal de Rajan",
+        "name": "San Cristóbal de Rajan",
         "province_id": "0214",
         "department_id": "02"
     },
@@ -1345,7 +1345,7 @@
     },
     {
         "id": "021802",
-        "name": "C\u00e1ceres del Per\u00fa",
+        "name": "Cáceres del Perú",
         "province_id": "0218",
         "department_id": "02"
     },
@@ -1369,7 +1369,7 @@
     },
     {
         "id": "021806",
-        "name": "Nepe\u00f1a",
+        "name": "Nepeña",
         "province_id": "0218",
         "department_id": "02"
     },
@@ -1627,7 +1627,7 @@
     },
     {
         "id": "030213",
-        "name": "San Jer\u00f3nimo",
+        "name": "San Jerónimo",
         "province_id": "0302",
         "department_id": "03"
     },
@@ -1639,7 +1639,7 @@
     },
     {
         "id": "030215",
-        "name": "Santa Mar\u00eda de Chicmo",
+        "name": "Santa María de Chicmo",
         "province_id": "0302",
         "department_id": "03"
     },
@@ -1669,7 +1669,7 @@
     },
     {
         "id": "030220",
-        "name": "Jos\u00e9 Mar\u00eda Arguedas",
+        "name": "José María Arguedas",
         "province_id": "0302",
         "department_id": "03"
     },
@@ -1777,13 +1777,13 @@
     },
     {
         "id": "030411",
-        "name": "San Juan de Chac\u00f1a",
+        "name": "San Juan de Chacña",
         "province_id": "0304",
         "department_id": "03"
     },
     {
         "id": "030412",
-        "name": "Sa\u00f1ayca",
+        "name": "Sañayca",
         "province_id": "0304",
         "department_id": "03"
     },
@@ -2089,7 +2089,7 @@
     },
     {
         "id": "040115",
-        "name": "Queque\u00f1a",
+        "name": "Quequeña",
         "province_id": "0401",
         "department_id": "04"
     },
@@ -2173,43 +2173,43 @@
     },
     {
         "id": "040129",
-        "name": "Jos\u00e9 Luis Bustamante Y Rivero",
+        "name": "José Luis Bustamante Y Rivero",
         "province_id": "0401",
         "department_id": "04"
     },
     {
         "id": "040201",
-        "name": "Caman\u00e1",
+        "name": "Camaná",
         "province_id": "0402",
         "department_id": "04"
     },
     {
         "id": "040202",
-        "name": "Jos\u00e9 Mar\u00eda Quimper",
+        "name": "José María Quimper",
         "province_id": "0402",
         "department_id": "04"
     },
     {
         "id": "040203",
-        "name": "Mariano Nicol\u00e1s Valc\u00e1rcel",
+        "name": "Mariano Nicolás Valcárcel",
         "province_id": "0402",
         "department_id": "04"
     },
     {
         "id": "040204",
-        "name": "Mariscal C\u00e1ceres",
+        "name": "Mariscal Cáceres",
         "province_id": "0402",
         "department_id": "04"
     },
     {
         "id": "040205",
-        "name": "Nicol\u00e1s de Pierola",
+        "name": "Nicolás de Pierola",
         "province_id": "0402",
         "department_id": "04"
     },
     {
         "id": "040206",
-        "name": "Oco\u00f1a",
+        "name": "Ocoña",
         "province_id": "0402",
         "department_id": "04"
     },
@@ -2227,13 +2227,13 @@
     },
     {
         "id": "040301",
-        "name": "Caravel\u00ed",
+        "name": "Caravelí",
         "province_id": "0403",
         "department_id": "04"
     },
     {
         "id": "040302",
-        "name": "Acar\u00ed",
+        "name": "Acarí",
         "province_id": "0403",
         "department_id": "04"
     },
@@ -2251,7 +2251,7 @@
     },
     {
         "id": "040305",
-        "name": "Bella Uni\u00f3n",
+        "name": "Bella Unión",
         "province_id": "0403",
         "department_id": "04"
     },
@@ -2371,7 +2371,7 @@
     },
     {
         "id": "040412",
-        "name": "U\u00f1on",
+        "name": "Uñon",
         "province_id": "0404",
         "department_id": "04"
     },
@@ -2539,7 +2539,7 @@
     },
     {
         "id": "040606",
-        "name": "R\u00edo Grande",
+        "name": "Río Grande",
         "province_id": "0406",
         "department_id": "04"
     },
@@ -2587,7 +2587,7 @@
     },
     {
         "id": "040706",
-        "name": "Punta de Bomb\u00f3n",
+        "name": "Punta de Bombón",
         "province_id": "0407",
         "department_id": "04"
     },
@@ -2707,7 +2707,7 @@
     },
     {
         "id": "050109",
-        "name": "San Jos\u00e9 de Ticllas",
+        "name": "San José de Ticllas",
         "province_id": "0501",
         "department_id": "05"
     },
@@ -2743,13 +2743,13 @@
     },
     {
         "id": "050115",
-        "name": "Jes\u00fas Nazareno",
+        "name": "Jesús Nazareno",
         "province_id": "0501",
         "department_id": "05"
     },
     {
         "id": "050116",
-        "name": "Andr\u00e9s Avelino C\u00e1ceres Dorregaray",
+        "name": "Andrés Avelino Cáceres Dorregaray",
         "province_id": "0501",
         "department_id": "05"
     },
@@ -2773,7 +2773,7 @@
     },
     {
         "id": "050204",
-        "name": "Mar\u00eda Parado de Bellido",
+        "name": "María Parado de Bellido",
         "province_id": "0502",
         "department_id": "05"
     },
@@ -2977,7 +2977,7 @@
     },
     {
         "id": "050605",
-        "name": "Chavi\u00f1a",
+        "name": "Chaviña",
         "province_id": "0506",
         "department_id": "05"
     },
@@ -3019,7 +3019,7 @@
     },
     {
         "id": "050612",
-        "name": "Oca\u00f1a",
+        "name": "Ocaña",
         "province_id": "0506",
         "department_id": "05"
     },
@@ -3037,7 +3037,7 @@
     },
     {
         "id": "050615",
-        "name": "San Crist\u00f3bal",
+        "name": "San Cristóbal",
         "province_id": "0506",
         "department_id": "05"
     },
@@ -3091,7 +3091,7 @@
     },
     {
         "id": "050703",
-        "name": "Coronel Casta\u00f1eda",
+        "name": "Coronel Castañeda",
         "province_id": "0507",
         "department_id": "05"
     },
@@ -3175,7 +3175,7 @@
     },
     {
         "id": "050809",
-        "name": "San Jos\u00e9 de Ushua",
+        "name": "San José de Ushua",
         "province_id": "0508",
         "department_id": "05"
     },
@@ -3193,7 +3193,7 @@
     },
     {
         "id": "050902",
-        "name": "Bel\u00e9n",
+        "name": "Belén",
         "province_id": "0509",
         "department_id": "05"
     },
@@ -3211,7 +3211,7 @@
     },
     {
         "id": "050905",
-        "name": "Huaca\u00f1a",
+        "name": "Huacaña",
         "province_id": "0509",
         "department_id": "05"
     },
@@ -3343,7 +3343,7 @@
     },
     {
         "id": "051104",
-        "name": "Concepci\u00f3n",
+        "name": "Concepción",
         "province_id": "0511",
         "department_id": "05"
     },
@@ -3379,7 +3379,7 @@
     },
     {
         "id": "060102",
-        "name": "Asunci\u00f3n",
+        "name": "Asunción",
         "province_id": "0601",
         "department_id": "06"
     },
@@ -3397,13 +3397,13 @@
     },
     {
         "id": "060105",
-        "name": "Enca\u00f1ada",
+        "name": "Encañada",
         "province_id": "0601",
         "department_id": "06"
     },
     {
         "id": "060106",
-        "name": "Jes\u00fas",
+        "name": "Jesús",
         "province_id": "0601",
         "department_id": "06"
     },
@@ -3415,7 +3415,7 @@
     },
     {
         "id": "060108",
-        "name": "Los Ba\u00f1os del Inca",
+        "name": "Los Baños del Inca",
         "province_id": "0601",
         "department_id": "06"
     },
@@ -3469,7 +3469,7 @@
     },
     {
         "id": "060301",
-        "name": "Celend\u00edn",
+        "name": "Celendín",
         "province_id": "0603",
         "department_id": "06"
     },
@@ -3493,13 +3493,13 @@
     },
     {
         "id": "060305",
-        "name": "Jorge Ch\u00e1vez",
+        "name": "Jorge Chávez",
         "province_id": "0603",
         "department_id": "06"
     },
     {
         "id": "060306",
-        "name": "Jos\u00e9 G\u00e1lvez",
+        "name": "José Gálvez",
         "province_id": "0603",
         "department_id": "06"
     },
@@ -3745,7 +3745,7 @@
     },
     {
         "id": "060608",
-        "name": "San Andr\u00e9s de Cutervo",
+        "name": "San Andrés de Cutervo",
         "province_id": "0606",
         "department_id": "06"
     },
@@ -3811,7 +3811,7 @@
     },
     {
         "id": "060801",
-        "name": "Ja\u00e9n",
+        "name": "Jaén",
         "province_id": "0608",
         "department_id": "06"
     },
@@ -3871,7 +3871,7 @@
     },
     {
         "id": "060811",
-        "name": "San Jos\u00e9 del Alto",
+        "name": "San José del Alto",
         "province_id": "0608",
         "department_id": "06"
     },
@@ -3913,7 +3913,7 @@
     },
     {
         "id": "060906",
-        "name": "San Jos\u00e9 de Lourdes",
+        "name": "San José de Lourdes",
         "province_id": "0609",
         "department_id": "06"
     },
@@ -3925,7 +3925,7 @@
     },
     {
         "id": "061001",
-        "name": "Pedro G\u00e1lvez",
+        "name": "Pedro Gálvez",
         "province_id": "0610",
         "department_id": "06"
     },
@@ -3955,13 +3955,13 @@
     },
     {
         "id": "061006",
-        "name": "Jos\u00e9 Manuel Quiroz",
+        "name": "José Manuel Quiroz",
         "province_id": "0610",
         "department_id": "06"
     },
     {
         "id": "061007",
-        "name": "Jos\u00e9 Sabogal",
+        "name": "José Sabogal",
         "province_id": "0610",
         "department_id": "06"
     },
@@ -3973,7 +3973,7 @@
     },
     {
         "id": "061102",
-        "name": "Bol\u00edvar",
+        "name": "Bolívar",
         "province_id": "0611",
         "department_id": "06"
     },
@@ -4039,7 +4039,7 @@
     },
     {
         "id": "061113",
-        "name": "Uni\u00f3n Agua Blanca",
+        "name": "Unión Agua Blanca",
         "province_id": "0611",
         "department_id": "06"
     },
@@ -4087,7 +4087,7 @@
     },
     {
         "id": "061304",
-        "name": "Chancayba\u00f1os",
+        "name": "Chancaybaños",
         "province_id": "0613",
         "department_id": "06"
     },
@@ -4171,7 +4171,7 @@
     },
     {
         "id": "070107",
-        "name": "Mi Per\u00fa",
+        "name": "Mi Perú",
         "province_id": "0701",
         "department_id": "07"
     },
@@ -4195,7 +4195,7 @@
     },
     {
         "id": "080104",
-        "name": "San Jer\u00f3nimo",
+        "name": "San Jerónimo",
         "province_id": "0801",
         "department_id": "08"
     },
@@ -4501,7 +4501,7 @@
     },
     {
         "id": "080707",
-        "name": "Qui\u00f1ota",
+        "name": "Quiñota",
         "province_id": "0807",
         "department_id": "08"
     },
@@ -4675,7 +4675,7 @@
     },
     {
         "id": "081006",
-        "name": "Omacha\u00e7",
+        "name": "Omachaç",
         "province_id": "0810",
         "department_id": "08"
     },
@@ -4729,7 +4729,7 @@
     },
     {
         "id": "081106",
-        "name": "Kos\u00f1ipata",
+        "name": "Kosñipata",
         "province_id": "0811",
         "department_id": "08"
     },
@@ -4909,7 +4909,7 @@
     },
     {
         "id": "090111",
-        "name": "Mariscal C\u00e1ceres",
+        "name": "Mariscal Cáceres",
         "province_id": "0901",
         "department_id": "09"
     },
@@ -4951,7 +4951,7 @@
     },
     {
         "id": "090118",
-        "name": "Ascensi\u00f3n",
+        "name": "Ascensión",
         "province_id": "0901",
         "department_id": "09"
     },
@@ -5239,7 +5239,7 @@
     },
     {
         "id": "090603",
-        "name": "C\u00f3rdova",
+        "name": "Córdova",
         "province_id": "0906",
         "department_id": "09"
     },
@@ -5353,7 +5353,7 @@
     },
     {
         "id": "090706",
-        "name": "Daniel Hern\u00e1ndez",
+        "name": "Daniel Hernández",
         "province_id": "0907",
         "department_id": "09"
     },
@@ -5371,7 +5371,7 @@
     },
     {
         "id": "090710",
-        "name": "\u00d1ahuimpuquio",
+        "name": "Ñahuimpuquio",
         "province_id": "0907",
         "department_id": "09"
     },
@@ -5449,7 +5449,7 @@
     },
     {
         "id": "100101",
-        "name": "Huanuco",
+        "name": "Huánuco",
         "province_id": "1001",
         "department_id": "10"
     },
@@ -5497,7 +5497,7 @@
     },
     {
         "id": "100109",
-        "name": "Santa Mar\u00eda del Valle",
+        "name": "Santa María del Valle",
         "province_id": "1001",
         "department_id": "10"
     },
@@ -5575,7 +5575,7 @@
     },
     {
         "id": "100301",
-        "name": "La Uni\u00f3n",
+        "name": "La Unión",
         "province_id": "1003",
         "department_id": "10"
     },
@@ -5587,7 +5587,7 @@
     },
     {
         "id": "100311",
-        "name": "Mar\u00edas",
+        "name": "Marías",
         "province_id": "1003",
         "department_id": "10"
     },
@@ -5665,7 +5665,7 @@
     },
     {
         "id": "100503",
-        "name": "Chav\u00edn de Pariarca",
+        "name": "Chavín de Pariarca",
         "province_id": "1005",
         "department_id": "10"
     },
@@ -5689,7 +5689,7 @@
     },
     {
         "id": "100507",
-        "name": "Monz\u00f3n",
+        "name": "Monzón",
         "province_id": "1005",
         "department_id": "10"
     },
@@ -5701,7 +5701,7 @@
     },
     {
         "id": "100509",
-        "name": "Pu\u00f1os",
+        "name": "Puños",
         "province_id": "1005",
         "department_id": "10"
     },
@@ -5725,19 +5725,19 @@
     },
     {
         "id": "100602",
-        "name": "Daniel Alom\u00eda Robles",
+        "name": "Daniel Alomía Robles",
         "province_id": "1006",
         "department_id": "10"
     },
     {
         "id": "100603",
-        "name": "Herm\u00edlio Valdizan",
+        "name": "Hermílio Valdizan",
         "province_id": "1006",
         "department_id": "10"
     },
     {
         "id": "100604",
-        "name": "Jos\u00e9 Crespo y Castillo",
+        "name": "José Crespo y Castillo",
         "province_id": "1006",
         "department_id": "10"
     },
@@ -5863,13 +5863,13 @@
     },
     {
         "id": "101001",
-        "name": "Jes\u00fas",
+        "name": "Jesús",
         "province_id": "1010",
         "department_id": "10"
     },
     {
         "id": "101002",
-        "name": "Ba\u00f1os",
+        "name": "Baños",
         "province_id": "1010",
         "department_id": "10"
     },
@@ -5893,7 +5893,7 @@
     },
     {
         "id": "101006",
-        "name": "San Francisco de As\u00eds",
+        "name": "San Francisco de Asís",
         "province_id": "1010",
         "department_id": "10"
     },
@@ -5959,7 +5959,7 @@
     },
     {
         "id": "110102",
-        "name": "La Tingui\u00f1a",
+        "name": "La Tinguiña",
         "province_id": "1101",
         "department_id": "11"
     },
@@ -6001,7 +6001,7 @@
     },
     {
         "id": "110109",
-        "name": "San Jos\u00e9 de Los Molinos",
+        "name": "San José de Los Molinos",
         "province_id": "1101",
         "department_id": "11"
     },
@@ -6145,7 +6145,7 @@
     },
     {
         "id": "110403",
-        "name": "R\u00edo Grande",
+        "name": "Río Grande",
         "province_id": "1104",
         "department_id": "11"
     },
@@ -6193,7 +6193,7 @@
     },
     {
         "id": "110506",
-        "name": "San Andr\u00e9s",
+        "name": "San Andrés",
         "province_id": "1105",
         "department_id": "11"
     },
@@ -6337,19 +6337,19 @@
     },
     {
         "id": "120129",
-        "name": "San Agust\u00edn",
+        "name": "San Agustín",
         "province_id": "1201",
         "department_id": "12"
     },
     {
         "id": "120130",
-        "name": "San Jer\u00f3nimo de Tunan",
+        "name": "San Jerónimo de Tunan",
         "province_id": "1201",
         "department_id": "12"
     },
     {
         "id": "120132",
-        "name": "Sa\u00f1o",
+        "name": "Saño",
         "province_id": "1201",
         "department_id": "12"
     },
@@ -6379,7 +6379,7 @@
     },
     {
         "id": "120201",
-        "name": "Concepci\u00f3n",
+        "name": "Concepción",
         "province_id": "1202",
         "department_id": "12"
     },
@@ -6415,7 +6415,7 @@
     },
     {
         "id": "120207",
-        "name": "Hero\u00ednas Toledo",
+        "name": "Heroínas Toledo",
         "province_id": "1202",
         "department_id": "12"
     },
@@ -6457,7 +6457,7 @@
     },
     {
         "id": "120214",
-        "name": "San Jos\u00e9 de Quero",
+        "name": "San José de Quero",
         "province_id": "1202",
         "department_id": "12"
     },
@@ -6493,7 +6493,7 @@
     },
     {
         "id": "120305",
-        "name": "San Ram\u00f3n",
+        "name": "San Ramón",
         "province_id": "1203",
         "department_id": "12"
     },
@@ -6571,13 +6571,13 @@
     },
     {
         "id": "120412",
-        "name": "Julc\u00e1n",
+        "name": "Julcán",
         "province_id": "1204",
         "department_id": "12"
     },
     {
         "id": "120413",
-        "name": "Leonor Ord\u00f3\u00f1ez",
+        "name": "Leonor Ordóñez",
         "province_id": "1204",
         "department_id": "12"
     },
@@ -6769,13 +6769,13 @@
     },
     {
         "id": "120607",
-        "name": "R\u00edo Negro",
+        "name": "Río Negro",
         "province_id": "1206",
         "department_id": "12"
     },
     {
         "id": "120608",
-        "name": "R\u00edo Tambo",
+        "name": "Río Tambo",
         "province_id": "1206",
         "department_id": "12"
     },
@@ -6811,7 +6811,7 @@
     },
     {
         "id": "120705",
-        "name": "La Uni\u00f3n",
+        "name": "La Unión",
         "province_id": "1207",
         "department_id": "12"
     },
@@ -6877,7 +6877,7 @@
     },
     {
         "id": "120807",
-        "name": "Santa B\u00e1rbara de Carhuacayan",
+        "name": "Santa Bárbara de Carhuacayan",
         "province_id": "1208",
         "department_id": "12"
     },
@@ -7051,7 +7051,7 @@
     },
     {
         "id": "130206",
-        "name": "R\u00e1zuri",
+        "name": "Rázuri",
         "province_id": "1302",
         "department_id": "13"
     },
@@ -7069,7 +7069,7 @@
     },
     {
         "id": "130301",
-        "name": "Bol\u00edvar",
+        "name": "Bolívar",
         "province_id": "1303",
         "department_id": "13"
     },
@@ -7231,7 +7231,7 @@
     },
     {
         "id": "130705",
-        "name": "San Jos\u00e9",
+        "name": "San José",
         "province_id": "1307",
         "department_id": "13"
     },
@@ -7477,7 +7477,7 @@
     },
     {
         "id": "140105",
-        "name": "Jos\u00e9 Leonardo Ortiz",
+        "name": "José Leonardo Ortiz",
         "province_id": "1401",
         "department_id": "14"
     },
@@ -7537,7 +7537,7 @@
     },
     {
         "id": "140115",
-        "name": "Sa\u00f1a",
+        "name": "Saña",
         "province_id": "1401",
         "department_id": "14"
     },
@@ -7573,13 +7573,13 @@
     },
     {
         "id": "140201",
-        "name": "Ferre\u00f1afe",
+        "name": "Ferreñafe",
         "province_id": "1402",
         "department_id": "14"
     },
     {
         "id": "140202",
-        "name": "Ca\u00f1aris",
+        "name": "Cañaris",
         "province_id": "1402",
         "department_id": "14"
     },
@@ -7669,7 +7669,7 @@
     },
     {
         "id": "140311",
-        "name": "San Jos\u00e9",
+        "name": "San José",
         "province_id": "1403",
         "department_id": "14"
     },
@@ -7687,7 +7687,7 @@
     },
     {
         "id": "150102",
-        "name": "Anc\u00f3n",
+        "name": "Ancón",
         "province_id": "1501",
         "department_id": "15"
     },
@@ -7705,7 +7705,7 @@
     },
     {
         "id": "150105",
-        "name": "Bre\u00f1a",
+        "name": "Breña",
         "province_id": "1501",
         "department_id": "15"
     },
@@ -7753,7 +7753,7 @@
     },
     {
         "id": "150113",
-        "name": "Jes\u00fas Mar\u00eda",
+        "name": "Jesús María",
         "province_id": "1501",
         "department_id": "15"
     },
@@ -7843,7 +7843,7 @@
     },
     {
         "id": "150128",
-        "name": "R\u00edmac",
+        "name": "Rímac",
         "province_id": "1501",
         "department_id": "15"
     },
@@ -7885,7 +7885,7 @@
     },
     {
         "id": "150135",
-        "name": "San Mart\u00edn de Porres",
+        "name": "San Martín de Porres",
         "province_id": "1501",
         "department_id": "15"
     },
@@ -7903,7 +7903,7 @@
     },
     {
         "id": "150138",
-        "name": "Santa Mar\u00eda del Mar",
+        "name": "Santa María del Mar",
         "province_id": "1501",
         "department_id": "15"
     },
@@ -7933,7 +7933,7 @@
     },
     {
         "id": "150143",
-        "name": "Villa Mar\u00eda del Triunfo",
+        "name": "Villa María del Triunfo",
         "province_id": "1501",
         "department_id": "15"
     },
@@ -8041,7 +8041,7 @@
     },
     {
         "id": "150501",
-        "name": "San Vicente de Ca\u00f1ete",
+        "name": "San Vicente de Cañete",
         "province_id": "1505",
         "department_id": "15"
     },
@@ -8131,7 +8131,7 @@
     },
     {
         "id": "150516",
-        "name": "Z\u00fa\u00f1iga",
+        "name": "Zúñiga",
         "province_id": "1505",
         "department_id": "15"
     },
@@ -8293,7 +8293,7 @@
     },
     {
         "id": "150715",
-        "name": "San Andr\u00e9s de Tupicocha",
+        "name": "San Andrés de Tupicocha",
         "province_id": "1507",
         "department_id": "15"
     },
@@ -8305,7 +8305,7 @@
     },
     {
         "id": "150717",
-        "name": "San Bartolom\u00e9",
+        "name": "San Bartolomé",
         "province_id": "1507",
         "department_id": "15"
     },
@@ -8455,7 +8455,7 @@
     },
     {
         "id": "150810",
-        "name": "Santa Mar\u00eda",
+        "name": "Santa María",
         "province_id": "1508",
         "department_id": "15"
     },
@@ -8533,7 +8533,7 @@
     },
     {
         "id": "151005",
-        "name": "Az\u00e1ngaro",
+        "name": "Azángaro",
         "province_id": "1510",
         "department_id": "15"
     },
@@ -8605,7 +8605,7 @@
     },
     {
         "id": "151017",
-        "name": "Hua\u00f1ec",
+        "name": "Huañec",
         "province_id": "1510",
         "department_id": "15"
     },
@@ -8659,7 +8659,7 @@
     },
     {
         "id": "151026",
-        "name": "San Joaqu\u00edn",
+        "name": "San Joaquín",
         "province_id": "1510",
         "department_id": "15"
     },
@@ -8695,7 +8695,7 @@
     },
     {
         "id": "151032",
-        "name": "Vi\u00f1ac",
+        "name": "Viñac",
         "province_id": "1510",
         "department_id": "15"
     },
@@ -8761,7 +8761,7 @@
     },
     {
         "id": "160112",
-        "name": "Bel\u00e9n",
+        "name": "Belén",
         "province_id": "1601",
         "department_id": "16"
     },
@@ -8803,7 +8803,7 @@
     },
     {
         "id": "160211",
-        "name": "Teniente Cesar L\u00f3pez Rojas",
+        "name": "Teniente Cesar López Rojas",
         "province_id": "1602",
         "department_id": "16"
     },
@@ -8839,7 +8839,7 @@
     },
     {
         "id": "160401",
-        "name": "Ram\u00f3n Castilla",
+        "name": "Ramón Castilla",
         "province_id": "1604",
         "department_id": "16"
     },
@@ -8881,7 +8881,7 @@
     },
     {
         "id": "160504",
-        "name": "Emilio San Mart\u00edn",
+        "name": "Emilio San Martín",
         "province_id": "1605",
         "department_id": "16"
     },
@@ -8941,7 +8941,7 @@
     },
     {
         "id": "160603",
-        "name": "Padre M\u00e1rquez",
+        "name": "Padre Márquez",
         "province_id": "1606",
         "department_id": "16"
     },
@@ -9073,7 +9073,7 @@
     },
     {
         "id": "170301",
-        "name": "I\u00f1apari",
+        "name": "Iñapari",
         "province_id": "1703",
         "department_id": "17"
     },
@@ -9115,7 +9115,7 @@
     },
     {
         "id": "180105",
-        "name": "San Crist\u00f3bal",
+        "name": "San Cristóbal",
         "province_id": "1801",
         "department_id": "18"
     },
@@ -9145,7 +9145,7 @@
     },
     {
         "id": "180204",
-        "name": "Ichu\u00f1a",
+        "name": "Ichuña",
         "province_id": "1802",
         "department_id": "18"
     },
@@ -9253,13 +9253,13 @@
     },
     {
         "id": "190108",
-        "name": "San Francisco de As\u00eds de Yarusyacan",
+        "name": "San Francisco de Asís de Yarusyacan",
         "province_id": "1901",
         "department_id": "19"
     },
     {
         "id": "190109",
-        "name": "Simon Bol\u00edvar",
+        "name": "Simon Bolívar",
         "province_id": "1901",
         "department_id": "19"
     },
@@ -9367,7 +9367,7 @@
     },
     {
         "id": "190306",
-        "name": "Puerto Berm\u00fadez",
+        "name": "Puerto Bermúdez",
         "province_id": "1903",
         "department_id": "19"
     },
@@ -9379,7 +9379,7 @@
     },
     {
         "id": "190308",
-        "name": "Constituci\u00f3n",
+        "name": "Constitución",
         "province_id": "1903",
         "department_id": "19"
     },
@@ -9421,7 +9421,7 @@
     },
     {
         "id": "200110",
-        "name": "La Uni\u00f3n",
+        "name": "La Unión",
         "province_id": "2001",
         "department_id": "20"
     },
@@ -9703,7 +9703,7 @@
     },
     {
         "id": "200701",
-        "name": "Pari\u00f1as",
+        "name": "Pariñas",
         "province_id": "2007",
         "department_id": "20"
     },
@@ -9745,7 +9745,7 @@
     },
     {
         "id": "200802",
-        "name": "Bellavista de la Uni\u00f3n",
+        "name": "Bellavista de la Unión",
         "province_id": "2008",
         "department_id": "20"
     },
@@ -9823,7 +9823,7 @@
     },
     {
         "id": "210109",
-        "name": "Ma\u00f1azo",
+        "name": "Mañazo",
         "province_id": "2101",
         "department_id": "21"
     },
@@ -9865,7 +9865,7 @@
     },
     {
         "id": "210201",
-        "name": "Az\u00e1ngaro",
+        "name": "Azángaro",
         "province_id": "2102",
         "department_id": "21"
     },
@@ -9901,13 +9901,13 @@
     },
     {
         "id": "210207",
-        "name": "Jos\u00e9 Domingo Choquehuanca",
+        "name": "José Domingo Choquehuanca",
         "province_id": "2102",
         "department_id": "21"
     },
     {
         "id": "210208",
-        "name": "Mu\u00f1ani",
+        "name": "Muñani",
         "province_id": "2102",
         "department_id": "21"
     },
@@ -9931,7 +9931,7 @@
     },
     {
         "id": "210212",
-        "name": "San Jos\u00e9",
+        "name": "San José",
         "province_id": "2102",
         "department_id": "21"
     },
@@ -10225,7 +10225,7 @@
     },
     {
         "id": "210806",
-        "name": "Nu\u00f1oa",
+        "name": "Nuñoa",
         "province_id": "2108",
         "department_id": "21"
     },
@@ -10507,7 +10507,7 @@
     },
     {
         "id": "220301",
-        "name": "San Jos\u00e9 de Sisa",
+        "name": "San José de Sisa",
         "province_id": "2203",
         "department_id": "22"
     },
@@ -10519,7 +10519,7 @@
     },
     {
         "id": "220303",
-        "name": "San Mart\u00edn",
+        "name": "San Martín",
         "province_id": "2203",
         "department_id": "22"
     },
@@ -10549,7 +10549,7 @@
     },
     {
         "id": "220403",
-        "name": "El Eslab\u00f3n",
+        "name": "El Eslabón",
         "province_id": "2204",
         "department_id": "22"
     },
@@ -10597,7 +10597,7 @@
     },
     {
         "id": "220505",
-        "name": "Cu\u00f1umbuqui",
+        "name": "Cuñumbuqui",
         "province_id": "2205",
         "department_id": "22"
     },
@@ -10639,7 +10639,7 @@
     },
     {
         "id": "220601",
-        "name": "Juanju\u00ed",
+        "name": "Juanjuí",
         "province_id": "2206",
         "department_id": "22"
     },
@@ -10699,13 +10699,13 @@
     },
     {
         "id": "220706",
-        "name": "San Crist\u00f3bal",
+        "name": "San Cristóbal",
         "province_id": "2207",
         "department_id": "22"
     },
     {
         "id": "220707",
-        "name": "San Hilari\u00f3n",
+        "name": "San Hilarión",
         "province_id": "2207",
         "department_id": "22"
     },
@@ -10741,7 +10741,7 @@
     },
     {
         "id": "220803",
-        "name": "El\u00edas Soplin Vargas",
+        "name": "Elías Soplin Vargas",
         "province_id": "2208",
         "department_id": "22"
     },
@@ -10951,7 +10951,7 @@
     },
     {
         "id": "230110",
-        "name": "Coronel Gregorio Albarrac\u00edn Lanchipa",
+        "name": "Coronel Gregorio Albarracín Lanchipa",
         "province_id": "2301",
         "department_id": "23"
     },
@@ -11023,7 +11023,7 @@
     },
     {
         "id": "230402",
-        "name": "H\u00e9roes Albarrac\u00edn",
+        "name": "Héroes Albarracín",
         "province_id": "2304",
         "department_id": "23"
     },

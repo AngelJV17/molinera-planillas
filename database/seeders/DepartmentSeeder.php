@@ -19,7 +19,7 @@ class DepartmentSeeder extends Seeder
         )
             ->map(fn($department) => [
                 'id'         => (int) $department['id'],
-                'name'       => strtoupper($department['name']),
+                'name' => mb_strtoupper($department['name'], 'UTF-8'),
                 'created_at' => now(),
                 'updated_at' => now(),
             ])

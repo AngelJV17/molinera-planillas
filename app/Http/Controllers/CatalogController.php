@@ -18,15 +18,18 @@ class CatalogController extends Controller
     }
 
     /**
-     * Muestra el listado de catálogos con filtros.
+     * Muestra el listado de catálogos filtrado por categoría.
      */
     public function index(Request $request): Response
     {
         $filters = $request->only([
+            'type',
             'search',
             'status',
             'per_page',
         ]);
+
+        $filters['type'] = $filters['type'] ?? 'DOCUMENT_TYPE';
 
         return Inertia::render('Catalogs/Index', [
             'catalogs' => $this->catalogService->paginate($filters),
@@ -37,9 +40,11 @@ class CatalogController extends Controller
     /**
      * Muestra el formulario de creación.
      */
-    public function create(): Response
+    public function create(Request $request): Response
     {
-        return Inertia::render('Catalogs/Create');
+        return Inertia::render('Catalogs/Create', [
+            'type' => $request->query('type', 'DOCUMENT_TYPE'),
+        ]);
     }
 
     /**
@@ -47,11 +52,11 @@ class CatalogController extends Controller
      */
     public function store(StoreCatalogRequest $request): RedirectResponse
     {
-        $this->catalogService->create($request->validated());
+        $catalog = $this->catalogService->create($request->validated());
 
         return redirect()
-            ->route('catalogs.index')
-            ->with('success', 'Catálogo registrado correctamente.');
+            ->route('catalogs.index', ['type' => $catalog->type])
+            ->with('success', 'Registro creado correctamente.');
     }
 
     /**
@@ -72,19 +77,17 @@ class CatalogController extends Controller
         $this->catalogService->update($catalog, $request->validated());
 
         return redirect()
-            ->route('catalogs.index')
-            ->with('success', 'Catálogo actualizado correctamente.');
+            ->route('catalogs.index', ['type' => $catalog->type])
+            ->with('success', 'Registro actualizado correctamente.');
     }
 
     /**
      * Activa o desactiva un catálogo.
-     *
-     * Evitamos eliminar registros para no afectar datos históricos.
      */
     public function toggleStatus(Catalog $catalog): RedirectResponse
     {
         $this->catalogService->toggleStatus($catalog);
 
-        return back()->with('success', 'Estado del catálogo actualizado.');
+        return back()->with('success', 'Estado actualizado correctamente.');
     }
 }

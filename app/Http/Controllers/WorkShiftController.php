@@ -55,7 +55,7 @@ class WorkShiftController extends Controller
         $this->service->create($request->validated());
 
         return redirect()
-            ->route('work-shifts.index')
+            ->route('organizational - structure . index')
             ->with('success', 'Turno registrado correctamente.');
     }
 
@@ -77,7 +77,8 @@ class WorkShiftController extends Controller
         $this->service->update($workShift, $request->validated());
 
         return redirect()
-            ->route('work-shifts.index')
+            ->route('organizational - structure . index
+')
             ->with('success', 'Turno actualizado correctamente.');
     }
 

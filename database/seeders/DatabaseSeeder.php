@@ -23,9 +23,9 @@ class DatabaseSeeder extends Seeder
         ]); */
 
         $this->call([
-            /* CatalogSeeder::class,
+            CatalogSeeder::class,
 
-            BankSeeder::class, */
+            BankSeeder::class,
 
             DepartmentSeeder::class,
 

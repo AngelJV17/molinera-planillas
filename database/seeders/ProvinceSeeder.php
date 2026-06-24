@@ -22,7 +22,7 @@ class ProvinceSeeder extends Seeder
         ->map(fn ($province) => [
             'id' => (int) $province['id'],
             'department_id' => (int) $province['department_id'],
-            'name' => strtoupper($province['name']),
+            'name' => mb_strtoupper($province['name'], 'UTF-8'),
             'created_at' => now(),
             'updated_at' => now(),
         ])

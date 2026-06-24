@@ -17,8 +17,18 @@ const props = defineProps({
     },
 });
 
+/**
+ * Normaliza fechas recibidas desde Laravel.
+ */
 const dateValue = (value) => value?.slice(0, 10) ?? '';
 
+/**
+ * Formulario de edición del trabajador.
+ *
+ * Importante:
+ * El campo user_id NO se maneja aquí.
+ * La vinculación Trabajador ↔ Usuario se realizará desde el módulo Usuarios.
+ */
 const form = useForm({
     employee_code: props.worker.employee_code,
     document_type_id: props.worker.document_type_id,
@@ -42,6 +52,7 @@ const form = useForm({
     pension_system_id: props.worker.pension_system_id ?? '',
     cuspp: props.worker.cuspp ?? '',
     status: props.worker.status,
+    has_system_access: !!props.worker.user_id,
 });
 
 const submit = () => {
@@ -50,23 +61,20 @@ const submit = () => {
 </script>
 
 <template>
+
     <Head title="Editar trabajador" />
 
     <AuthenticatedLayout title="Editar trabajador">
         <section class="mx-auto max-w-5xl space-y-6">
-            <PageHeader
-                title="Editar trabajador"
-                description="Actualiza la información personal y laboral del trabajador."
-            >
+            <PageHeader title="Editar trabajador"
+                description="Actualiza la información personal y laboral del trabajador.">
                 <template #icon>
                     <Users class="h-7 w-7" />
                 </template>
 
                 <template #actions>
-                    <Link
-                        :href="route('workers.index')"
-                        class="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-gray-600 shadow-sm transition hover:bg-slate-50"
-                    >
+                    <Link :href="route('workers.index')"
+                        class="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-gray-600 shadow-sm transition hover:bg-slate-50">
                         <ArrowLeft class="h-4 w-4" />
                         Volver
                     </Link>
@@ -77,11 +85,9 @@ const submit = () => {
                 <Form :form="form" :options="options" :initial-district="worker.district" />
 
                 <div class="mt-6 flex justify-end">
-                    <button
-                        type="submit"
+                    <button type="submit"
                         class="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-white shadow transition hover:bg-primary-dark disabled:opacity-60"
-                        :disabled="form.processing"
-                    >
+                        :disabled="form.processing">
                         <Save class="h-4 w-4" />
                         Actualizar
                     </button>

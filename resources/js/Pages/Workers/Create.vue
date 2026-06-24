@@ -14,7 +14,6 @@ defineProps({
 });
 
 const form = useForm({
-    employee_code: '',
     document_type_id: '',
     document_number: '',
     first_name: '',
@@ -36,6 +35,7 @@ const form = useForm({
     pension_system_id: '',
     cuspp: '',
     status: true,
+    has_system_access: false,
 });
 
 const submit = () => {
@@ -44,23 +44,20 @@ const submit = () => {
 </script>
 
 <template>
+
     <Head title="Nuevo trabajador" />
 
     <AuthenticatedLayout title="Nuevo trabajador">
         <section class="mx-auto max-w-5xl space-y-6">
-            <PageHeader
-                title="Registrar trabajador"
-                description="Crea el expediente laboral base para asistencia, planillas y boletas."
-            >
+            <PageHeader title="Registrar trabajador"
+                description="Crea el expediente laboral base para asistencia, planillas y boletas.">
                 <template #icon>
                     <Users class="h-7 w-7" />
                 </template>
 
                 <template #actions>
-                    <Link
-                        :href="route('workers.index')"
-                        class="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-gray-600 shadow-sm transition hover:bg-slate-50"
-                    >
+                    <Link :href="route('workers.index')"
+                        class="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-gray-600 shadow-sm transition hover:bg-slate-50">
                         <ArrowLeft class="h-4 w-4" />
                         Volver
                     </Link>
@@ -71,11 +68,9 @@ const submit = () => {
                 <Form :form="form" :options="options" />
 
                 <div class="mt-6 flex justify-end">
-                    <button
-                        type="submit"
+                    <button type="submit"
                         class="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-white shadow transition hover:bg-primary-dark disabled:opacity-60"
-                        :disabled="form.processing"
-                    >
+                        :disabled="form.processing">
                         <Save class="h-4 w-4" />
                         Guardar
                     </button>

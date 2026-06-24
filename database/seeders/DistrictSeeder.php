@@ -22,7 +22,7 @@ class DistrictSeeder extends Seeder
         ->map(fn ($district) => [
             'id' => (int) $district['id'],
             'province_id' => (int) $district['province_id'],
-            'name' => strtoupper($district['name']),
+            'name' => mb_strtoupper($district['name'], 'UTF-8'),
             'created_at' => now(),
             'updated_at' => now(),
         ])

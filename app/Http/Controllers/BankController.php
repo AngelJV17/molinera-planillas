@@ -1,5 +1,4 @@
 <?php
-
 namespace App\Http\Controllers;
 
 use App\Http\Requests\Bank\StoreBankRequest;
@@ -30,15 +29,15 @@ class BankController extends Controller
     public function index(Request $request): Response
     {
         return Inertia::render('Banks/Index', [
-            'banks' => $this->service->paginate(
+            'banks'   => $this->service->paginate(
                 search: $request->search,
                 status: $request->status,
                 perPage: $request->integer('per_page', 10)
             ),
 
             'filters' => [
-                'search' => $request->search,
-                'status' => $request->status,
+                'search'   => $request->search,
+                'status'   => $request->status,
                 'per_page' => $request->per_page,
             ],
         ]);
@@ -55,14 +54,11 @@ class BankController extends Controller
     /**
      * Guardar banco.
      */
-    public function store(
-        StoreBankRequest $request
-    ): RedirectResponse {
-
+    public function store(StoreBankRequest $request): RedirectResponse {
         $this->service->create($request->validated());
 
         return redirect()
-            ->route('banks.index')
+            ->route('organizational-structure.index')
             ->with(
                 'success',
                 'Banco registrado correctamente.'
@@ -82,15 +78,11 @@ class BankController extends Controller
     /**
      * Actualizar banco.
      */
-    public function update(
-        UpdateBankRequest $request,
-        Bank $bank
-    ): RedirectResponse {
-
+    public function update(UpdateBankRequest $request,Bank $bank): RedirectResponse {
         $this->service->update($bank, $request->validated());
 
         return redirect()
-            ->route('banks.index')
+            ->route('organizational - structure . index')
             ->with(
                 'success',
                 'Banco actualizado correctamente.'
@@ -100,10 +92,7 @@ class BankController extends Controller
     /**
      * Cambiar estado.
      */
-    public function toggleStatus(
-        Bank $bank
-    ): RedirectResponse {
-
+    public function toggleStatus(Bank $bank): RedirectResponse {
         $this->service->toggleStatus($bank);
 
         return back()->with(

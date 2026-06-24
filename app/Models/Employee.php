@@ -1,12 +1,11 @@
 <?php
-
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\HasOne;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Employee extends Model
@@ -38,14 +37,15 @@ class Employee extends Model
         'photo',
         'signature',
         'status',
+        'user_id',
     ];
 
     protected $casts = [
-        'birth_date' => 'date',
-        'hire_date' => 'date',
+        'birth_date'       => 'date',
+        'hire_date'        => 'date',
         'termination_date' => 'date',
-        'base_salary' => 'decimal:2',
-        'status' => 'boolean',
+        'base_salary'      => 'decimal:2',
+        'status'           => 'boolean',
     ];
 
     /**
@@ -151,5 +151,17 @@ class Employee extends Model
     {
         return $this->hasOne(EmployeeBankAccount::class)
             ->where('is_primary', true);
+    }
+
+    /**
+     * Usuario vinculado al trabajador.
+     *
+     * Esta relación es opcional:
+     * - Un trabajador puede no tener acceso al sistema.
+     * - Un trabajador administrativo puede tener usuario.
+     */
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
     }
 }

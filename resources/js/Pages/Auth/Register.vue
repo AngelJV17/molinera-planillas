@@ -15,15 +15,13 @@ import {
 
 const form = useForm({
     name: '',
+    username: '',
     email: '',
     password: '',
     password_confirmation: '',
+    status: true,
 });
 
-/**
- * Envía el formulario de registro al backend.
- * Al finalizar, limpia los campos de contraseña por seguridad.
- */
 const submit = () => {
     form.post(route('register'), {
         onFinish: () => form.reset('password', 'password_confirmation'),
@@ -36,7 +34,6 @@ const submit = () => {
     <Head title="Registro" />
 
     <div class="flex min-h-screen overflow-hidden bg-slate-100">
-        <!-- Panel izquierdo -->
         <section
             class="relative hidden w-1/2 overflow-hidden bg-gradient-to-br from-primary via-primary to-primary-dark text-white lg:flex">
             <div class="absolute -left-20 -top-20 h-72 w-72 rounded-full bg-white/10"></div>
@@ -45,18 +42,17 @@ const submit = () => {
             <div class="relative z-10 flex flex-col justify-between p-10">
                 <div>
                     <div class="flex items-center gap-4">
-                        <div class="flex items-center gap-4">
-                            <img src="/images/molicente-icon.png" alt="MOLICENTE"
-                                class="h-24 w-auto rounded-xl bg-white p-3 shadow-xl" />
-                            <div>
-                                <h1 class="font-rajdhani text-3xl font-black text-white">
-                                    MOLICENTE
-                                </h1>
+                        <img src="/images/molicente-icon.png" alt="MOLICENTE"
+                            class="h-24 w-auto rounded-xl bg-white p-3 shadow-xl" />
 
-                                <p class="text-sm text-white/80">
-                                    Industria Molinera San Vicente SRL
-                                </p>
-                            </div>
+                        <div>
+                            <h1 class="font-rajdhani text-3xl font-black text-white">
+                                MOLICENTE
+                            </h1>
+
+                            <p class="text-sm text-white/80">
+                                Industria Molinera San Vicente SRL
+                            </p>
                         </div>
                     </div>
 
@@ -101,10 +97,8 @@ const submit = () => {
             </div>
         </section>
 
-        <!-- Panel derecho -->
         <section class="flex w-full items-center justify-center overflow-y-auto px-4 py-6 lg:w-1/2">
             <div class="w-full max-w-md">
-                <!-- Logo móvil -->
                 <div class="mb-8 flex justify-center lg:hidden">
                     <div class="text-center">
                         <div
@@ -138,71 +132,91 @@ const submit = () => {
                         </div>
 
                         <form @submit.prevent="submit" class="space-y-4">
-                            <!-- Nombre -->
                             <div>
                                 <InputLabel for="name" value="Nombre completo" />
 
                                 <div class="relative mt-2">
                                     <UserRound class="absolute left-3 top-3 h-5 w-5 text-gray-400" />
 
-                                    <TextInput id="name" type="text"
+                                    <TextInput id="name" v-model="form.name" type="text"
                                         class="block w-full rounded-xl border-slate-300 pl-11 text-sm shadow-sm focus:border-primary focus:ring-primary"
-                                        v-model="form.name" required autofocus autocomplete="name"
-                                        placeholder="Nombre del usuario" />
+                                        required autofocus autocomplete="name" placeholder="Nombre del usuario" />
                                 </div>
 
                                 <InputError class="mt-2" :message="form.errors.name" />
                             </div>
 
-                            <!-- Email -->
                             <div>
-                                <InputLabel for="email" value="Correo electrónico" />
+                                <InputLabel for="username" value="Usuario" />
+
+                                <div class="relative mt-2">
+                                    <UserRound class="absolute left-3 top-3 h-5 w-5 text-gray-400" />
+
+                                    <TextInput id="username" v-model="form.username" type="text"
+                                        class="block w-full rounded-xl border-slate-300 pl-11 text-sm shadow-sm focus:border-primary focus:ring-primary"
+                                        required autocomplete="username" placeholder="Ej: superadmin" />
+                                </div>
+
+                                <InputError class="mt-2" :message="form.errors.username" />
+                            </div>
+
+                            <div>
+                                <InputLabel for="email" value="Correo electrónico (opcional)" />
 
                                 <div class="relative mt-2">
                                     <Mail class="absolute left-3 top-3 h-5 w-5 text-gray-400" />
 
-                                    <TextInput id="email" type="email"
+                                    <TextInput id="email" v-model="form.email" type="email"
                                         class="block w-full rounded-xl border-slate-300 pl-11 text-sm shadow-sm focus:border-primary focus:ring-primary"
-                                        v-model="form.email" required autocomplete="username"
-                                        placeholder="usuario@empresa.com" />
+                                        autocomplete="email" placeholder="usuario@empresa.com" />
                                 </div>
 
                                 <InputError class="mt-2" :message="form.errors.email" />
                             </div>
 
-                            <!-- Password -->
                             <div>
                                 <InputLabel for="password" value="Contraseña" />
 
                                 <div class="relative mt-2">
                                     <LockKeyhole class="absolute left-3 top-3 h-5 w-5 text-gray-400" />
 
-                                    <TextInput id="password" type="password"
+                                    <TextInput id="password" v-model="form.password" type="password"
                                         class="block w-full rounded-xl border-slate-300 pl-11 text-sm shadow-sm focus:border-primary focus:ring-primary"
-                                        v-model="form.password" required autocomplete="new-password"
-                                        placeholder="••••••••" />
+                                        required autocomplete="new-password" placeholder="••••••••" />
                                 </div>
 
                                 <InputError class="mt-2" :message="form.errors.password" />
                             </div>
 
-                            <!-- Confirmación -->
                             <div>
                                 <InputLabel for="password_confirmation" value="Confirmar contraseña" />
 
                                 <div class="relative mt-2">
                                     <LockKeyhole class="absolute left-3 top-3 h-5 w-5 text-gray-400" />
 
-                                    <TextInput id="password_confirmation" type="password"
+                                    <TextInput id="password_confirmation" v-model="form.password_confirmation"
+                                        type="password"
                                         class="block w-full rounded-xl border-slate-300 pl-11 text-sm shadow-sm focus:border-primary focus:ring-primary"
-                                        v-model="form.password_confirmation" required autocomplete="new-password"
-                                        placeholder="••••••••" />
+                                        required autocomplete="new-password" placeholder="••••••••" />
                                 </div>
 
                                 <InputError class="mt-2" :message="form.errors.password_confirmation" />
                             </div>
 
-                            <!-- Acciones -->
+                            <div>
+                                <label
+                                    class="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
+                                    <input id="status" v-model="form.status" type="checkbox"
+                                        class="rounded border-slate-300 text-primary shadow-sm focus:ring-primary">
+
+                                    <span class="text-sm font-semibold text-gray-700">
+                                        Usuario activo
+                                    </span>
+                                </label>
+
+                                <InputError class="mt-2" :message="form.errors.status" />
+                            </div>
+
                             <div class="flex flex-col gap-4 pt-2 sm:flex-row sm:items-center sm:justify-between">
                                 <Link :href="route('login')"
                                     class="text-sm font-semibold text-primary transition hover:text-primary-dark">

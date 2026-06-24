@@ -15,7 +15,11 @@ class CatalogSeeder extends Seeder
     public function run(): void
     {
         $catalogs = [
-            // Tipos de documento
+            /*
+            |--------------------------------------------------------------------------
+            | TIPOS DE DOCUMENTO
+            |--------------------------------------------------------------------------
+            */
             [
                 'type'        => 'DOCUMENT_TYPE',
                 'code'        => 'DNI',
@@ -28,8 +32,156 @@ class CatalogSeeder extends Seeder
                 'name'        => 'Carné de Extranjería',
                 'description' => 'Documento para trabajadores extranjeros',
             ],
+            [
+                'type'        => 'DOCUMENT_TYPE',
+                'code'        => 'PASSPORT',
+                'name'        => 'Pasaporte',
+                'description' => 'Documento de identificación internacional',
+            ],
 
-            // Estado del trabajador
+            /*
+            |--------------------------------------------------------------------------
+            | GÉNEROS
+            |--------------------------------------------------------------------------
+            */
+            [
+                'type'        => 'GENDER',
+                'code'        => 'MALE',
+                'name'        => 'Masculino',
+                'description' => 'Género masculino',
+            ],
+            [
+                'type'        => 'GENDER',
+                'code'        => 'FEMALE',
+                'name'        => 'Femenino',
+                'description' => 'Género femenino',
+            ],
+
+            /*
+            |--------------------------------------------------------------------------
+            | ESTADOS CIVILES
+            |--------------------------------------------------------------------------
+            */
+            [
+                'type'        => 'MARITAL_STATUS',
+                'code'        => 'SINGLE',
+                'name'        => 'Soltero(a)',
+                'description' => 'Persona que no ha contraído matrimonio',
+            ],
+            [
+                'type'        => 'MARITAL_STATUS',
+                'code'        => 'MARRIED',
+                'name'        => 'Casado(a)',
+                'description' => 'Persona unida legalmente en matrimonio',
+            ],
+            [
+                'type'        => 'MARITAL_STATUS',
+                'code'        => 'COHABITANT',
+                'name'        => 'Conviviente',
+                'description' => 'Persona que mantiene una unión de hecho',
+            ],
+            [
+                'type'        => 'MARITAL_STATUS',
+                'code'        => 'DIVORCED',
+                'name'        => 'Divorciado(a)',
+                'description' => 'Persona cuyo matrimonio ha sido disuelto legalmente',
+            ],
+            [
+                'type'        => 'MARITAL_STATUS',
+                'code'        => 'WIDOWED',
+                'name'        => 'Viudo(a)',
+                'description' => 'Persona cuyo cónyuge ha fallecido',
+            ],
+
+            /*
+            |--------------------------------------------------------------------------
+            | ÁREAS DE TRABAJO
+            |--------------------------------------------------------------------------
+            */
+            [
+                'type'        => 'WORK_AREA',
+                'code'        => 'ADMIN',
+                'name'        => 'Administración',
+                'description' => 'Área encargada de la gestión administrativa de la empresa',
+            ],
+            [
+                'type'        => 'WORK_AREA',
+                'code'        => 'PRODUCTION',
+                'name'        => 'Producción',
+                'description' => 'Área encargada del proceso operativo del molino',
+            ],
+            [
+                'type'        => 'WORK_AREA',
+                'code'        => 'WAREHOUSE',
+                'name'        => 'Almacén',
+                'description' => 'Área encargada de recepción, control e inventario',
+            ],
+            [
+                'type'        => 'WORK_AREA',
+                'code'        => 'SECURITY',
+                'name'        => 'Seguridad',
+                'description' => 'Área encargada de vigilancia y control de ingreso',
+            ],
+            [
+                'type'        => 'WORK_AREA',
+                'code'        => 'ACCOUNTING',
+                'name'        => 'Contabilidad',
+                'description' => 'Área encargada de la gestión contable y financiera',
+            ],
+
+            /*
+            |--------------------------------------------------------------------------
+            | CARGOS
+            |--------------------------------------------------------------------------
+            */
+            [
+                'type'        => 'POSITION',
+                'code'        => 'MANAGER',
+                'name'        => 'Administrador',
+                'description' => 'Responsable de la gestión general de la empresa',
+            ],
+            [
+                'type'        => 'POSITION',
+                'code'        => 'ACCOUNTANT',
+                'name'        => 'Contador',
+                'description' => 'Responsable de la contabilidad de la empresa',
+            ],
+            [
+                'type'        => 'POSITION',
+                'code'        => 'SUPERVISOR',
+                'name'        => 'Supervisor',
+                'description' => 'Responsable de supervisar las labores operativas',
+            ],
+            [
+                'type'        => 'POSITION',
+                'code'        => 'MILL_OPERATOR',
+                'name'        => 'Operario de Molino',
+                'description' => 'Trabajador encargado de apoyar en las operaciones del molino',
+            ],
+            [
+                'type'        => 'POSITION',
+                'code'        => 'WAREHOUSE_ASSISTANT',
+                'name'        => 'Auxiliar de Almacén',
+                'description' => 'Apoyo en inventario, recepción y almacenamiento',
+            ],
+            [
+                'type'        => 'POSITION',
+                'code'        => 'ADMIN_ASSISTANT',
+                'name'        => 'Asistente Administrativo',
+                'description' => 'Apoyo en tareas administrativas de la empresa',
+            ],
+            [
+                'type'        => 'POSITION',
+                'code'        => 'WATCHMAN',
+                'name'        => 'Vigilante',
+                'description' => 'Responsable de la seguridad y control de ingreso',
+            ],
+
+            /*
+            |--------------------------------------------------------------------------
+            | ESTADOS DEL TRABAJADOR
+            |--------------------------------------------------------------------------
+            */
             [
                 'type'        => 'WORKER_STATUS',
                 'code'        => 'ACTIVE',
@@ -38,12 +190,34 @@ class CatalogSeeder extends Seeder
             ],
             [
                 'type'        => 'WORKER_STATUS',
-                'code'        => 'INACTIVE',
-                'name'        => 'Inactivo',
-                'description' => 'Trabajador que ya no labora en la empresa',
+                'code'        => 'ON_VACATION',
+                'name'        => 'Vacaciones',
+                'description' => 'Trabajador que se encuentra de vacaciones',
+            ],
+            [
+                'type'        => 'WORKER_STATUS',
+                'code'        => 'ON_LEAVE',
+                'name'        => 'Licencia',
+                'description' => 'Trabajador con licencia temporal',
+            ],
+            [
+                'type'        => 'WORKER_STATUS',
+                'code'        => 'SUSPENDED',
+                'name'        => 'Suspendido',
+                'description' => 'Trabajador suspendido temporalmente',
+            ],
+            [
+                'type'        => 'WORKER_STATUS',
+                'code'        => 'TERMINATED',
+                'name'        => 'Cesado',
+                'description' => 'Trabajador que ya no pertenece a la empresa',
             ],
 
-            // Régimen pensionario
+            /*
+            |--------------------------------------------------------------------------
+            | SISTEMA PENSIONARIO
+            |--------------------------------------------------------------------------
+            */
             [
                 'type'        => 'PENSION_SYSTEM',
                 'code'        => 'ONP',
@@ -52,9 +226,27 @@ class CatalogSeeder extends Seeder
             ],
             [
                 'type'        => 'PENSION_SYSTEM',
-                'code'        => 'AFP',
-                'name'        => 'AFP',
-                'description' => 'Sistema Privado de Pensiones',
+                'code'        => 'AFP_INTEGRA',
+                'name'        => 'AFP Integra',
+                'description' => 'Administradora Privada de Fondos de Pensiones',
+            ],
+            [
+                'type'        => 'PENSION_SYSTEM',
+                'code'        => 'AFP_PRIMA',
+                'name'        => 'AFP Prima',
+                'description' => 'Administradora Privada de Fondos de Pensiones',
+            ],
+            [
+                'type'        => 'PENSION_SYSTEM',
+                'code'        => 'AFP_PROFUTURO',
+                'name'        => 'AFP Profuturo',
+                'description' => 'Administradora Privada de Fondos de Pensiones',
+            ],
+            [
+                'type'        => 'PENSION_SYSTEM',
+                'code'        => 'AFP_HABITAT',
+                'name'        => 'AFP Habitat',
+                'description' => 'Administradora Privada de Fondos de Pensiones',
             ],
             [
                 'type'        => 'PENSION_SYSTEM',
@@ -63,7 +255,29 @@ class CatalogSeeder extends Seeder
                 'description' => 'No registra régimen pensionario',
             ],
 
-            // Estados de asistencia
+            /*
+            |--------------------------------------------------------------------------
+            | TIPOS DE CUENTA BANCARIA
+            |--------------------------------------------------------------------------
+            */
+            [
+                'type'        => 'ACCOUNT_TYPE',
+                'code'        => 'SAVINGS',
+                'name'        => 'Cuenta de Ahorros',
+                'description' => 'Cuenta bancaria para depósitos y retiros',
+            ],
+            [
+                'type'        => 'ACCOUNT_TYPE',
+                'code'        => 'CURRENT',
+                'name'        => 'Cuenta Corriente',
+                'description' => 'Cuenta bancaria utilizada para operaciones empresariales',
+            ],
+
+            /*
+            |--------------------------------------------------------------------------
+            | ESTADOS DE ASISTENCIA
+            |--------------------------------------------------------------------------
+            */
             [
                 'type'        => 'ATTENDANCE_STATUS',
                 'code'        => 'PRESENT',
@@ -83,7 +297,11 @@ class CatalogSeeder extends Seeder
                 'description' => 'Día no laborable o descanso del trabajador',
             ],
 
-            // Estados de planilla
+            /*
+            |--------------------------------------------------------------------------
+            | ESTADOS DE PLANILLA
+            |--------------------------------------------------------------------------
+            */
             [
                 'type'        => 'PAYROLL_STATUS',
                 'code'        => 'GENERATED',
@@ -115,7 +333,11 @@ class CatalogSeeder extends Seeder
                 'description' => 'Planilla pagada de forma externa al sistema',
             ],
 
-            // Estados de boleta
+            /*
+            |--------------------------------------------------------------------------
+            | ESTADOS DE BOLETA
+            |--------------------------------------------------------------------------
+            */
             [
                 'type'        => 'PAYMENT_SLIP_STATUS',
                 'code'        => 'GENERATED',
@@ -135,7 +357,11 @@ class CatalogSeeder extends Seeder
                 'description' => 'Boleta anulada por corrección administrativa',
             ],
 
-            // Tipos de concepto para boleta
+            /*
+            |--------------------------------------------------------------------------
+            | TIPOS DE CONCEPTO PARA BOLETA
+            |--------------------------------------------------------------------------
+            */
             [
                 'type'        => 'PAYMENT_CONCEPT_TYPE',
                 'code'        => 'INCOME',

@@ -11,7 +11,7 @@
     },
     {
         "id": "0103",
-        "name": "Bongar\u00e1",
+        "name": "Bongará",
         "department_id": "01"
     },
     {
@@ -26,7 +26,7 @@
     },
     {
         "id": "0106",
-        "name": "Rodr\u00edguez de Mendoza",
+        "name": "Rodríguez de Mendoza",
         "department_id": "01"
     },
     {
@@ -51,7 +51,7 @@
     },
     {
         "id": "0204",
-        "name": "Asunci\u00f3n",
+        "name": "Asunción",
         "department_id": "02"
     },
     {
@@ -66,7 +66,7 @@
     },
     {
         "id": "0207",
-        "name": "Carlos Ferm\u00edn Fitzcarrald",
+        "name": "Carlos Fermín Fitzcarrald",
         "department_id": "02"
     },
     {
@@ -176,12 +176,12 @@
     },
     {
         "id": "0402",
-        "name": "Caman\u00e1",
+        "name": "Camaná",
         "department_id": "04"
     },
     {
         "id": "0403",
-        "name": "Caravel\u00ed",
+        "name": "Caravelí",
         "department_id": "04"
     },
     {
@@ -206,7 +206,7 @@
     },
     {
         "id": "0408",
-        "name": "La Uni\u00f2n",
+        "name": "La Uniòn",
         "department_id": "04"
     },
     {
@@ -246,7 +246,7 @@
     },
     {
         "id": "0508",
-        "name": "P\u00e0ucar del Sara Sara",
+        "name": "Pàucar del Sara Sara",
         "department_id": "05"
     },
     {
@@ -256,12 +256,12 @@
     },
     {
         "id": "0510",
-        "name": "V\u00edctor Fajardo",
+        "name": "Víctor Fajardo",
         "department_id": "05"
     },
     {
         "id": "0511",
-        "name": "Vilcas Huam\u00e1n",
+        "name": "Vilcas Huamán",
         "department_id": "05"
     },
     {
@@ -276,7 +276,7 @@
     },
     {
         "id": "0603",
-        "name": "Celend\u00edn",
+        "name": "Celendín",
         "department_id": "06"
     },
     {
@@ -286,7 +286,7 @@
     },
     {
         "id": "0605",
-        "name": "Contumaz\u00e1",
+        "name": "Contumazá",
         "department_id": "06"
     },
     {
@@ -301,7 +301,7 @@
     },
     {
         "id": "0608",
-        "name": "Ja\u00e9n",
+        "name": "Jaén",
         "department_id": "06"
     },
     {
@@ -376,7 +376,7 @@
     },
     {
         "id": "0809",
-        "name": "La Convenci\u00f3n",
+        "name": "La Convención",
         "department_id": "08"
     },
     {
@@ -426,7 +426,7 @@
     },
     {
         "id": "0906",
-        "name": "Huaytar\u00e1",
+        "name": "Huaytará",
         "department_id": "09"
     },
     {
@@ -436,7 +436,7 @@
     },
     {
         "id": "1001",
-        "name": "Hu\u00e1nuco",
+        "name": "Huánuco",
         "department_id": "10"
     },
     {
@@ -456,7 +456,7 @@
     },
     {
         "id": "1005",
-        "name": "Huamal\u00edes",
+        "name": "Huamalíes",
         "department_id": "10"
     },
     {
@@ -466,7 +466,7 @@
     },
     {
         "id": "1007",
-        "name": "Mara\u00f1\u00f3n",
+        "name": "Marañón",
         "department_id": "10"
     },
     {
@@ -521,7 +521,7 @@
     },
     {
         "id": "1202",
-        "name": "Concepci\u00f3n ",
+        "name": "Concepción ",
         "department_id": "12"
     },
     {
@@ -536,7 +536,7 @@
     },
     {
         "id": "1205",
-        "name": "Jun\u00edn ",
+        "name": "Junín ",
         "department_id": "12"
     },
     {
@@ -571,17 +571,17 @@
     },
     {
         "id": "1303",
-        "name": "Bol\u00edvar ",
+        "name": "Bolívar ",
         "department_id": "13"
     },
     {
         "id": "1304",
-        "name": "Chep\u00e9n ",
+        "name": "Chepén ",
         "department_id": "13"
     },
     {
         "id": "1305",
-        "name": "Julc\u00e1n ",
+        "name": "Julcán ",
         "department_id": "13"
     },
     {
@@ -601,7 +601,7 @@
     },
     {
         "id": "1309",
-        "name": "S\u00e1nchez Carri\u00f3n ",
+        "name": "Sánchez Carrión ",
         "department_id": "13"
     },
     {
@@ -611,12 +611,12 @@
     },
     {
         "id": "1311",
-        "name": "Gran Chim\u00fa ",
+        "name": "Gran Chimú ",
         "department_id": "13"
     },
     {
         "id": "1312",
-        "name": "Vir\u00fa ",
+        "name": "Virú ",
         "department_id": "13"
     },
     {
@@ -626,7 +626,7 @@
     },
     {
         "id": "1402",
-        "name": "Ferre\u00f1afe ",
+        "name": "Ferreñafe ",
         "department_id": "14"
     },
     {
@@ -656,7 +656,7 @@
     },
     {
         "id": "1505",
-        "name": "Ca\u00f1ete ",
+        "name": "Cañete ",
         "department_id": "15"
     },
     {
@@ -666,7 +666,7 @@
     },
     {
         "id": "1507",
-        "name": "Huarochir\u00ed ",
+        "name": "Huarochirí ",
         "department_id": "15"
     },
     {
@@ -676,7 +676,7 @@
     },
     {
         "id": "1509",
-        "name": "Oy\u00f3n ",
+        "name": "Oyón ",
         "department_id": "15"
     },
     {
@@ -701,7 +701,7 @@
     },
     {
         "id": "1604",
-        "name": "Mariscal Ram\u00f3n Castilla ",
+        "name": "Mariscal Ramón Castilla ",
         "department_id": "16"
     },
     {
@@ -716,7 +716,7 @@
     },
     {
         "id": "1607",
-        "name": "Datem del Mara\u00f1\u00f3n ",
+        "name": "Datem del Marañón ",
         "department_id": "16"
     },
     {
@@ -746,7 +746,7 @@
     },
     {
         "id": "1802",
-        "name": "General S\u00e1nchez Cerro ",
+        "name": "General Sánchez Cerro ",
         "department_id": "18"
     },
     {
@@ -761,7 +761,7 @@
     },
     {
         "id": "1902",
-        "name": "Daniel Alcides Carri\u00f3n ",
+        "name": "Daniel Alcides Carrión ",
         "department_id": "19"
     },
     {
@@ -786,7 +786,7 @@
     },
     {
         "id": "2004",
-        "name": "Morrop\u00f3n ",
+        "name": "Morropón ",
         "department_id": "20"
     },
     {
@@ -816,7 +816,7 @@
     },
     {
         "id": "2102",
-        "name": "Az\u00e1ngaro ",
+        "name": "Azángaro ",
         "department_id": "21"
     },
     {
@@ -836,7 +836,7 @@
     },
     {
         "id": "2106",
-        "name": "Huancan\u00e9 ",
+        "name": "Huancané ",
         "department_id": "21"
     },
     {
@@ -861,7 +861,7 @@
     },
     {
         "id": "2111",
-        "name": "San Rom\u00e1n ",
+        "name": "San Román ",
         "department_id": "21"
     },
     {
@@ -901,7 +901,7 @@
     },
     {
         "id": "2206",
-        "name": "Mariscal C\u00e1ceres ",
+        "name": "Mariscal Cáceres ",
         "department_id": "22"
     },
     {
@@ -916,7 +916,7 @@
     },
     {
         "id": "2209",
-        "name": "San Mart\u00edn ",
+        "name": "San Martín ",
         "department_id": "22"
     },
     {
@@ -976,7 +976,7 @@
     },
     {
         "id": "2504",
-        "name": "Pur\u00fas",
+        "name": "Purús",
         "department_id": "25"
     }
 ]
