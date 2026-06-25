@@ -41,21 +41,17 @@ class LoginRequest extends FormRequest
     {
         $this->ensureIsNotRateLimited();
 
-        if (! Auth::attempt($this->only('username', 'password'), $this->boolean('remember'))) {
+        $credentials = [
+            'username' => $this->string('username')->toString(),
+            'password' => $this->string('password')->toString(),
+            'status'   => true,
+        ];
+
+        if (! Auth::attempt($credentials, $this->boolean('remember'))) {
             RateLimiter::hit($this->throttleKey());
 
             throw ValidationException::withMessages([
                 'username' => trans('auth.failed'),
-            ]);
-        }
-
-        if (! Auth::user()->status) {
-            Auth::logout();
-
-            RateLimiter::hit($this->throttleKey());
-
-            throw ValidationException::withMessages([
-                'username' => 'Tu usuario se encuentra inactivo.',
             ]);
         }
 

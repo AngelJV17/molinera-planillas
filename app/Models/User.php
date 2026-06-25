@@ -1,28 +1,38 @@
 <?php
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Database\Factories\UserFactory;
-use Illuminate\Database\Eloquent\Attributes\Fillable;
-use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
-#[Fillable(['name',
-        'username',
-        'email',
-        'password',
-        'status',
-    ])]
-#[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable;
 
     /**
-     * Get the attributes that should be cast.
+     * Atributos asignables masivamente.
+     */
+    protected $fillable = [
+        'name',
+        'username',
+        'email',
+        'password',
+        'status',
+    ];
+
+    /**
+     * Atributos ocultos en respuestas.
+     */
+    protected $hidden = [
+        'password',
+        'remember_token',
+    ];
+
+    /**
+     * Casts del modelo.
      *
      * @return array<string, string>
      */
@@ -35,8 +45,16 @@ class User extends Authenticatable
         ];
     }
 
-    public function employee()
+    /**
+     * Trabajador vinculado al usuario.
+     *
+     * Un usuario puede estar vinculado a un trabajador.
+     * Ejemplo:
+     * - Super Admin: usuario sin trabajador.
+     * - Trabajador con acceso: usuario vinculado a employee.
+     */
+    public function employee(): HasOne
     {
-        return $this->belongsTo(Employee::class);
+        return $this->hasOne(Employee::class);
     }
 }

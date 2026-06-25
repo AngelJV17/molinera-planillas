@@ -8,7 +8,6 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
@@ -31,48 +30,19 @@ class RegisteredUserController extends Controller
      */
     public function store(Request $request): RedirectResponse
     {
-        $validated = $request->validate([
-            'name'        => [
-                'required',
-                'string',
-                'max:255',
-            ],
-
-            'username'    => [
-                'required',
-                'string',
-                'max:50',
-                'alpha_dash',
-                Rule::unique('users', 'username'),
-            ],
-
-            'email'       => [
-                'nullable',
-                'string',
-                'lowercase',
-                'email',
-                'max:255',
-                Rule::unique('users', 'email'),
-            ],
-
-            'password'    => [
-                'required',
-                'confirmed',
-                Rules\Password::defaults(),
-            ],
-
-            'status'      => [
-                'required',
-                'boolean',
-            ],
+        $request->validate([
+            'name'     => ['required', 'string', 'max:255'],
+            'username' => ['required', 'string', 'max:50', 'unique:users,username'],
+            'email'    => ['nullable', 'string', 'lowercase', 'email', 'max:255', 'unique:users,email'],
+            'password' => ['required', 'confirmed', Rules\Password::defaults()],
         ]);
 
         $user = User::create([
-            'name'        => $validated['name'],
-            'username'    => $validated['username'],
-            'email'       => $validated['email'] ?? null,
-            'password'    => Hash::make($validated['password']),
-            'status'      => $validated['status'],
+            'name'     => $request->name,
+            'username' => $request->username,
+            'email'    => $request->email,
+            'password' => Hash::make($request->password),
+            'status'   => true,
         ]);
 
         event(new Registered($user));

@@ -26,9 +26,18 @@ class UserFactory extends Factory
     {
         return [
             'name' => fake()->name(),
+
+            // Campo obligatorio agregado al sistema.
+            'username' => fake()->unique()->numerify('########'),
+
+            // En tu sistema el email puede ser nullable,
+            // pero para pruebas de Breeze conviene generarlo.
             'email' => fake()->unique()->safeEmail(),
             'email_verified_at' => now(),
             'password' => static::$password ??= Hash::make('password'),
+
+            // Campo agregado al sistema.
+            'status' => true,
             'remember_token' => Str::random(10),
         ];
     }
@@ -40,6 +49,13 @@ class UserFactory extends Factory
     {
         return $this->state(fn (array $attributes) => [
             'email_verified_at' => null,
+        ]);
+    }
+
+    public function inactive(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'status' => false,
         ]);
     }
 }
