@@ -5,6 +5,8 @@ use App\Http\Controllers\CatalogController;
 use App\Http\Controllers\EmployeeController;
 use App\Http\Controllers\OrganizationalStructureController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\RoleController;
+use App\Http\Controllers\UserController;
 use App\Http\Controllers\WorkShiftController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
@@ -157,9 +159,18 @@ Route::middleware(['auth', 'verified'])->group(function () {
     |--------------------------------------------------------------------------
     */
 
-    Route::get('/users', function () {
-        return Inertia::render('Users/Index');
-    })->name('users.index');
+    Route::get('users', [UserController::class, 'index'])
+        ->name('users.index');
+
+    Route::resource('users', UserController::class)
+        ->except(['show', 'destroy']);
+
+    Route::patch('users/{user}/toggle-status', [UserController::class, 'toggleStatus'])
+        ->name('users.toggle-status');
+
+    Route::patch('users/{user}/reset-password', [UserController::class, 'resetPassword'])
+        ->name('users.reset-password');
+
 });
 
 /*
@@ -184,6 +195,13 @@ Route::middleware('auth')->group(function () {
         '/profile',
         [ProfileController::class, 'destroy']
     )->name('profile.destroy');
+
+    Route::get('roles', [RoleController::class, 'index'])
+        ->name('roles.index');
+
+    Route::resource('roles', RoleController::class)
+        ->except(['show', 'destroy']);
+
 });
 
 require __DIR__ . '/auth.php';

@@ -32,6 +32,8 @@ class DatabaseSeeder extends Seeder
             ProvinceSeeder::class,
 
             DistrictSeeder::class,
+
+            RolePermissionSeeder::class,
         ]);
     }
 }

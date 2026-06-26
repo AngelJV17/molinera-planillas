@@ -15,6 +15,7 @@ import {
     ChevronRight,
     X,
     BriefcaseBusiness,
+    KeyRound,
 } from 'lucide-vue-next';
 
 import ApplicationLogo from '@/Components/ApplicationLogo.vue';
@@ -50,6 +51,13 @@ const menuItems = [
     },
 
     { name: 'Usuarios', routeName: 'users.index', icon: ShieldCheck, section: 'security', activePattern: 'users.*' },
+    {
+        name: 'Roles y Permisos',
+        routeName: 'roles.index',
+        icon: KeyRound,
+        section: 'security',
+        activePattern: 'roles.*',
+    },
     { name: 'Reportes', routeName: 'reports.index', icon: BarChart3, section: 'reports', activePattern: 'reports.*' },
 ];
 

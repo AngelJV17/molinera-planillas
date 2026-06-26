@@ -6,11 +6,12 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Spatie\Permission\Traits\HasRoles;
 
 class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
-    use HasFactory, Notifiable;
+    use HasFactory, Notifiable, HasRoles;
 
     /**
      * Atributos asignables masivamente.
@@ -21,6 +22,7 @@ class User extends Authenticatable
         'email',
         'password',
         'status',
+        'must_change_password',
     ];
 
     /**
@@ -39,9 +41,10 @@ class User extends Authenticatable
     protected function casts(): array
     {
         return [
-            'email_verified_at' => 'datetime',
-            'password'          => 'hashed',
-            'status'            => 'boolean',
+            'email_verified_at'    => 'datetime',
+            'password'             => 'hashed',
+            'status'               => 'boolean',
+            'must_change_password' => 'boolean',
         ];
     }
 

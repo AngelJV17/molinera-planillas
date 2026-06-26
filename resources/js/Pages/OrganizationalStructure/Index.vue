@@ -1,19 +1,23 @@
 <script setup>
-import { Head, Link, router } from '@inertiajs/vue3';
+import { Head, router } from '@inertiajs/vue3';
 import { computed, ref, watch } from 'vue';
 
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
-import PageHeader from '@/Components/Common/PageHeader.vue';
-import FilterCard from '@/Components/Common/FilterCard.vue';
-import PrimaryActionButton from '@/Components/Common/PrimaryActionButton.vue';
 import EmptyState from '@/Components/Common/EmptyState.vue';
+import FilterCard from '@/Components/Common/FilterCard.vue';
+import ListSummary from '@/Components/Common/ListSummary.vue';
+import PageHeader from '@/Components/Common/PageHeader.vue';
+import PrimaryActionButton from '@/Components/Common/PrimaryActionButton.vue';
+
+import PerPageFilter from '@/Components/Filters/PerPageFilter.vue';
+import StatusFilter from '@/Components/Filters/StatusFilter.vue';
 
 import DataTable from '@/Components/Table/DataTable.vue';
 import SearchInput from '@/Components/Table/SearchInput.vue';
 import StatusBadge from '@/Components/Table/StatusBadge.vue';
-
-import StatusFilter from '@/Components/Filters/StatusFilter.vue';
-import PerPageFilter from '@/Components/Filters/PerPageFilter.vue';
+import TableActionButton from '@/Components/Table/TableActionButton.vue';
+import TableActions from '@/Components/Table/TableActions.vue';
+import TableEntityCell from '@/Components/Table/TableEntityCell.vue';
 
 import {
     Building2,
@@ -37,31 +41,18 @@ const props = defineProps({
     },
 });
 
-/**
- * Controla la pestaña activa.
- */
 const activeTab = ref('banks');
 
-/**
- * Filtros locales.
- */
 const search = ref('');
 const status = ref('');
 const perPage = ref(10);
 const currentPage = ref(1);
 
-/**
- * Pestañas del módulo.
- *
- * Áreas y cargos ya no se manejan aquí.
- * Esos datos se administran como catálogos:
- * - WORK_AREA
- * - POSITION
- */
 const tabs = [
     {
         key: 'banks',
         label: 'Bancos',
+        singular: 'banco',
         description: 'Entidades financieras utilizadas para pagos y cuentas de trabajadores.',
         icon: Building2,
         createRoute: 'banks.create',
@@ -69,54 +60,46 @@ const tabs = [
     {
         key: 'workShifts',
         label: 'Turnos',
+        singular: 'turno',
         description: 'Horarios laborales utilizados para asistencia, planillas y control interno.',
         icon: Clock3,
         createRoute: 'work-shifts.create',
     },
 ];
 
-/**
- * Columnas dinámicas según la pestaña seleccionada.
- */
 const columns = computed(() => {
     if (activeTab.value === 'banks') {
         return [
-            { key: 'name', label: 'Banco' },
-            { key: 'code', label: 'Código' },
+            { key: 'entity', label: 'Banco' },
             { key: 'status', label: 'Estado' },
             { key: 'actions', label: 'Acciones', align: 'right' },
         ];
     }
 
     return [
-        { key: 'name', label: 'Turno' },
-        { key: 'schedule', label: 'Horario' },
-        { key: 'daily_hours', label: 'Jornada' },
+        { key: 'entity', label: 'Turno' },
+        { key: 'schedule', label: 'Horario / Jornada' },
         { key: 'status', label: 'Estado' },
         { key: 'actions', label: 'Acciones', align: 'right' },
     ];
 });
 
-/**
- * Información de la pestaña actual.
- */
 const currentTab = computed(() => {
     return tabs.find((tab) => tab.key === activeTab.value);
 });
 
-/**
- * Registros según pestaña.
- */
 const currentRecords = computed(() => {
-    if (activeTab.value === 'banks') return props.banks;
-    if (activeTab.value === 'workShifts') return props.workShifts;
+    if (activeTab.value === 'banks') {
+        return props.banks;
+    }
+
+    if (activeTab.value === 'workShifts') {
+        return props.workShifts;
+    }
 
     return [];
 });
 
-/**
- * Filtro local por búsqueda y estado.
- */
 const filteredRecords = computed(() => {
     return currentRecords.value.filter((record) => {
         const searchText = search.value.toLowerCase();
@@ -135,16 +118,10 @@ const filteredRecords = computed(() => {
     });
 });
 
-/**
- * Total de páginas.
- */
 const totalPages = computed(() => {
     return Math.ceil(filteredRecords.value.length / Number(perPage.value)) || 1;
 });
 
-/**
- * Registros visibles según paginación local.
- */
 const visibleRecords = computed(() => {
     const start = (currentPage.value - 1) * Number(perPage.value);
     const end = start + Number(perPage.value);
@@ -152,9 +129,6 @@ const visibleRecords = computed(() => {
     return filteredRecords.value.slice(start, end);
 });
 
-/**
- * Cambia la pestaña y reinicia filtros.
- */
 const changeTab = (tabKey) => {
     activeTab.value = tabKey;
     search.value = '';
@@ -167,34 +141,49 @@ watch([search, status, perPage], () => {
     currentPage.value = 1;
 });
 
-/**
- * Navegación de páginas.
- */
 const goToPage = (page) => {
-    if (page < 1 || page > totalPages.value) return;
+    if (page < 1 || page > totalPages.value) {
+        return;
+    }
 
     currentPage.value = page;
 };
 
-/**
- * Formatea hora HH:mm:ss a HH:mm.
- */
 const formatTime = (time) => {
     return time ? time.slice(0, 5) : '--:--';
 };
 
-/**
- * Formatea horas de jornada.
- */
 const formatHours = (hours) => {
     return `${Number(hours ?? 0).toLocaleString('es-PE', {
         minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
     })} h`;
 };
 
-/**
- * Activa o desactiva registros.
- */
+const bankCode = (bank) => {
+    return bank.code ? `Código: ${bank.code}` : 'Sin código registrado';
+};
+
+const shiftSchedule = (shift) => {
+    return `${formatTime(shift.start_time)} - ${formatTime(shift.end_time)}`;
+};
+
+const shiftBreak = (shift) => {
+    if (!shift.break_start_time || !shift.break_end_time) {
+        return 'Sin horario de descanso registrado';
+    }
+
+    return `Descanso: ${formatTime(shift.break_start_time)} - ${formatTime(shift.break_end_time)}`;
+};
+
+const shiftTolerance = (shift) => {
+    if (shift.tolerance_minutes === null || shift.tolerance_minutes === undefined) {
+        return 'Sin tolerancia registrada';
+    }
+
+    return `Tolerancia: ${shift.tolerance_minutes} min`;
+};
+
 const toggleStatus = (record) => {
     if (activeTab.value === 'banks') {
         router.patch(route('banks.toggle-status', record.id), {}, {
@@ -261,7 +250,6 @@ const toggleStatus = (record) => {
                 </div>
             </div>
 
-            <!-- Filtros -->
             <FilterCard>
                 <template #filters>
                     <SearchInput v-model="search" placeholder="Buscar por nombre, código o descripción..." />
@@ -272,46 +260,15 @@ const toggleStatus = (record) => {
                 </template>
             </FilterCard>
 
-            <!-- Resumen -->
-            <div class="grid gap-4 lg:grid-cols-[1fr_auto] lg:items-center">
-                <div>
-                    <h2 class="text-lg font-black text-gray-900">
-                        {{ currentTab?.label }} registrados
-                    </h2>
+            <ListSummary :title="`${currentTab?.label} registrados`" :description="currentTab?.description"
+                label="Total registros" :total="filteredRecords.length" :icon="Database" />
 
-                    <p class="text-sm text-gray-500">
-                        {{ currentTab?.description }}
-                    </p>
-                </div>
-
-                <div class="flex items-center gap-4 rounded-2xl border border-primary/20 bg-white px-5 py-3 shadow-md">
-                    <div class="flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                        <Database class="h-5 w-5" />
-                    </div>
-
-                    <div>
-                        <p class="text-xs font-bold uppercase tracking-wide text-gray-500">
-                            Total registros
-                        </p>
-
-                        <p class="text-2xl font-black leading-none text-primary">
-                            {{ filteredRecords.length }}
-                        </p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Tabla -->
             <DataTable :columns="columns">
                 <!-- Bancos -->
                 <template v-if="activeTab === 'banks'">
                     <tr v-for="bank in visibleRecords" :key="bank.id" class="text-sm transition hover:bg-primary/5">
-                        <td class="px-6 py-4 font-semibold text-gray-800">
-                            {{ bank.name }}
-                        </td>
-
                         <td class="px-6 py-4">
-                            {{ bank.code ?? '-' }}
+                            <TableEntityCell :icon="Building2" :title="bank.name" :subtitle="bankCode(bank)" />
                         </td>
 
                         <td class="px-6 py-4">
@@ -319,19 +276,13 @@ const toggleStatus = (record) => {
                         </td>
 
                         <td class="px-6 py-4">
-                            <div class="flex justify-end gap-2">
-                                <Link :href="route('banks.edit', bank.id)"
-                                    class="rounded-xl border border-slate-300 bg-white p-2 text-gray-700 shadow-sm transition hover:border-primary hover:bg-primary/10 hover:text-primary"
-                                    title="Editar">
-                                    <Edit class="h-4 w-4" />
-                                </Link>
+                            <TableActions>
+                                <TableActionButton :href="route('banks.edit', bank.id)" :icon="Edit"
+                                    title="Editar banco" />
 
-                                <button type="button"
-                                    class="rounded-xl border border-slate-300 bg-white p-2 text-gray-700 shadow-sm transition hover:border-danger hover:bg-danger/10 hover:text-danger"
-                                    title="Cambiar estado" @click="toggleStatus(bank)">
-                                    <Power class="h-4 w-4" />
-                                </button>
-                            </div>
+                                <TableActionButton :icon="Power" title="Cambiar estado" variant="danger"
+                                    @click="toggleStatus(bank)" />
+                            </TableActions>
                         </td>
                     </tr>
                 </template>
@@ -340,29 +291,18 @@ const toggleStatus = (record) => {
                 <template v-if="activeTab === 'workShifts'">
                     <tr v-for="shift in visibleRecords" :key="shift.id" class="text-sm transition hover:bg-primary/5">
                         <td class="px-6 py-4">
-                            <div>
-                                <p class="font-bold text-gray-800">
-                                    {{ shift.name }}
-                                </p>
-
-                                <p v-if="shift.break_start_time && shift.break_end_time"
-                                    class="text-xs font-medium text-primary">
-                                    Almuerzo:
-                                    {{ formatTime(shift.break_start_time) }}
-                                    -
-                                    {{ formatTime(shift.break_end_time) }}
-                                </p>
-                            </div>
+                            <TableEntityCell :icon="Clock3" :title="shift.name" :subtitle="shiftBreak(shift)"
+                                :meta="shiftTolerance(shift)" />
                         </td>
 
-                        <td class="px-6 py-4 font-semibold text-gray-700">
-                            {{ formatTime(shift.start_time) }}
-                            -
-                            {{ formatTime(shift.end_time) }}
-                        </td>
+                        <td class="px-6 py-4">
+                            <p class="font-bold text-gray-800">
+                                {{ shiftSchedule(shift) }}
+                            </p>
 
-                        <td class="px-6 py-4 font-bold text-gray-800">
-                            {{ formatHours(shift.daily_hours) }}
+                            <p class="text-xs font-medium text-gray-500">
+                                Jornada: {{ formatHours(shift.daily_hours) }}
+                            </p>
                         </td>
 
                         <td class="px-6 py-4">
@@ -370,24 +310,17 @@ const toggleStatus = (record) => {
                         </td>
 
                         <td class="px-6 py-4">
-                            <div class="flex justify-end gap-2">
-                                <Link :href="route('work-shifts.edit', shift.id)"
-                                    class="rounded-xl border border-slate-300 bg-white p-2 text-gray-700 shadow-sm transition hover:border-primary hover:bg-primary/10 hover:text-primary"
-                                    title="Editar">
-                                    <Edit class="h-4 w-4" />
-                                </Link>
+                            <TableActions>
+                                <TableActionButton :href="route('work-shifts.edit', shift.id)" :icon="Edit"
+                                    title="Editar turno" />
 
-                                <button type="button"
-                                    class="rounded-xl border border-slate-300 bg-white p-2 text-gray-700 shadow-sm transition hover:border-danger hover:bg-danger/10 hover:text-danger"
-                                    title="Cambiar estado" @click="toggleStatus(shift)">
-                                    <Power class="h-4 w-4" />
-                                </button>
-                            </div>
+                                <TableActionButton :icon="Power" title="Cambiar estado" variant="danger"
+                                    @click="toggleStatus(shift)" />
+                            </TableActions>
                         </td>
                     </tr>
                 </template>
 
-                <!-- Estado vacío -->
                 <template v-if="visibleRecords.length === 0" #empty>
                     <td :colspan="columns.length">
                         <EmptyState :title="`No se encontraron ${currentTab?.label.toLowerCase()}`"
@@ -408,9 +341,13 @@ const toggleStatus = (record) => {
                 class="flex flex-col gap-4 rounded-3xl border border-slate-300 bg-white px-6 py-4 shadow-lg sm:flex-row sm:items-center sm:justify-between">
                 <p class="text-sm font-medium text-gray-500">
                     Mostrando
-                    <span class="font-bold text-gray-700">{{ visibleRecords.length }}</span>
+                    <span class="font-bold text-gray-700">
+                        {{ visibleRecords.length }}
+                    </span>
                     de
-                    <span class="font-bold text-gray-700">{{ filteredRecords.length }}</span>
+                    <span class="font-bold text-gray-700">
+                        {{ filteredRecords.length }}
+                    </span>
                     registros
                 </p>
 
