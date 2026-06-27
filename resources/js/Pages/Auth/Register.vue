@@ -1,16 +1,23 @@
 <script setup>
+import { ref } from 'vue';
+
+import Checkbox from '@/Components/Checkbox.vue';
 import InputError from '@/Components/InputError.vue';
 import InputLabel from '@/Components/InputLabel.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import TextInput from '@/Components/TextInput.vue';
+
 import { Head, Link, useForm } from '@inertiajs/vue3';
+
 import {
-    Leaf,
-    UserRound,
-    Mail,
-    LockKeyhole,
-    ShieldCheck,
     ClipboardCheck,
+    Eye,
+    EyeOff,
+    Leaf,
+    LockKeyhole,
+    Mail,
+    ShieldCheck,
+    UserRound,
 } from 'lucide-vue-next';
 
 const form = useForm({
@@ -22,28 +29,50 @@ const form = useForm({
     status: true,
 });
 
+/**
+ * Controla la visibilidad de la contraseña principal.
+ */
+const showPassword = ref(false);
+
+/**
+ * Controla la visibilidad de la confirmación de contraseña.
+ */
+const showPasswordConfirmation = ref(false);
+
+/**
+ * Registra un nuevo usuario en el sistema.
+ */
 const submit = () => {
     form.post(route('register'), {
-        onFinish: () => form.reset('password', 'password_confirmation'),
+        onFinish: () => {
+            form.reset('password', 'password_confirmation');
+
+            // Por seguridad, al terminar el proceso volvemos a ocultar los campos.
+            showPassword.value = false;
+            showPasswordConfirmation.value = false;
+        },
     });
 };
 </script>
 
 <template>
-
     <Head title="Registro" />
 
     <div class="flex min-h-screen overflow-hidden bg-slate-100">
         <section
-            class="relative hidden w-1/2 overflow-hidden bg-gradient-to-br from-primary via-primary to-primary-dark text-white lg:flex">
+            class="relative hidden w-1/2 overflow-hidden bg-gradient-to-br from-primary via-primary to-primary-dark text-white lg:flex"
+        >
             <div class="absolute -left-20 -top-20 h-72 w-72 rounded-full bg-white/10"></div>
             <div class="absolute -bottom-24 right-10 h-80 w-80 rounded-full bg-secondary/20"></div>
 
             <div class="relative z-10 flex flex-col justify-between p-10">
                 <div>
                     <div class="flex items-center gap-4">
-                        <img src="/images/molicente-icon.png" alt="MOLICENTE"
-                            class="h-24 w-auto rounded-xl bg-white p-3 shadow-xl" />
+                        <img
+                            src="/images/molicente-icon.png"
+                            alt="MOLICENTE"
+                            class="h-24 w-auto rounded-xl bg-white p-3 shadow-xl"
+                        />
 
                         <div>
                             <h1 class="font-rajdhani text-3xl font-black text-white">
@@ -75,6 +104,7 @@ const submit = () => {
                 <div class="grid gap-4">
                     <div class="flex items-center gap-3 rounded-2xl bg-white/10 p-4 backdrop-blur">
                         <ShieldCheck class="h-6 w-6 text-secondary" />
+
                         <p class="text-sm text-white/90">
                             Gestión segura mediante usuarios y roles.
                         </p>
@@ -82,6 +112,7 @@ const submit = () => {
 
                     <div class="flex items-center gap-3 rounded-2xl bg-white/10 p-4 backdrop-blur">
                         <ClipboardCheck class="h-6 w-6 text-secondary" />
+
                         <p class="text-sm text-white/90">
                             Control administrativo organizado para la empresa.
                         </p>
@@ -89,6 +120,7 @@ const submit = () => {
 
                     <div class="flex items-center gap-3 rounded-2xl bg-white/10 p-4 backdrop-blur">
                         <Leaf class="h-6 w-6 text-secondary" />
+
                         <p class="text-sm text-white/90">
                             Plataforma alineada a la identidad visual de MOLICENTE.
                         </p>
@@ -102,9 +134,13 @@ const submit = () => {
                 <div class="mb-8 flex justify-center lg:hidden">
                     <div class="text-center">
                         <div
-                            class="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-primary text-white shadow-lg">
-                            <img src="/images/molicente-icon.png" alt="MOLICENTE"
-                                class="w-auto rounded-xl bg-white p-3 shadow-xl" />
+                            class="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-primary text-white shadow-lg"
+                        >
+                            <img
+                                src="/images/molicente-icon.png"
+                                alt="MOLICENTE"
+                                class="w-auto rounded-xl bg-white p-3 shadow-xl"
+                            />
                         </div>
 
                         <h1 class="font-rajdhani mt-3 text-2xl font-black text-primary">
@@ -131,101 +167,201 @@ const submit = () => {
                             </p>
                         </div>
 
-                        <form @submit.prevent="submit" class="space-y-4">
+                        <form
+                            class="space-y-4"
+                            @submit.prevent="submit"
+                        >
                             <div>
-                                <InputLabel for="name" value="Nombre completo" />
+                                <InputLabel
+                                    for="name"
+                                    value="Nombre completo"
+                                />
 
                                 <div class="relative mt-2">
-                                    <UserRound class="absolute left-3 top-3 h-5 w-5 text-gray-400" />
+                                    <UserRound class="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
 
-                                    <TextInput id="name" v-model="form.name" type="text"
+                                    <TextInput
+                                        id="name"
+                                        v-model="form.name"
+                                        type="text"
                                         class="block w-full rounded-xl border-slate-300 pl-11 text-sm shadow-sm focus:border-primary focus:ring-primary"
-                                        required autofocus autocomplete="name" placeholder="Nombre del usuario" />
+                                        required
+                                        autofocus
+                                        autocomplete="name"
+                                        placeholder="Nombre del usuario"
+                                    />
                                 </div>
 
-                                <InputError class="mt-2" :message="form.errors.name" />
+                                <InputError
+                                    class="mt-2"
+                                    :message="form.errors.name"
+                                />
                             </div>
 
                             <div>
-                                <InputLabel for="username" value="Usuario" />
+                                <InputLabel
+                                    for="username"
+                                    value="Usuario"
+                                />
 
                                 <div class="relative mt-2">
-                                    <UserRound class="absolute left-3 top-3 h-5 w-5 text-gray-400" />
+                                    <UserRound class="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
 
-                                    <TextInput id="username" v-model="form.username" type="text"
+                                    <TextInput
+                                        id="username"
+                                        v-model="form.username"
+                                        type="text"
                                         class="block w-full rounded-xl border-slate-300 pl-11 text-sm shadow-sm focus:border-primary focus:ring-primary"
-                                        required autocomplete="username" placeholder="Ej: superadmin" />
+                                        required
+                                        autocomplete="username"
+                                        placeholder="Ej: superadmin"
+                                    />
                                 </div>
 
-                                <InputError class="mt-2" :message="form.errors.username" />
+                                <InputError
+                                    class="mt-2"
+                                    :message="form.errors.username"
+                                />
                             </div>
 
                             <div>
-                                <InputLabel for="email" value="Correo electrónico (opcional)" />
+                                <InputLabel
+                                    for="email"
+                                    value="Correo electrónico (opcional)"
+                                />
 
                                 <div class="relative mt-2">
-                                    <Mail class="absolute left-3 top-3 h-5 w-5 text-gray-400" />
+                                    <Mail class="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
 
-                                    <TextInput id="email" v-model="form.email" type="email"
+                                    <TextInput
+                                        id="email"
+                                        v-model="form.email"
+                                        type="email"
                                         class="block w-full rounded-xl border-slate-300 pl-11 text-sm shadow-sm focus:border-primary focus:ring-primary"
-                                        autocomplete="email" placeholder="usuario@empresa.com" />
+                                        autocomplete="email"
+                                        placeholder="usuario@empresa.com"
+                                    />
                                 </div>
 
-                                <InputError class="mt-2" :message="form.errors.email" />
+                                <InputError
+                                    class="mt-2"
+                                    :message="form.errors.email"
+                                />
                             </div>
 
                             <div>
-                                <InputLabel for="password" value="Contraseña" />
+                                <InputLabel
+                                    for="password"
+                                    value="Contraseña"
+                                />
 
                                 <div class="relative mt-2">
-                                    <LockKeyhole class="absolute left-3 top-3 h-5 w-5 text-gray-400" />
+                                    <LockKeyhole class="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
 
-                                    <TextInput id="password" v-model="form.password" type="password"
-                                        class="block w-full rounded-xl border-slate-300 pl-11 text-sm shadow-sm focus:border-primary focus:ring-primary"
-                                        required autocomplete="new-password" placeholder="••••••••" />
+                                    <TextInput
+                                        id="password"
+                                        v-model="form.password"
+                                        :type="showPassword ? 'text' : 'password'"
+                                        class="block w-full rounded-xl border-slate-300 pl-11 pr-11 text-sm shadow-sm focus:border-primary focus:ring-primary"
+                                        required
+                                        autocomplete="new-password"
+                                        placeholder="••••••••"
+                                    />
+
+                                    <!-- Botón para mostrar u ocultar la contraseña -->
+                                    <button
+                                        type="button"
+                                        class="absolute right-3 top-1/2 -translate-y-1/2 rounded-lg p-1 text-gray-400 transition hover:bg-slate-100 hover:text-primary"
+                                        :title="showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'"
+                                        :aria-label="showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'"
+                                        @click="showPassword = !showPassword"
+                                    >
+                                        <component
+                                            :is="showPassword ? EyeOff : Eye"
+                                            class="h-5 w-5"
+                                        />
+                                    </button>
                                 </div>
 
-                                <InputError class="mt-2" :message="form.errors.password" />
+                                <InputError
+                                    class="mt-2"
+                                    :message="form.errors.password"
+                                />
                             </div>
 
                             <div>
-                                <InputLabel for="password_confirmation" value="Confirmar contraseña" />
+                                <InputLabel
+                                    for="password_confirmation"
+                                    value="Confirmar contraseña"
+                                />
 
                                 <div class="relative mt-2">
-                                    <LockKeyhole class="absolute left-3 top-3 h-5 w-5 text-gray-400" />
+                                    <LockKeyhole class="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
 
-                                    <TextInput id="password_confirmation" v-model="form.password_confirmation"
-                                        type="password"
-                                        class="block w-full rounded-xl border-slate-300 pl-11 text-sm shadow-sm focus:border-primary focus:ring-primary"
-                                        required autocomplete="new-password" placeholder="••••••••" />
+                                    <TextInput
+                                        id="password_confirmation"
+                                        v-model="form.password_confirmation"
+                                        :type="showPasswordConfirmation ? 'text' : 'password'"
+                                        class="block w-full rounded-xl border-slate-300 pl-11 pr-11 text-sm shadow-sm focus:border-primary focus:ring-primary"
+                                        required
+                                        autocomplete="new-password"
+                                        placeholder="••••••••"
+                                    />
+
+                                    <!-- Botón para mostrar u ocultar la confirmación -->
+                                    <button
+                                        type="button"
+                                        class="absolute right-3 top-1/2 -translate-y-1/2 rounded-lg p-1 text-gray-400 transition hover:bg-slate-100 hover:text-primary"
+                                        :title="showPasswordConfirmation ? 'Ocultar contraseña' : 'Mostrar contraseña'"
+                                        :aria-label="showPasswordConfirmation ? 'Ocultar contraseña' : 'Mostrar contraseña'"
+                                        @click="showPasswordConfirmation = !showPasswordConfirmation"
+                                    >
+                                        <component
+                                            :is="showPasswordConfirmation ? EyeOff : Eye"
+                                            class="h-5 w-5"
+                                        />
+                                    </button>
                                 </div>
 
-                                <InputError class="mt-2" :message="form.errors.password_confirmation" />
+                                <InputError
+                                    class="mt-2"
+                                    :message="form.errors.password_confirmation"
+                                />
                             </div>
 
                             <div>
-                                <label
-                                    class="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
-                                    <input id="status" v-model="form.status" type="checkbox"
-                                        class="rounded border-slate-300 text-primary shadow-sm focus:ring-primary">
+                                <label class="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
+                                    <input
+                                        id="status"
+                                        v-model="form.status"
+                                        type="checkbox"
+                                        class="rounded border-slate-300 text-primary shadow-sm focus:ring-primary"
+                                    >
 
                                     <span class="text-sm font-semibold text-gray-700">
                                         Usuario activo
                                     </span>
                                 </label>
 
-                                <InputError class="mt-2" :message="form.errors.status" />
+                                <InputError
+                                    class="mt-2"
+                                    :message="form.errors.status"
+                                />
                             </div>
 
                             <div class="flex flex-col gap-4 pt-2 sm:flex-row sm:items-center sm:justify-between">
-                                <Link :href="route('login')"
-                                    class="text-sm font-semibold text-primary transition hover:text-primary-dark">
+                                <Link
+                                    :href="route('login')"
+                                    class="text-sm font-semibold text-primary transition hover:text-primary-dark"
+                                >
                                     ¿Ya tienes cuenta?
                                 </Link>
 
                                 <PrimaryButton
                                     class="flex justify-center rounded-xl bg-primary px-6 py-3 text-sm font-bold uppercase tracking-wide text-white shadow-md transition hover:bg-primary-dark"
-                                    :class="{ 'opacity-60': form.processing }" :disabled="form.processing">
+                                    :class="{ 'opacity-60': form.processing }"
+                                    :disabled="form.processing"
+                                >
                                     Crear cuenta
                                 </PrimaryButton>
                             </div>

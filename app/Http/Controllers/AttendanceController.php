@@ -1,0 +1,180 @@
+<?php
+namespace App\Http\Controllers;
+
+use App\Http\Requests\Attendance\StoreMonthlyAttendanceRequest;
+use App\Http\Requests\Attendance\UpdateAttendanceDayRequest;
+use App\Models\AttendanceDay;
+use App\Models\MonthlyAttendance;
+use App\Services\AttendanceService;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Inertia\Inertia;
+use Inertia\Response;
+
+class AttendanceController extends Controller
+{
+    public function __construct(
+        private readonly AttendanceService $service
+    ) {
+    }
+
+    /**
+     * Muestra el listado de asistencias mensuales.
+     */
+    public function index(Request $request): Response
+    {
+        $period      = $request->input('period', '');
+        $periodParts = $this->service->parsePeriod($period);
+
+        $filters = [
+            'search'    => $request->input('search', ''),
+            'status_id' => $request->input('status_id', ''),
+            'period'    => $period,
+            'month'     => $periodParts['month'],
+            'year'      => $periodParts['year'],
+            'per_page'  => $request->input('per_page', 10),
+        ];
+
+        $attendances = $this->service
+            ->paginate($filters)
+            ->through(function (MonthlyAttendance $attendance) {
+                return [
+                    'id'                         => $attendance->id,
+                    'month'                      => $attendance->month,
+                    'year'                       => $attendance->year,
+                    'period'                     => $this->service->monthName($attendance->month) . ' ' . $attendance->year,
+
+                    'employee'                   => [
+                        'id'       => $attendance->employee?->id,
+                        'name'     => $this->service->employeeDisplayName($attendance->employee),
+                        'code'     => $this->service->employeeCode($attendance->employee),
+                        'document' => $this->service->employeeDocument($attendance->employee),
+                    ],
+
+                    'status'                     => [
+                        'id'   => $attendance->status?->id,
+                        'code' => $attendance->status?->code,
+                        'name' => $attendance->status?->name ?? 'Sin estado',
+                    ],
+
+                    'worked_days'                => $attendance->worked_days,
+                    'absence_days'               => $attendance->absence_days,
+                    'compensated_absence_days'   => $attendance->compensated_absence_days,
+                    'uncompensated_absence_days' => $attendance->uncompensated_absence_days,
+                    'exchange_days'              => $attendance->exchange_days,
+                    'rest_days'                  => $attendance->rest_days,
+                    'overtime_hours'             => $attendance->overtime_hours,
+                    'observations'               => $attendance->observations,
+                    'is_editable'                => $attendance->isEditable(),
+                    'is_closed'                  => $attendance->isClosed(),
+                ];
+            });
+
+        return Inertia::render('Attendance/Index', [
+            'attendances'     => $attendances,
+            'filters'         => $filters,
+            'employees'       => $this->service->employeeOptions(),
+            'monthlyStatuses' => $this->service->monthlyStatuses(),
+            'monthOptions'    => $this->service->monthOptions(),
+            'yearOptions'     => $this->service->yearOptions(),
+            'allowedPeriods'  => $this->service->allowedPeriodOptions(),
+            'defaultPeriod'   => now()->format('Y-m'),
+            'defaultMonth'    => now()->month,
+            'defaultYear'     => now()->year,
+        ]);
+    }
+
+    /**
+     * Registra una nueva cabecera mensual y genera sus días.
+     */
+    public function store(StoreMonthlyAttendanceRequest $request): RedirectResponse
+    {
+        $this->service->createMonthlyAttendance(
+            $request->validated(),
+            $request->user()?->id
+        );
+
+        return redirect()
+            ->route('attendance.index')
+            ->with('success', 'Asistencia mensual registrada correctamente.');
+    }
+
+    /**
+     * Muestra la pantalla del calendario mensual.
+     *
+     * Esta vista la construiremos en el siguiente paso.
+     */
+    public function edit(MonthlyAttendance $monthlyAttendance): Response
+    {
+        $monthlyAttendance->load([
+            'employee',
+            'status',
+            'days.status',
+            'days.absenceExchange.status',
+            'days.workedExchange.status',
+        ]);
+
+        return Inertia::render('Attendance/Edit', [
+            'attendance'  => [
+                'id'       => $monthlyAttendance->id,
+                'month'    => $monthlyAttendance->month,
+                'year'     => $monthlyAttendance->year,
+                'period'   => $this->service->monthName($monthlyAttendance->month) . ' ' . $monthlyAttendance->year,
+                'employee' => [
+                    'id'       => $monthlyAttendance->employee?->id,
+                    'name'     => $this->service->employeeDisplayName($monthlyAttendance->employee),
+                    'code'     => $this->service->employeeCode($monthlyAttendance->employee),
+                    'document' => $this->service->employeeDocument($monthlyAttendance->employee),
+                ],
+                'status'   => [
+                    'id'   => $monthlyAttendance->status?->id,
+                    'code' => $monthlyAttendance->status?->code,
+                    'name' => $monthlyAttendance->status?->name ?? 'Sin estado',
+                ],
+                'days'     => $monthlyAttendance->days
+                    ->sortBy('attendance_date')
+                    ->values()
+                    ->map(fn(AttendanceDay $day) => [
+                        'id'              => $day->id,
+                        'attendance_date' => $day->attendance_date?->format('Y-m-d'),
+                        'day_number'      => $day->attendance_date?->format('d'),
+                        'weekday'         => $day->attendance_date?->locale('es')->isoFormat('ddd'),
+                        'status'          => [
+                            'id'   => $day->status?->id,
+                            'code' => $day->status?->code,
+                            'name' => $day->status?->name ?? 'Sin estado',
+                        ],
+                        'overtime_hours'  => $day->overtime_hours,
+                        'observation'     => $day->observation,
+                    ]),
+            ],
+            'dayStatuses' => $this->service->dayStatuses(),
+        ]);
+    }
+
+    /**
+     * Actualiza un día del calendario mensual.
+     */
+    public function updateDay(UpdateAttendanceDayRequest $request, AttendanceDay $attendanceDay): RedirectResponse
+    {
+        $this->service->updateDay(
+            $attendanceDay,
+            $request->validated()
+        );
+
+        return back()->with('success', 'Día de asistencia actualizado correctamente.');
+    }
+
+    /**
+     * Cierra la asistencia mensual.
+     */
+    public function close(MonthlyAttendance $monthlyAttendance, Request $request): RedirectResponse
+    {
+        $this->service->close(
+            $monthlyAttendance,
+            $request->user()?->id
+        );
+
+        return back()->with('success', 'Asistencia mensual cerrada correctamente.');
+    }
+}

@@ -19,21 +19,17 @@ import StatusBadge from '@/Components/Table/StatusBadge.vue';
 import TableActionButton from '@/Components/Table/TableActionButton.vue';
 import TableActions from '@/Components/Table/TableActions.vue';
 import TableEntityCell from '@/Components/Table/TableEntityCell.vue';
+import {
+    catalogCategories,
+    getCatalogCategory,
+} from '@/Config/catalogCategories';
 
 import {
-    BriefcaseBusiness,
-    Building2,
-    CreditCard,
     Database,
     Edit,
-    HeartHandshake,
-    IdCard,
-    Landmark,
     ListChecks,
     Plus,
     Power,
-    UserCheck,
-    VenusAndMars,
 } from 'lucide-vue-next';
 
 const props = defineProps({
@@ -48,66 +44,13 @@ const props = defineProps({
     },
 });
 
-const catalogGroups = [
-    {
-        key: 'DOCUMENT_TYPE',
-        label: 'Tipos de documento',
-        singular: 'Tipo de documento',
-        description: 'DNI, Carné de Extranjería y otros documentos.',
-        icon: IdCard,
-    },
-    {
-        key: 'GENDER',
-        label: 'Géneros',
-        singular: 'Género',
-        description: 'Opciones de género para los trabajadores.',
-        icon: VenusAndMars,
-    },
-    {
-        key: 'MARITAL_STATUS',
-        label: 'Estados civiles',
-        singular: 'Estado civil',
-        description: 'Soltero, casado, conviviente y otros.',
-        icon: HeartHandshake,
-    },
-    {
-        key: 'WORK_AREA',
-        label: 'Áreas de trabajo',
-        singular: 'Área de trabajo',
-        description: 'Áreas internas de la empresa.',
-        icon: Building2,
-    },
-    {
-        key: 'POSITION',
-        label: 'Cargos',
-        singular: 'Cargo',
-        description: 'Cargos asignados a los trabajadores.',
-        icon: BriefcaseBusiness,
-    },
-    {
-        key: 'WORKER_STATUS',
-        label: 'Estados laborales',
-        singular: 'Estado laboral',
-        description: 'Estados usados para controlar trabajadores.',
-        icon: UserCheck,
-    },
-    {
-        key: 'PENSION_SYSTEM',
-        label: 'Sistemas pensionarios',
-        singular: 'Sistema pensionario',
-        description: 'ONP, AFP u otros sistemas.',
-        icon: Landmark,
-    },
-    {
-        key: 'ACCOUNT_TYPE',
-        label: 'Tipos de cuenta',
-        singular: 'Tipo de cuenta',
-        description: 'Cuenta de ahorros, corriente u otras.',
-        icon: CreditCard,
-    },
-];
+/**
+ * Categorías disponibles para mostrar en la pantalla de catálogos.
+ * Se importan desde un archivo centralizado para evitar duplicidad.
+ */
+const catalogGroups = catalogCategories;
 
-const activeType = ref(props.filters.type ?? 'DOCUMENT_TYPE');
+const activeType = ref(props.filters.type ?? catalogCategories[0].key);
 const search = ref(props.filters.search ?? '');
 const status = ref(props.filters.status ?? '');
 const perPage = ref(props.filters.per_page ?? 10);
@@ -115,7 +58,7 @@ const perPage = ref(props.filters.per_page ?? 10);
 let filterTimeout = null;
 
 const activeGroup = computed(() => {
-    return catalogGroups.find((group) => group.key === activeType.value);
+    return getCatalogCategory(activeType.value);
 });
 
 const columns = [

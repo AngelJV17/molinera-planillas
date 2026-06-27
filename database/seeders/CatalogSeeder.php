@@ -275,26 +275,92 @@ class CatalogSeeder extends Seeder
 
             /*
             |--------------------------------------------------------------------------
-            | ESTADOS DE ASISTENCIA
+            | ESTADOS DE ASISTENCIA MENSUAL
             |--------------------------------------------------------------------------
+            |
+            | Controlan el estado general de la asistencia de un trabajador
+            | en un mes específico.
+            |
             */
             [
-                'type'        => 'ATTENDANCE_STATUS',
+                'type'        => 'ATTENDANCE_MONTHLY_STATUS',
+                'code'        => 'DRAFT',
+                'name'        => 'Borrador',
+                'description' => 'Asistencia mensual en edición',
+            ],
+            [
+                'type'        => 'ATTENDANCE_MONTHLY_STATUS',
+                'code'        => 'CLOSED',
+                'name'        => 'Cerrada',
+                'description' => 'Asistencia mensual cerrada y lista para planilla',
+            ],
+
+            /*
+            |--------------------------------------------------------------------------
+            | ESTADOS DEL DÍA DE ASISTENCIA
+            |--------------------------------------------------------------------------
+            |
+            | Se usan para marcar cada día dentro del calendario mensual
+            | de asistencia del trabajador.
+            |
+            */
+            [
+                'type'        => 'ATTENDANCE_DAY_STATUS',
+                'code'        => 'UNMARKED',
+                'name'        => 'Sin marcar',
+                'description' => 'Día pendiente de marcar en el calendario de asistencia',
+            ],
+            [
+                'type'        => 'ATTENDANCE_DAY_STATUS',
                 'code'        => 'PRESENT',
                 'name'        => 'Asistió',
                 'description' => 'El trabajador asistió en la fecha registrada',
             ],
             [
-                'type'        => 'ATTENDANCE_STATUS',
+                'type'        => 'ATTENDANCE_DAY_STATUS',
                 'code'        => 'ABSENT',
                 'name'        => 'Faltó',
                 'description' => 'El trabajador no asistió en la fecha registrada',
             ],
             [
-                'type'        => 'ATTENDANCE_STATUS',
+                'type'        => 'ATTENDANCE_DAY_STATUS',
+                'code'        => 'EXCHANGE_WORKED',
+                'name'        => 'Trabajó como canje',
+                'description' => 'Día trabajado para compensar una falta registrada',
+            ],
+            [
+                'type'        => 'ATTENDANCE_DAY_STATUS',
                 'code'        => 'REST',
                 'name'        => 'Descanso',
                 'description' => 'Día no laborable o descanso del trabajador',
+            ],
+
+            /*
+            |--------------------------------------------------------------------------
+            | ESTADOS DE CANJE DE ASISTENCIA
+            |--------------------------------------------------------------------------
+            |
+            | Controlan el estado de la relación entre una falta y el día
+            | trabajado para compensarla.
+            |
+            */
+            [
+                'type'        => 'ATTENDANCE_EXCHANGE_STATUS',
+                'code'        => 'PENDING',
+                'name'        => 'Pendiente',
+                'description' => 'Canje registrado pero pendiente de validación',
+            ],
+            [
+                'type'        => 'ATTENDANCE_EXCHANGE_STATUS',
+                'code'        => 'APPLIED',
+                'name'        => 'Aplicado',
+                'description' => 'Canje aplicado correctamente para compensar una falta',
+            ],
+            [
+                'type'        => 'ATTENDANCE_EXCHANGE_STATUS',
+                'code'        => 'CANCELLED',
+                'name'        => 'Anulado',
+                'description' => 'Canje anulado por corrección administrativa',
             ],
 
             /*

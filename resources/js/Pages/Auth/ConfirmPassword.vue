@@ -1,19 +1,31 @@
 <script setup>
+import { ref } from 'vue';
+
 import InputError from '@/Components/InputError.vue';
 import InputLabel from '@/Components/InputLabel.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import TextInput from '@/Components/TextInput.vue';
+
 import { Head, useForm } from '@inertiajs/vue3';
+
 import {
+    AlertTriangle,
+    Eye,
+    EyeOff,
+    KeyRound,
     LockKeyhole,
     ShieldCheck,
-    KeyRound,
-    AlertTriangle,
 } from 'lucide-vue-next';
 
 const form = useForm({
     password: '',
 });
+
+/**
+ * Controla si la contraseña actual se muestra como texto
+ * o se mantiene oculta.
+ */
+const showPassword = ref(false);
 
 /**
  * Confirma la contraseña actual antes de permitir
@@ -42,6 +54,7 @@ const submit = () => {
                     <div class="flex items-center gap-4">
                         <img src="/images/molicente-icon.png" alt="MOLICENTE"
                             class="h-24 w-auto rounded-xl bg-white p-3 shadow-xl" />
+
                         <div>
                             <h1 class="font-rajdhani text-3xl font-black text-white">
                                 MOLICENTE
@@ -136,11 +149,22 @@ const submit = () => {
                                 <InputLabel for="password" value="Contraseña actual" />
 
                                 <div class="relative mt-2">
-                                    <LockKeyhole class="absolute left-3 top-3 h-5 w-5 text-gray-400" />
+                                    <LockKeyhole
+                                        class="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
 
-                                    <TextInput id="password" v-model="form.password" type="password" required autofocus
+                                    <TextInput id="password" v-model="form.password"
+                                        :type="showPassword ? 'text' : 'password'" required autofocus
                                         autocomplete="current-password" placeholder="••••••••"
-                                        class="block w-full rounded-xl border-slate-300 pl-11 text-sm shadow-sm focus:border-primary focus:ring-primary" />
+                                        class="block w-full rounded-xl border-slate-300 px-11 text-sm shadow-sm focus:border-primary focus:ring-primary" />
+
+                                    <!-- Botón para mostrar u ocultar la contraseña actual -->
+                                    <button type="button"
+                                        class="absolute right-3 top-1/2 -translate-y-1/2 rounded-lg p-1 text-gray-400 transition hover:bg-slate-100 hover:text-primary"
+                                        :title="showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'"
+                                        :aria-label="showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'"
+                                        @click="showPassword = !showPassword">
+                                        <component :is="showPassword ? EyeOff : Eye" class="h-5 w-5" />
+                                    </button>
                                 </div>
 
                                 <InputError class="mt-2" :message="form.errors.password" />

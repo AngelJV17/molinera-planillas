@@ -164,4 +164,20 @@ class Employee extends Model
     {
         return $this->belongsTo(User::class);
     }
+
+    /**
+     * Asistencias mensuales registradas para el trabajador.
+     */
+    public function monthlyAttendances(): HasMany
+    {
+        return $this->hasMany(MonthlyAttendance::class);
+    }
+
+    /**
+     * Canjes de asistencia registrados para el trabajador.
+     */
+    public function attendanceExchanges(): HasMany
+    {
+        return $this->hasMany(AttendanceExchange::class);
+    }
 }

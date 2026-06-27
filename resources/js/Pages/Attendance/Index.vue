@@ -1,163 +1,428 @@
 <script setup>
-import { Head } from '@inertiajs/vue3';
-import { computed, reactive, ref } from 'vue';
-import { CalendarDays, CheckCircle2, Clock, Save, TriangleAlert } from 'lucide-vue-next';
+import { Head, router, useForm } from '@inertiajs/vue3';
+import { computed, ref, watch } from 'vue';
 
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
+
+import EmptyState from '@/Components/Common/EmptyState.vue';
+import FilterCard from '@/Components/Common/FilterCard.vue';
+import ListSummary from '@/Components/Common/ListSummary.vue';
 import PageHeader from '@/Components/Common/PageHeader.vue';
 import SectionCard from '@/Components/Common/SectionCard.vue';
+
+import InputError from '@/Components/InputError.vue';
+import InputLabel from '@/Components/InputLabel.vue';
+
+import PerPageFilter from '@/Components/Filters/PerPageFilter.vue';
+
 import DataTable from '@/Components/Table/DataTable.vue';
+import Pagination from '@/Components/Table/Pagination.vue';
+import SearchInput from '@/Components/Table/SearchInput.vue';
+import TableActionButton from '@/Components/Table/TableActionButton.vue';
+import TableActions from '@/Components/Table/TableActions.vue';
+import TableEntityCell from '@/Components/Table/TableEntityCell.vue';
 
-const attendance = ref([
-    { id: 1, trabajador: 'Juan Pérez Huamán', fecha: '2026-06-01', estado: 'Asistió', entrada: '07:55', salida: '17:10', horasExtras: 1, horasCanjeables: 0 },
-    { id: 2, trabajador: 'María Quispe Rojas', fecha: '2026-06-01', estado: 'Pendiente', entrada: '', salida: '', horasExtras: 0, horasCanjeables: 0 },
-    { id: 3, trabajador: 'Carlos Mendoza Salas', fecha: '2026-06-01', estado: 'Falta', entrada: '', salida: '', horasExtras: 0, horasCanjeables: 0 },
-    { id: 4, trabajador: 'Rosa Campos León', fecha: '2026-06-01', estado: 'Asistió', entrada: '08:01', salida: '17:00', horasExtras: 0, horasCanjeables: 2 },
-]);
+import {
+    CalendarCheck,
+    CalendarDays,
+    CheckCircle2,
+    Clock3,
+    Database,
+    Plus,
+    RefreshCcw,
+    UserCheck,
+} from 'lucide-vue-next';
 
-const selectedRecord = ref(attendance.value[0]);
+const props = defineProps({
+    attendances: {
+        type: Object,
+        required: true,
+    },
 
-const dayDetail = reactive({
-    estado: selectedRecord.value.estado,
-    horasCanjeables: selectedRecord.value.horasCanjeables,
-    horasExtras: selectedRecord.value.horasExtras,
-    observaciones: 'Ingreso registrado dentro de tolerancia.',
+    filters: {
+        type: Object,
+        default: () => ({}),
+    },
+
+    employees: {
+        type: Array,
+        default: () => [],
+    },
+
+    monthlyStatuses: {
+        type: Array,
+        default: () => [],
+    },
+
+    monthOptions: {
+        type: Array,
+        default: () => [],
+    },
+
+    yearOptions: {
+        type: Array,
+        default: () => [],
+    },
+
+    defaultMonth: {
+        type: Number,
+        required: true,
+    },
+
+    defaultYear: {
+        type: Number,
+        required: true,
+    },
+
+    allowedPeriods: {
+        type: Array,
+        default: () => [],
+    },
+
+    defaultPeriod: {
+        type: String,
+        required: true,
+    },
 });
 
+/**
+ * Filtros principales del listado.
+ */
+const search = ref(props.filters.search ?? '');
+const statusId = ref(props.filters.status_id ?? '');
+const period = ref(props.filters.period ?? '');
+const perPage = ref(props.filters.per_page ?? 10);
+
+let filterTimeout = null;
+
+/**
+ * Formulario para crear una asistencia mensual.
+ */
+const form = useForm({
+    employee_id: '',
+    period: props.defaultPeriod,
+    observations: '',
+});
+
+/**
+ * Columnas visibles de la tabla.
+ */
 const columns = [
-    { key: 'trabajador', label: 'Trabajador' },
-    { key: 'fecha', label: 'Fecha' },
-    { key: 'estado', label: 'Estado' },
-    { key: 'jornada', label: 'Jornada' },
-    { key: 'extras', label: 'Extras' },
+    { key: 'employee', label: 'Trabajador' },
+    { key: 'period', label: 'Periodo' },
+    { key: 'summary', label: 'Resumen mensual' },
+    { key: 'status', label: 'Estado' },
+    { key: 'actions', label: 'Acciones', align: 'right' },
 ];
 
-const counters = computed(() => ({
-    asistio: attendance.value.filter((item) => item.estado === 'Asistió').length,
-    pendiente: attendance.value.filter((item) => item.estado === 'Pendiente').length,
-    falta: attendance.value.filter((item) => item.estado === 'Falta').length,
-}));
+/**
+ * Total de asistencias registradas.
+ */
+const totalAttendances = computed(() => {
+    return props.attendances.total ?? props.attendances.data.length;
+});
 
-const selectRecord = (record) => {
-    selectedRecord.value = record;
-    dayDetail.estado = record.estado;
-    dayDetail.horasCanjeables = record.horasCanjeables;
-    dayDetail.horasExtras = record.horasExtras;
-    dayDetail.observaciones = record.estado === 'Falta' ? 'Sin marca de ingreso.' : 'Detalle editable del día.';
+/**
+ * Aplica filtros al listado.
+ */
+const applyFilters = () => {
+    router.get(
+        route('attendance.index'),
+        {
+            search: search.value || undefined,
+            status_id: statusId.value || undefined,
+            period: period.value || undefined,
+            per_page: perPage.value || 10,
+        },
+        {
+            preserveState: true,
+            preserveScroll: true,
+            replace: true,
+        },
+    );
 };
 
-const saveDetail = () => {
-    selectedRecord.value.estado = dayDetail.estado;
-    selectedRecord.value.horasCanjeables = Number(dayDetail.horasCanjeables);
-    selectedRecord.value.horasExtras = Number(dayDetail.horasExtras);
+/**
+ * Observa cambios en filtros con un pequeño retardo
+ * para evitar demasiadas peticiones al escribir.
+ */
+watch([search, statusId, period, perPage], () => {
+    clearTimeout(filterTimeout);
+
+    filterTimeout = setTimeout(() => {
+        applyFilters();
+    }, 350);
+});
+
+/**
+ * Registra la cabecera mensual de asistencia.
+ *
+ * El formulario usa un campo visual llamado "period",
+ * pero el backend recibe month y year separados.
+ */
+const submit = () => {
+    const [selectedYear, selectedMonth] = String(form.period).split('-');
+
+    form
+        .transform((data) => ({
+            employee_id: data.employee_id,
+            month: Number(selectedMonth),
+            year: Number(selectedYear),
+            observations: data.observations,
+        }))
+        .post(route('attendance.store'), {
+            preserveScroll: true,
+
+            onSuccess: () => {
+                form.reset('employee_id', 'observations');
+            },
+        });
 };
 
-const statusClass = (status) => ({
-    Asistió: 'bg-green-100 text-green-700',
-    Pendiente: 'bg-secondary/15 text-secondary',
-    Falta: 'bg-danger/15 text-danger',
-    Tardanza: 'bg-secondary/15 text-secondary',
-    Permiso: 'bg-primary/15 text-primary',
-}[status]);
+/**
+ * Cierra una asistencia mensual.
+ */
+const closeAttendance = (attendance) => {
+    const confirmed = window.confirm(
+        `¿Deseas cerrar la asistencia de ${attendance.employee.name} correspondiente a ${attendance.period}?`,
+    );
+
+    if (!confirmed) {
+        return;
+    }
+
+    router.patch(
+        route('attendance.close', attendance.id),
+        {},
+        {
+            preserveScroll: true,
+        },
+    );
+};
+
+/**
+ * Obtiene clases visuales para el estado mensual.
+ */
+const statusClasses = (status) => {
+    if (status?.code === 'CLOSED') {
+        return 'border-emerald-200 bg-emerald-50 text-emerald-700';
+    }
+
+    return 'border-amber-200 bg-amber-50 text-amber-700';
+};
+
+/**
+ * Obtiene texto del estado mensual.
+ */
+const statusLabel = (status) => {
+    return status?.name ?? 'Sin estado';
+};
 </script>
 
 <template>
-    <Head title="Asistencia" />
 
-    <AuthenticatedLayout title="Asistencia">
+    <Head title="Asistencia mensual" />
+
+    <AuthenticatedLayout title="Asistencia mensual">
         <section class="space-y-6">
-            <PageHeader
-                title="Registro de asistencia"
-                description="Controla marcas diarias, faltas, tardanzas, horas extras y horas canjeables."
-            >
+            <PageHeader title="Asistencia mensual"
+                description="Registra y controla la asistencia mensual de cada trabajador mediante un calendario diario.">
                 <template #icon>
-                    <CalendarDays class="h-7 w-7" />
+                    <CalendarCheck class="h-7 w-7" />
                 </template>
             </PageHeader>
 
-            <div class="grid gap-4 md:grid-cols-3">
-                <article class="rounded-2xl border border-slate-200 bg-white p-5 shadow-md">
-                    <div class="flex items-center justify-between">
-                        <p class="text-sm font-semibold text-gray-500">Asistidos</p>
-                        <CheckCircle2 class="h-5 w-5 text-green-600" />
-                    </div>
-                    <p class="mt-2 text-3xl font-black text-green-600">{{ counters.asistio }}</p>
-                </article>
-                <article class="rounded-2xl border border-slate-200 bg-white p-5 shadow-md">
-                    <div class="flex items-center justify-between">
-                        <p class="text-sm font-semibold text-gray-500">Pendientes</p>
-                        <Clock class="h-5 w-5 text-secondary" />
-                    </div>
-                    <p class="mt-2 text-3xl font-black text-secondary">{{ counters.pendiente }}</p>
-                </article>
-                <article class="rounded-2xl border border-slate-200 bg-white p-5 shadow-md">
-                    <div class="flex items-center justify-between">
-                        <p class="text-sm font-semibold text-gray-500">Faltas</p>
-                        <TriangleAlert class="h-5 w-5 text-danger" />
-                    </div>
-                    <p class="mt-2 text-3xl font-black text-danger">{{ counters.falta }}</p>
-                </article>
-            </div>
-
-            <div class="grid gap-6 xl:grid-cols-[1fr_360px]">
-                <section class="space-y-4">
+            <!-- Formulario de creación de asistencia mensual -->
+            <SectionCard title="Nuevo control mensual"
+                description="Selecciona un trabajador, mes y año para generar automáticamente su calendario de asistencia.">
+                <form class="grid gap-4 lg:grid-cols-[1fr_240px_auto]" @submit.prevent="submit">
+                    <!-- Trabajador -->
                     <div>
-                        <h2 class="text-lg font-black text-gray-900">Registro diario</h2>
-                        <p class="text-sm text-gray-500">Selecciona una fila para editar el detalle del día.</p>
+                        <InputLabel for="employee_id" value="Trabajador" />
+
+                        <select id="employee_id" v-model="form.employee_id"
+                            class="mt-2 block w-full rounded-xl border-slate-300 text-sm shadow-sm focus:border-primary focus:ring-primary"
+                            required>
+                            <option value="">
+                                Selecciona un trabajador
+                            </option>
+
+                            <option v-for="employee in employees" :key="employee.id" :value="employee.id">
+                                {{ employee.name }} - {{ employee.code }}
+                            </option>
+                        </select>
+
+                        <InputError class="mt-2" :message="form.errors.employee_id" />
                     </div>
 
-                    <DataTable :columns="columns">
-                        <tr
-                            v-for="record in attendance"
-                            :key="record.id"
-                            class="cursor-pointer text-sm transition hover:bg-primary/5"
-                            :class="selectedRecord.id === record.id ? 'bg-primary/5' : ''"
-                            @click="selectRecord(record)"
-                        >
-                            <td class="px-6 py-4 font-bold text-gray-800">{{ record.trabajador }}</td>
-                            <td class="px-6 py-4 text-gray-600">{{ record.fecha }}</td>
-                            <td class="px-6 py-4">
-                                <span class="rounded-full px-3 py-1 text-xs font-bold" :class="statusClass(record.estado)">
-                                    {{ record.estado }}
-                                </span>
-                            </td>
-                            <td class="px-6 py-4 text-gray-600">{{ record.entrada || '--' }} / {{ record.salida || '--' }}</td>
-                            <td class="px-6 py-4 font-bold text-gray-800">{{ record.horasExtras }} h</td>
-                        </tr>
-                    </DataTable>
-                </section>
+                    <!-- Periodo permitido -->
+                    <div>
+                        <InputLabel for="period" value="Periodo permitido" />
 
-                <SectionCard title="Detalle del día" :description="selectedRecord.trabajador">
-                    <form class="space-y-4" @submit.prevent="saveDetail">
-                        <label class="block text-sm font-semibold text-gray-700">
-                            Estado
-                            <select v-model="dayDetail.estado" class="mt-2 w-full rounded-xl border-gray-300 text-sm focus:border-primary focus:ring-primary">
-                                <option>Asistió</option>
-                                <option>Pendiente</option>
-                                <option>Falta</option>
-                                <option>Tardanza</option>
-                                <option>Permiso</option>
-                            </select>
-                        </label>
-                        <label class="block text-sm font-semibold text-gray-700">
-                            Horas canjeables
-                            <input v-model.number="dayDetail.horasCanjeables" min="0" step="0.5" type="number" class="mt-2 w-full rounded-xl border-gray-300 text-sm focus:border-primary focus:ring-primary" />
-                        </label>
-                        <label class="block text-sm font-semibold text-gray-700">
-                            Horas extras
-                            <input v-model.number="dayDetail.horasExtras" min="0" step="0.5" type="number" class="mt-2 w-full rounded-xl border-gray-300 text-sm focus:border-primary focus:ring-primary" />
-                        </label>
-                        <label class="block text-sm font-semibold text-gray-700">
-                            Observaciones
-                            <textarea v-model="dayDetail.observaciones" rows="5" class="mt-2 w-full rounded-xl border-gray-300 text-sm focus:border-primary focus:ring-primary"></textarea>
-                        </label>
+                        <select id="period" v-model="form.period"
+                            class="mt-2 block w-full rounded-xl border-slate-300 text-sm shadow-sm focus:border-primary focus:ring-primary"
+                            required>
+                            <option v-for="option in allowedPeriods" :key="option.value" :value="option.value">
+                                {{ option.label }}
+                                {{ option.is_current ? '(Actual)' : '(Mes anterior)' }}
+                            </option>
+                        </select>
 
-                        <button type="submit" class="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-5 py-3 text-sm font-bold text-white hover:bg-primary-dark">
-                            <Save class="h-4 w-4" />
-                            Guardar detalle
+                        <InputError class="mt-2"
+                            :message="form.errors.period || form.errors.month || form.errors.year" />
+                    </div>
+
+                    <!-- Botón -->
+                    <div class="flex items-end">
+                        <button type="submit"
+                            class="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-bold uppercase tracking-wide text-white shadow transition hover:bg-primary-dark disabled:opacity-60"
+                            :disabled="form.processing">
+                            <Plus class="h-4 w-4" />
+                            Crear
                         </button>
-                    </form>
-                </SectionCard>
+                    </div>
+
+                    <!-- Observaciones -->
+                    <div class="lg:col-span-3">
+                        <InputLabel for="observations" value="Observaciones generales" />
+
+                        <textarea id="observations" v-model="form.observations" rows="2"
+                            class="mt-2 block w-full rounded-xl border-slate-300 text-sm shadow-sm focus:border-primary focus:ring-primary"
+                            placeholder="Observación opcional para esta asistencia mensual." />
+
+                        <InputError class="mt-2" :message="form.errors.observations" />
+                    </div>
+                </form>
+            </SectionCard>
+
+            <!-- Filtros -->
+            <FilterCard>
+                <template #filters>
+                    <SearchInput v-model="search" placeholder="Buscar por trabajador, código o documento..." />
+
+                    <select v-model="period"
+                        class="rounded-xl border-slate-300 text-sm shadow-sm focus:border-primary focus:ring-primary">
+                        <option value="">
+                            Todos los periodos permitidos
+                        </option>
+
+                        <option v-for="option in allowedPeriods" :key="option.value" :value="option.value">
+                            {{ option.label }}
+                        </option>
+                    </select>
+
+                    <select v-model="statusId"
+                        class="rounded-xl border-slate-300 text-sm shadow-sm focus:border-primary focus:ring-primary">
+                        <option value="">
+                            Todos los estados
+                        </option>
+
+                        <option v-for="status in monthlyStatuses" :key="status.id" :value="status.id">
+                            {{ status.name }}
+                        </option>
+                    </select>
+
+                    <PerPageFilter v-model="perPage" />
+                </template>
+            </FilterCard>
+
+            <!-- Resumen -->
+            <ListSummary title="Controles mensuales registrados"
+                description="Listado de asistencias mensuales generadas por trabajador." label="Total controles"
+                :total="totalAttendances" :icon="Database" />
+
+            <!-- Tabla -->
+            <DataTable :columns="columns">
+                <tr v-for="attendance in attendances.data" :key="attendance.id"
+                    class="text-sm transition hover:bg-primary/5">
+                    <!-- Trabajador -->
+                    <td class="px-6 py-4">
+                        <TableEntityCell :icon="UserCheck" :title="attendance.employee.name"
+                            :subtitle="`Documento: ${attendance.employee.document}`"
+                            :meta="`Código: ${attendance.employee.code}`" />
+                    </td>
+
+                    <!-- Periodo -->
+                    <td class="px-6 py-4">
+                        <div class="flex items-center gap-3">
+                            <div
+                                class="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                                <CalendarDays class="h-5 w-5" />
+                            </div>
+
+                            <div>
+                                <p class="font-black text-gray-800">
+                                    {{ attendance.period }}
+                                </p>
+
+                                <p class="text-xs font-semibold text-gray-500">
+                                    Mes {{ attendance.month }} / Año {{ attendance.year }}
+                                </p>
+                            </div>
+                        </div>
+                    </td>
+
+                    <!-- Resumen mensual -->
+                    <td class="px-6 py-4">
+                        <div class="flex flex-wrap gap-2">
+                            <span class="rounded-full bg-emerald-50 px-3 py-1 text-[11px] font-bold text-emerald-700">
+                                Asistió: {{ attendance.worked_days }}
+                            </span>
+
+                            <span class="rounded-full bg-red-50 px-3 py-1 text-[11px] font-bold text-red-700">
+                                Faltas: {{ attendance.absence_days }}
+                            </span>
+
+                            <span class="rounded-full bg-blue-50 px-3 py-1 text-[11px] font-bold text-blue-700">
+                                Canjes: {{ attendance.exchange_days }}
+                            </span>
+
+                            <span class="rounded-full bg-amber-50 px-3 py-1 text-[11px] font-bold text-amber-700">
+                                Pendientes desc.: {{ attendance.uncompensated_absence_days }}
+                            </span>
+
+                            <span class="rounded-full bg-slate-100 px-3 py-1 text-[11px] font-bold text-slate-700">
+                                H. extras: {{ attendance.overtime_hours }}
+                            </span>
+                        </div>
+                    </td>
+
+                    <!-- Estado -->
+                    <td class="px-6 py-4">
+                        <span class="inline-flex rounded-full border px-3 py-1 text-xs font-black"
+                            :class="statusClasses(attendance.status)">
+                            {{ statusLabel(attendance.status) }}
+                        </span>
+                    </td>
+
+                    <!-- Acciones -->
+                    <td class="px-6 py-4">
+                        <TableActions>
+                            <TableActionButton :href="route('attendance.edit', attendance.id)" :icon="CalendarDays"
+                                title="Abrir calendario" />
+
+                            <TableActionButton v-if="attendance.is_editable" :icon="CheckCircle2"
+                                title="Cerrar asistencia" variant="success" @click="closeAttendance(attendance)" />
+                        </TableActions>
+                    </td>
+                </tr>
+
+                <template v-if="attendances.data.length === 0" #empty>
+                    <td :colspan="columns.length">
+                        <EmptyState title="No se encontraron asistencias mensuales"
+                            description="Registra un nuevo control mensual o modifica los filtros de búsqueda.">
+                            <template #icon>
+                                <Clock3 class="h-10 w-10" />
+                            </template>
+                        </EmptyState>
+                    </td>
+                </template>
+            </DataTable>
+
+            <!-- Paginación -->
+            <div v-if="attendances.links?.length > 3"
+                class="rounded-3xl border border-slate-300 bg-white px-6 py-4 shadow-lg">
+                <Pagination :links="attendances.links" />
             </div>
         </section>
     </AuthenticatedLayout>
