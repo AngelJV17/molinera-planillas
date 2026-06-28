@@ -1,6 +1,7 @@
 <?php
 namespace App\Http\Controllers;
 
+use App\Http\Requests\Attendance\BulkUpdateAttendanceDaysRequest;
 use App\Http\Requests\Attendance\StoreMonthlyAttendanceRequest;
 use App\Http\Requests\Attendance\UpdateAttendanceDayRequest;
 use App\Models\AttendanceDay;
@@ -107,47 +108,85 @@ class AttendanceController extends Controller
     public function edit(MonthlyAttendance $monthlyAttendance): Response
     {
         $monthlyAttendance->load([
-            'employee',
+            'employee.workShift',
             'status',
             'days.status',
+            'days.workShift',
             'days.absenceExchange.status',
             'days.workedExchange.status',
         ]);
 
         return Inertia::render('Attendance/Edit', [
             'attendance'  => [
-                'id'       => $monthlyAttendance->id,
-                'month'    => $monthlyAttendance->month,
-                'year'     => $monthlyAttendance->year,
-                'period'   => $this->service->monthName($monthlyAttendance->month) . ' ' . $monthlyAttendance->year,
-                'employee' => [
-                    'id'       => $monthlyAttendance->employee?->id,
-                    'name'     => $this->service->employeeDisplayName($monthlyAttendance->employee),
-                    'code'     => $this->service->employeeCode($monthlyAttendance->employee),
-                    'document' => $this->service->employeeDocument($monthlyAttendance->employee),
+                'id'             => $monthlyAttendance->id,
+                'period'         => $this->service->monthName((int) $monthlyAttendance->month) . ' ' . $monthlyAttendance->year,
+
+                'employee'       => [
+                    'id'         => $monthlyAttendance->employee?->id,
+                    'name'       => $this->service->employeeDisplayName($monthlyAttendance->employee),
+                    'code'       => $this->service->employeeCode($monthlyAttendance->employee),
+                    'document'   => $this->service->employeeDocument($monthlyAttendance->employee),
+
+                    'work_shift' => $monthlyAttendance->employee?->workShift
+                        ? [
+                        'id'          => $monthlyAttendance->employee->workShift->id,
+                        'name'        => $monthlyAttendance->employee->workShift->name,
+                        'start_time'  => optional($monthlyAttendance->employee->workShift->start_time)->format('H:i'),
+                        'end_time'    => optional($monthlyAttendance->employee->workShift->end_time)->format('H:i'),
+                        'daily_hours' => $monthlyAttendance->employee->workShift->daily_hours,
+                    ]
+                        : null,
                 ],
-                'status'   => [
+
+                'status'         => [
                     'id'   => $monthlyAttendance->status?->id,
                     'code' => $monthlyAttendance->status?->code,
-                    'name' => $monthlyAttendance->status?->name ?? 'Sin estado',
+                    'name' => $monthlyAttendance->status?->name,
                 ],
-                'days'     => $monthlyAttendance->days
+
+                'month'          => $monthlyAttendance->month,
+                'year'           => $monthlyAttendance->year,
+                'worked_days'    => $monthlyAttendance->worked_days,
+                'absence_days'   => $monthlyAttendance->absence_days,
+                'exchange_days'  => $monthlyAttendance->exchange_days,
+                'rest_days'      => $monthlyAttendance->rest_days,
+                'overtime_hours' => $monthlyAttendance->overtime_hours,
+
+                'days'           => $monthlyAttendance->days
                     ->sortBy('attendance_date')
                     ->values()
-                    ->map(fn(AttendanceDay $day) => [
-                        'id'              => $day->id,
-                        'attendance_date' => $day->attendance_date?->format('Y-m-d'),
-                        'day_number'      => $day->attendance_date?->format('d'),
-                        'weekday'         => $day->attendance_date?->locale('es')->isoFormat('ddd'),
-                        'status'          => [
-                            'id'   => $day->status?->id,
-                            'code' => $day->status?->code,
-                            'name' => $day->status?->name ?? 'Sin estado',
-                        ],
-                        'overtime_hours'  => $day->overtime_hours,
-                        'observation'     => $day->observation,
-                    ]),
+                    ->map(function ($day) {
+                        return [
+                            'id'               => $day->id,
+                            'attendance_date'  => $day->attendance_date?->toDateString(),
+                            'day_number'       => $day->attendance_date?->format('d'),
+                            'weekday'          => $day->attendance_date?->locale('es')->translatedFormat('D'),
+
+                            'status'           => [
+                                'id'   => $day->status?->id,
+                                'code' => $day->status?->code,
+                                'name' => $day->status?->name,
+                            ],
+
+                            'work_shift'       => $day->workShift
+                                ? [
+                                'id'   => $day->workShift->id,
+                                'name' => $day->workShift->name,
+                            ]
+                                : null,
+
+                            'entry_time'       => $day->entry_time,
+                            'exit_time'        => $day->exit_time,
+                            'worked_hours'     => $day->worked_hours,
+                            'overtime_hours'   => $day->overtime_hours,
+                            'observation'      => $day->observation,
+
+                            'absence_exchange' => $day->absenceExchange,
+                            'worked_exchange'  => $day->workedExchange,
+                        ];
+                    }),
             ],
+
             'dayStatuses' => $this->service->dayStatuses(),
         ]);
     }
@@ -163,6 +202,22 @@ class AttendanceController extends Controller
         );
 
         return back()->with('success', 'Día de asistencia actualizado correctamente.');
+    }
+
+    /**
+     * Actualiza varios días de una asistencia mensual con un mismo estado.
+     */
+    public function bulkUpdateDays(
+        BulkUpdateAttendanceDaysRequest $request,
+        MonthlyAttendance $monthlyAttendance
+    ) {
+        $this->service->bulkUpdateDays(
+            attendance: $monthlyAttendance,
+            dayIds: $request->input('day_ids'),
+            statusCode: $request->input('status_code')
+        );
+
+        return back()->with('success', 'Los días seleccionados fueron actualizados correctamente.');
     }
 
     /**

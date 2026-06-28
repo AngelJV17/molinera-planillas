@@ -1,22 +1,19 @@
 <?php
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class AttendanceDay extends Model
 {
-    use HasFactory;
-
     /**
      * Tipo de catálogo usado para los estados diarios.
      */
     public const CATALOG_TYPE_STATUS = 'ATTENDANCE_DAY_STATUS';
 
     /**
-     * Códigos esperados en la tabla catalogs para los estados del calendario.
+     * Estados diarios permitidos.
      */
     public const STATUS_UNMARKED        = 'UNMARKED';
     public const STATUS_PRESENT         = 'PRESENT';
@@ -31,23 +28,25 @@ class AttendanceDay extends Model
         'monthly_attendance_id',
         'status_id',
         'attendance_date',
+        'work_shift_id',
+        'entry_time',
+        'exit_time',
+        'worked_hours',
         'overtime_hours',
         'observation',
     ];
 
     /**
-     * Conversiones automáticas de tipos.
+     * Conversión automática de tipos.
      */
-    protected function casts(): array
-    {
-        return [
-            'attendance_date' => 'date',
-            'overtime_hours'  => 'decimal:2',
-        ];
-    }
+    protected $casts = [
+        'attendance_date' => 'date',
+        'worked_hours'    => 'decimal:2',
+        'overtime_hours'  => 'decimal:2',
+    ];
 
     /**
-     * Cabecera mensual a la que pertenece el día.
+     * Asistencia mensual a la que pertenece este día.
      */
     public function monthlyAttendance(): BelongsTo
     {
@@ -55,7 +54,7 @@ class AttendanceDay extends Model
     }
 
     /**
-     * Estado del día obtenido desde catalogs.
+     * Estado diario del calendario.
      */
     public function status(): BelongsTo
     {
@@ -63,7 +62,15 @@ class AttendanceDay extends Model
     }
 
     /**
-     * Canje donde este día funciona como falta compensada.
+     * Turno usado para calcular horas trabajadas y horas extras.
+     */
+    public function workShift(): BelongsTo
+    {
+        return $this->belongsTo(WorkShift::class);
+    }
+
+    /**
+     * Canje donde este día representa la falta.
      */
     public function absenceExchange(): HasOne
     {
@@ -71,7 +78,7 @@ class AttendanceDay extends Model
     }
 
     /**
-     * Canje donde este día funciona como día trabajado para compensar.
+     * Canje donde este día representa el día trabajado para compensar.
      */
     public function workedExchange(): HasOne
     {
@@ -79,7 +86,7 @@ class AttendanceDay extends Model
     }
 
     /**
-     * Indica si este día está marcado como falta.
+     * Indica si el día está marcado como falta.
      */
     public function isAbsent(): bool
     {
@@ -87,10 +94,21 @@ class AttendanceDay extends Model
     }
 
     /**
-     * Indica si este día está marcado como trabajado para canje.
+     * Indica si el día está marcado como trabajo por canje.
      */
     public function isExchangeWorked(): bool
     {
         return $this->status?->code === self::STATUS_EXCHANGE_WORKED;
+    }
+
+    /**
+     * Indica si el día requiere hora de ingreso y salida.
+     */
+    public function requiresWorkingHours(): bool
+    {
+        return in_array($this->status?->code, [
+            self::STATUS_PRESENT,
+            self::STATUS_EXCHANGE_WORKED,
+        ], true);
     }
 }

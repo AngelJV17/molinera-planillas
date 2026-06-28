@@ -6,7 +6,9 @@ use App\Models\AttendanceExchange;
 use App\Models\Catalog;
 use App\Models\Employee;
 use App\Models\MonthlyAttendance;
+use App\Models\WorkShift;
 use Carbon\Carbon;
+use Carbon\CarbonInterface;
 use Carbon\CarbonPeriod;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
@@ -50,12 +52,11 @@ class AttendanceService
      * Crea una asistencia mensual para un trabajador.
      *
      * Al crear la cabecera mensual también se generan automáticamente
-     * los días del calendario con estado "Sin marcar".
+     * todos los días del calendario con estado "Sin marcar".
      */
     public function createMonthlyAttendance(array $data, ?int $userId = null): MonthlyAttendance
     {
         return DB::transaction(function () use ($data, $userId) {
-            // Valida que solo se pueda registrar el mes actual o el mes anterior.
             $this->ensureAllowedPeriod(
                 (int) $data['month'],
                 (int) $data['year']
@@ -97,36 +98,165 @@ class AttendanceService
     /**
      * Actualiza un día del calendario.
      *
-     * Esto se usará en la siguiente pantalla de calendario mensual.
+     * Si el día se marca como Asistió o Trabajó como canje,
+     * se exige turno asignado al trabajador y se calculan
+     * automáticamente las horas trabajadas y horas extras.
      */
     public function updateDay(AttendanceDay $day, array $data): AttendanceDay
     {
         return DB::transaction(function () use ($day, $data) {
-            $day->load('monthlyAttendance.status');
+            $day->load([
+                'monthlyAttendance.status',
+                'monthlyAttendance.employee.workShift',
+            ]);
 
-            // Valida que el día pueda modificarse.
-            // Aquí se bloquean asistencias cerradas y días futuros.
             $this->ensureDayCanBeUpdated($day);
 
-            $day->update([
-                'status_id'      => $data['status_id'],
-                'overtime_hours' => $data['overtime_hours'] ?? 0,
-                'observation'    => $data['observation'] ?? null,
-            ]);
+            $status     = $this->attendanceDayStatus((int) $data['status_id']);
+            $statusCode = $status->code;
+
+            if ($this->isWorkedStatus($statusCode)) {
+                $workShift = $this->resolveEmployeeWorkShift($day);
+
+                $calculatedHours = $this->calculateWorkedAndOvertimeHours(
+                    attendanceDate: $day->attendance_date,
+                    entryTime: $data['entry_time'] ?? null,
+                    exitTime: $data['exit_time'] ?? null,
+                    workShift: $workShift
+                );
+
+                $day->update([
+                    'status_id'      => $status->id,
+                    'work_shift_id'  => $workShift->id,
+                    'entry_time'     => $data['entry_time'],
+                    'exit_time'      => $data['exit_time'],
+                    'worked_hours'   => $calculatedHours['worked_hours'],
+                    'overtime_hours' => $calculatedHours['overtime_hours'],
+                    'observation'    => $data['observation'] ?? null,
+                ]);
+            } else {
+                $day->update([
+                    'status_id'      => $status->id,
+                    'work_shift_id'  => null,
+                    'entry_time'     => null,
+                    'exit_time'      => null,
+                    'worked_hours'   => 0,
+                    'overtime_hours' => 0,
+                    'observation'    => $data['observation'] ?? null,
+                ]);
+            }
 
             $this->recalculateTotals($day->monthlyAttendance);
 
-            return $day;
+            return $day->refresh();
+        });
+    }
+
+        /**
+     * Actualiza varios días del calendario con un mismo estado.
+     *
+     * Esta función está pensada para carga rápida desde cuaderno:
+     * - Seleccionar varios días.
+     * - Marcar todos como Asistió, Faltó o Descanso.
+     *
+     * Cuando el estado es Asistió, se usa automáticamente el turno
+     * asignado al trabajador para registrar ingreso, salida, horas
+     * trabajadas y horas extras.
+     */
+    public function bulkUpdateDays(MonthlyAttendance $attendance, array $dayIds, string $statusCode): void
+    {
+        DB::transaction(function () use ($attendance, $dayIds, $statusCode) {
+            $attendance->load([
+                'status',
+                'employee.workShift',
+            ]);
+
+            if (! $attendance->isEditable()) {
+                throw ValidationException::withMessages([
+                    'day_ids' => 'No se puede modificar una asistencia mensual cerrada.',
+                ]);
+            }
+
+            $allowedStatusCodes = [
+                AttendanceDay::STATUS_PRESENT,
+                AttendanceDay::STATUS_ABSENT,
+                AttendanceDay::STATUS_REST,
+            ];
+
+            if (! in_array($statusCode, $allowedStatusCodes, true)) {
+                throw ValidationException::withMessages([
+                    'status_code' => 'Solo puedes aplicar Asistió, Faltó o Descanso de forma masiva.',
+                ]);
+            }
+
+            $uniqueDayIds = collect($dayIds)
+                ->map(fn ($id) => (int) $id)
+                ->unique()
+                ->values();
+
+            $days = $attendance->days()
+                ->whereIn('id', $uniqueDayIds)
+                ->get();
+
+            if ($days->count() !== $uniqueDayIds->count()) {
+                throw ValidationException::withMessages([
+                    'day_ids' => 'Uno o más días seleccionados no pertenecen a esta asistencia mensual.',
+                ]);
+            }
+
+            $statusId = $this->catalogId(
+                AttendanceDay::CATALOG_TYPE_STATUS,
+                $statusCode
+            );
+
+            foreach ($days as $day) {
+                $day->setRelation('monthlyAttendance', $attendance);
+
+                $this->ensureDayCanBeUpdated($day);
+
+                if ($statusCode === AttendanceDay::STATUS_PRESENT) {
+                    $workShift = $this->resolveEmployeeWorkShift($day);
+
+                    $entryTime = $this->formatTimeValue($workShift->start_time);
+                    $exitTime = $this->formatTimeValue($workShift->end_time);
+
+                    $calculatedHours = $this->calculateWorkedAndOvertimeHours(
+                        attendanceDate: $day->attendance_date,
+                        entryTime: $entryTime,
+                        exitTime: $exitTime,
+                        workShift: $workShift
+                    );
+
+                    $day->update([
+                        'status_id' => $statusId,
+                        'work_shift_id' => $workShift->id,
+                        'entry_time' => $entryTime,
+                        'exit_time' => $exitTime,
+                        'worked_hours' => $calculatedHours['worked_hours'],
+                        'overtime_hours' => $calculatedHours['overtime_hours'],
+                        'observation' => $day->observation,
+                    ]);
+
+                    continue;
+                }
+
+                $day->update([
+                    'status_id' => $statusId,
+                    'work_shift_id' => null,
+                    'entry_time' => null,
+                    'exit_time' => null,
+                    'worked_hours' => 0,
+                    'overtime_hours' => 0,
+                    'observation' => $day->observation,
+                ]);
+            }
+
+            $this->recalculateTotals($attendance->refresh());
         });
     }
 
     /**
      * Verifica si un día del calendario puede modificarse.
-     *
-     * Reglas:
-     * - No se puede modificar una asistencia mensual cerrada.
-     * - No se pueden marcar días futuros.
-     *   Ejemplo: si hoy es 26, no se puede registrar 27, 28, 29, etc.
      */
     private function ensureDayCanBeUpdated(AttendanceDay $day): void
     {
@@ -148,16 +278,12 @@ class AttendanceService
 
     /**
      * Cierra una asistencia mensual.
-     *
-     * Una vez cerrada, ya no debería editarse desde el calendario.
      */
     public function close(MonthlyAttendance $attendance, ?int $userId = null): MonthlyAttendance
     {
         return DB::transaction(function () use ($attendance, $userId) {
             $attendance->load(['status', 'days.status']);
 
-            // No se permite cerrar un periodo que todavía no ha terminado.
-            // Ejemplo: si hoy es 26 de junio, no se puede cerrar junio porque aún faltan días.
             $periodEndDate = Carbon::create($attendance->year, $attendance->month, 1)
                 ->endOfMonth()
                 ->startOfDay();
@@ -224,10 +350,7 @@ class AttendanceService
     }
 
     /**
-     * Devuelve trabajadores para el selector.
-     *
-     * Se intenta mantener flexible porque la tabla employees puede variar
-     * según los nombres de columnas definidos en tu proyecto.
+     * Devuelve trabajadores activos para el selector.
      */
     public function employeeOptions()
     {
@@ -259,7 +382,7 @@ class AttendanceService
     }
 
     /**
-     * Opciones de meses para filtros y formulario.
+     * Opciones de meses.
      */
     public function monthOptions(): array
     {
@@ -280,7 +403,7 @@ class AttendanceService
     }
 
     /**
-     * Opciones de años para filtros y formulario.
+     * Opciones de años.
      */
     public function yearOptions(): array
     {
@@ -324,6 +447,10 @@ class AttendanceService
                 ],
                 [
                     'status_id'      => $unmarkedStatusId,
+                    'work_shift_id'  => null,
+                    'entry_time'     => null,
+                    'exit_time'      => null,
+                    'worked_hours'   => 0,
                     'overtime_hours' => 0,
                 ]
             );
@@ -391,6 +518,184 @@ class AttendanceService
             'rest_days'                  => $restDays,
             'overtime_hours'             => $overtimeHours,
         ]);
+    }
+
+    /**
+     * Obtiene el catálogo de estado diario seleccionado.
+     */
+    private function attendanceDayStatus(int $statusId): Catalog
+    {
+        $status = Catalog::query()
+            ->where('id', $statusId)
+            ->where('type', AttendanceDay::CATALOG_TYPE_STATUS)
+            ->where('status', true)
+            ->first();
+
+        if (! $status) {
+            throw ValidationException::withMessages([
+                'status_id' => 'El estado seleccionado no es válido para asistencia diaria.',
+            ]);
+        }
+
+        return $status;
+    }
+
+    /**
+     * Indica si el estado requiere registrar horas trabajadas.
+     */
+    private function isWorkedStatus(string $statusCode): bool
+    {
+        return in_array($statusCode, [
+            AttendanceDay::STATUS_PRESENT,
+            AttendanceDay::STATUS_EXCHANGE_WORKED,
+        ], true);
+    }
+
+    /**
+     * Obtiene el turno asignado al trabajador.
+     *
+     * Esta validación es estricta porque las horas extras dependen del turno.
+     */
+    private function resolveEmployeeWorkShift(AttendanceDay $day): WorkShift
+    {
+        $employee = $day->monthlyAttendance?->employee;
+
+        if (! $employee) {
+            throw ValidationException::withMessages([
+                'status_id' => 'No se encontró el trabajador asociado a esta asistencia.',
+            ]);
+        }
+
+        $workShift = $employee->workShift;
+
+        if (! $workShift) {
+            throw ValidationException::withMessages([
+                'status_id' => 'No se puede registrar asistencia porque el trabajador no tiene un turno de trabajo asignado.',
+            ]);
+        }
+
+        if (! $workShift->status) {
+            throw ValidationException::withMessages([
+                'status_id' => 'No se puede registrar asistencia porque el turno asignado al trabajador está inactivo.',
+            ]);
+        }
+
+        return $workShift;
+    }
+
+    /**
+     * Calcula horas trabajadas y horas extras usando el turno asignado.
+     */
+    private function calculateWorkedAndOvertimeHours(
+        CarbonInterface | string $attendanceDate,
+        ?string $entryTime,
+        ?string $exitTime,
+        WorkShift $workShift
+    ): array {
+        if (! $entryTime || ! $exitTime) {
+            throw ValidationException::withMessages([
+                'entry_time' => 'La hora de ingreso es obligatoria.',
+                'exit_time'  => 'La hora de salida es obligatoria.',
+            ]);
+        }
+
+        $date = $attendanceDate instanceof CarbonInterface
+            ? $attendanceDate->toDateString()
+            : Carbon::parse($attendanceDate)->toDateString();
+
+        $entryAt = Carbon::parse("{$date} {$entryTime}");
+        $exitAt  = Carbon::parse("{$date} {$exitTime}");
+
+        if ($exitAt->lessThanOrEqualTo($entryAt)) {
+            if (! $workShift->crosses_midnight) {
+                throw ValidationException::withMessages([
+                    'exit_time' => 'La hora de salida debe ser posterior a la hora de ingreso.',
+                ]);
+            }
+
+            $exitAt->addDay();
+        }
+
+        $workedMinutes = $entryAt->diffInMinutes($exitAt);
+
+        $breakMinutes = $this->calculateBreakMinutes(
+            date: $date,
+            entryAt: $entryAt,
+            exitAt: $exitAt,
+            workShift: $workShift
+        );
+
+        $workedMinutes = max($workedMinutes - $breakMinutes, 0);
+
+        $workedHours   = round($workedMinutes / 60, 2);
+        $expectedHours = (float) $workShift->daily_hours;
+        $overtimeHours = round(max($workedHours - $expectedHours, 0), 2);
+
+        return [
+            'worked_hours'   => $workedHours,
+            'overtime_hours' => $overtimeHours,
+        ];
+    }
+
+    /**
+     * Calcula los minutos de refrigerio que deben descontarse.
+     *
+     * Solo descuenta refrigerio si el turno tiene hora de inicio y fin de descanso
+     * y si ese rango cruza realmente con el rango trabajado.
+     */
+    private function calculateBreakMinutes(
+        string $date,
+        CarbonInterface $entryAt,
+        CarbonInterface $exitAt,
+        WorkShift $workShift
+    ): int {
+        if (! $workShift->break_start_time || ! $workShift->break_end_time) {
+            return 0;
+        }
+
+        $breakStartTime = $this->formatTimeValue($workShift->break_start_time);
+        $breakEndTime   = $this->formatTimeValue($workShift->break_end_time);
+        $shiftStartTime = $this->formatTimeValue($workShift->start_time);
+
+        $breakStartAt = Carbon::parse("{$date} {$breakStartTime}");
+        $breakEndAt   = Carbon::parse("{$date} {$breakEndTime}");
+
+        if ($workShift->crosses_midnight && $breakStartTime < $shiftStartTime) {
+            $breakStartAt->addDay();
+        }
+
+        if ($breakEndAt->lessThanOrEqualTo($breakStartAt)) {
+            $breakEndAt->addDay();
+        }
+
+        $overlapStart = $entryAt->greaterThan($breakStartAt)
+            ? $entryAt->copy()
+            : $breakStartAt->copy();
+
+        $overlapEnd = $exitAt->lessThan($breakEndAt)
+            ? $exitAt->copy()
+            : $breakEndAt->copy();
+
+        if ($overlapEnd->lessThanOrEqualTo($overlapStart)) {
+            return 0;
+        }
+
+        return $overlapStart->diffInMinutes($overlapEnd);
+    }
+
+    /**
+     * Normaliza un valor de hora.
+     *
+     * WorkShift castea las horas como datetime:H:i, por eso este método
+     * acepta Carbon o string.
+     */
+    private function formatTimeValue(mixed $value): string
+    {
+        if ($value instanceof CarbonInterface) {
+            return $value->format('H:i');
+        }
+
+        return substr((string) $value, 0, 5);
     }
 
     /**
@@ -493,11 +798,6 @@ class AttendanceService
 
     /**
      * Devuelve los periodos permitidos para registrar asistencia.
-     *
-     * Regla del negocio:
-     * - Solo se permite registrar el mes actual.
-     * - También se permite registrar como máximo el mes anterior.
-     * - No se permiten meses futuros ni meses antiguos.
      */
     public function allowedPeriodOptions(): array
     {
@@ -557,5 +857,4 @@ class AttendanceService
             'year'  => (int) $year,
         ];
     }
-
 }

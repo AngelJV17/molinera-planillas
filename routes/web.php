@@ -230,6 +230,9 @@ Route::middleware(['auth', 'verified', 'password.changed'])->group(function () {
 
             Route::patch('{monthlyAttendance}/close', 'close')
                 ->name('close');
+
+            Route::patch('{monthlyAttendance}/days/bulk', 'bulkUpdateDays')
+                ->name('days.bulk-update');
         });
 
     Route::patch(
