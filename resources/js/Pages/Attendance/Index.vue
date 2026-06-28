@@ -3,6 +3,7 @@ import { Head, router, useForm } from '@inertiajs/vue3';
 import { computed, ref, watch } from 'vue';
 
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
+import { confirmCloseAttendance } from '@/Utils/alerts';
 
 import EmptyState from '@/Components/Common/EmptyState.vue';
 import FilterCard from '@/Components/Common/FilterCard.vue';
@@ -182,10 +183,11 @@ const submit = () => {
 /**
  * Cierra una asistencia mensual.
  */
-const closeAttendance = (attendance) => {
-    const confirmed = window.confirm(
-        `¿Deseas cerrar la asistencia de ${attendance.employee.name} correspondiente a ${attendance.period}?`,
-    );
+const closeAttendance = async (attendance) => {
+    const confirmed = await confirmCloseAttendance({
+        employeeName: attendance.employee.name,
+        period: attendance.period,
+    });
 
     if (!confirmed) {
         return;

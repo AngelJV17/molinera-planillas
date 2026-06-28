@@ -3,6 +3,7 @@ import { Head, Link, router, useForm } from "@inertiajs/vue3";
 import { computed, ref } from "vue";
 
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout.vue";
+import { confirmCloseAttendance } from "@/Utils/alerts";
 
 import InputError from "@/Components/InputError.vue";
 import InputLabel from "@/Components/InputLabel.vue";
@@ -387,10 +388,11 @@ const closeDayPanel = () => {
 /**
  * Cierra la asistencia mensual.
  */
-const closeAttendance = () => {
-    const confirmed = window.confirm(
-        `¿Deseas cerrar la asistencia de ${props.attendance.employee.name} correspondiente a ${props.attendance.period}?`,
-    );
+const closeAttendance = async () => {
+    const confirmed = await confirmCloseAttendance({
+        employeeName: props.attendance.employee.name,
+        period: props.attendance.period,
+    });
 
     if (!confirmed) {
         return;
