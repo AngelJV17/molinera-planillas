@@ -1,6 +1,7 @@
 <?php
 namespace App\Http\Requests\Attendance;
 
+use App\Models\Employee;
 use App\Models\MonthlyAttendance;
 use Carbon\Carbon;
 use Illuminate\Contracts\Validation\ValidationRule;
@@ -71,6 +72,24 @@ class StoreMonthlyAttendanceRequest extends FormRequest
                 $validator->errors()->add(
                     'employee_id',
                     'Este trabajador ya tiene una asistencia mensual registrada para el mes y año seleccionados.'
+                );
+            }
+
+            $employee = Employee::query()
+                ->select(['id', 'status', 'work_shift_id'])
+                ->find($this->input('employee_id'));
+
+            if ($employee && ! $employee->status) {
+                $validator->errors()->add(
+                    'employee_id',
+                    'Solo puedes registrar asistencia para trabajadores activos.'
+                );
+            }
+
+            if ($employee && ! $employee->work_shift_id) {
+                $validator->errors()->add(
+                    'employee_id',
+                    'Solo puedes registrar asistencia para trabajadores con turno asignado.'
                 );
             }
 

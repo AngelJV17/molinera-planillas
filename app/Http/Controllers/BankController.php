@@ -82,7 +82,7 @@ class BankController extends Controller
         $this->service->update($bank, $request->validated());
 
         return redirect()
-            ->route('organizational - structure . index')
+            ->route('organizational-structure.index')
             ->with(
                 'success',
                 'Banco actualizado correctamente.'

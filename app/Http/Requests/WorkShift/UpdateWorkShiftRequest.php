@@ -40,7 +40,7 @@ class UpdateWorkShiftRequest extends FormRequest
             'break_end_time'    => ['nullable', 'date_format:H:i', 'required_with:break_start_time'],
             'tolerance_minutes' => ['required', 'integer', 'min:0', 'max:240'],
             'daily_hours' => ['required', 'numeric', 'min:0.5', 'max:24'],
-            'cross_midnight' => ['required', 'boolean'],
+            'crosses_midnight' => ['required', 'boolean'],
             'status' => ['required', 'boolean'],
         ];
     }
