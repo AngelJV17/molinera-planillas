@@ -18,6 +18,7 @@ import StatusBadge from '@/Components/Table/StatusBadge.vue';
 import TableActionButton from '@/Components/Table/TableActionButton.vue';
 import TableActions from '@/Components/Table/TableActions.vue';
 import TableEntityCell from '@/Components/Table/TableEntityCell.vue';
+import { confirmStatusChange } from '@/Utils/alerts';
 
 import {
     Building2,
@@ -184,7 +185,16 @@ const shiftTolerance = (shift) => {
     return `Tolerancia: ${shift.tolerance_minutes} min`;
 };
 
-const toggleStatus = (record) => {
+const toggleStatus = async (record) => {
+    const confirmed = await confirmStatusChange({
+        title: '¿Cambiar estado?',
+        text: `Se actualizará el estado de ${record.name}.`,
+    });
+
+    if (!confirmed) {
+        return;
+    }
+
     if (activeTab.value === 'banks') {
         router.patch(route('banks.toggle-status', record.id), {}, {
             preserveScroll: true,

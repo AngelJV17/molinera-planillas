@@ -19,6 +19,7 @@ import StatusBadge from '@/Components/Table/StatusBadge.vue';
 import TableActionButton from '@/Components/Table/TableActionButton.vue';
 import TableActions from '@/Components/Table/TableActions.vue';
 import TableEntityCell from '@/Components/Table/TableEntityCell.vue';
+import { confirmAction, confirmStatusChange } from '@/Utils/alerts';
 
 import {
     CheckCircle2,
@@ -159,7 +160,16 @@ const copyTemporaryCredentials = async () => {
     }
 };
 
-const toggleStatus = (user) => {
+const toggleStatus = async (user) => {
+    const confirmed = await confirmStatusChange({
+        title: '¿Cambiar estado del usuario?',
+        text: `Se actualizará el estado de ${user.name}.`,
+    });
+
+    if (!confirmed) {
+        return;
+    }
+
     router.patch(
         route('users.toggle-status', user.id),
         {},
@@ -169,10 +179,14 @@ const toggleStatus = (user) => {
     );
 };
 
-const resetPassword = (user) => {
-    const confirmed = window.confirm(
-        `¿Deseas generar una nueva contraseña temporal para ${user.name}?`,
-    );
+const resetPassword = async (user) => {
+    const confirmed = await confirmAction({
+        title: '¿Restablecer contraseña?',
+        text: `Se generará una nueva contraseña temporal para ${user.name}.`,
+        icon: 'warning',
+        confirmButtonText: 'Sí, restablecer',
+        cancelButtonText: 'Cancelar',
+    });
 
     if (!confirmed) {
         return;

@@ -19,6 +19,7 @@ import StatusBadge from '@/Components/Table/StatusBadge.vue';
 import TableActionButton from '@/Components/Table/TableActionButton.vue';
 import TableActions from '@/Components/Table/TableActions.vue';
 import TableEntityCell from '@/Components/Table/TableEntityCell.vue';
+import { confirmStatusChange } from '@/Utils/alerts';
 import {
     catalogCategories,
     getCatalogCategory,
@@ -101,7 +102,16 @@ watch([search, status, perPage], () => {
     }, 350);
 });
 
-const toggleStatus = (catalog) => {
+const toggleStatus = async (catalog) => {
+    const confirmed = await confirmStatusChange({
+        title: '¿Cambiar estado del catálogo?',
+        text: `Se actualizará el estado de ${catalog.name}.`,
+    });
+
+    if (!confirmed) {
+        return;
+    }
+
     router.patch(
         route('catalogs.toggle-status', catalog.id),
         {},

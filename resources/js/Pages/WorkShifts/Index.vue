@@ -14,6 +14,7 @@ import DataTable from '@/Components/Table/DataTable.vue';
 import Pagination from '@/Components/Table/Pagination.vue';
 import SearchInput from '@/Components/Table/SearchInput.vue';
 import StatusBadge from '@/Components/Table/StatusBadge.vue';
+import { confirmStatusChange } from '@/Utils/alerts';
 
 const props = defineProps({
     workShifts: {
@@ -59,7 +60,16 @@ watch([search, status, perPage], () => {
     applyFilters();
 });
 
-const toggleStatus = (workShift) => {
+const toggleStatus = async (workShift) => {
+    const confirmed = await confirmStatusChange({
+        title: '¿Cambiar estado del turno?',
+        text: `Se actualizará el estado de ${workShift.name}.`,
+    });
+
+    if (!confirmed) {
+        return;
+    }
+
     router.patch(
         route('work-shifts.toggle-status', workShift.id),
         {},

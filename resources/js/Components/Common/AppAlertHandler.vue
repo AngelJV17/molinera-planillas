@@ -103,6 +103,10 @@ watch(
         if (messages.info) {
             showAlert('info', messages.info);
         }
+
+        if (messages.status) {
+            showAlert('info', messages.status);
+        }
     },
     {
         deep: true,

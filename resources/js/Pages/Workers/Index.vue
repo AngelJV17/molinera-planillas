@@ -19,6 +19,7 @@ import StatusBadge from '@/Components/Table/StatusBadge.vue';
 import TableActionButton from '@/Components/Table/TableActionButton.vue';
 import TableActions from '@/Components/Table/TableActions.vue';
 import TableEntityCell from '@/Components/Table/TableEntityCell.vue';
+import { confirmStatusChange } from '@/Utils/alerts';
 
 import {
     BriefcaseBusiness,
@@ -87,7 +88,16 @@ watch([search, status, workShiftId, perPage], () => {
     }, 350);
 });
 
-const toggleStatus = (worker) => {
+const toggleStatus = async (worker) => {
+    const confirmed = await confirmStatusChange({
+        title: '¿Cambiar estado del trabajador?',
+        text: `Se actualizará el estado de ${fullName(worker)}.`,
+    });
+
+    if (!confirmed) {
+        return;
+    }
+
     router.patch(
         route('workers.toggle-status', worker.id),
         {},

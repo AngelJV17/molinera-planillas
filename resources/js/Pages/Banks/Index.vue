@@ -14,6 +14,7 @@ import DataTable from '@/Components/Table/DataTable.vue';
 import Pagination from '@/Components/Table/Pagination.vue';
 import SearchInput from '@/Components/Table/SearchInput.vue';
 import StatusBadge from '@/Components/Table/StatusBadge.vue';
+import { confirmStatusChange } from '@/Utils/alerts';
 
 const props = defineProps({
     banks: {
@@ -57,7 +58,16 @@ watch([search, status, perPage], () => {
     applyFilters();
 });
 
-const toggleStatus = (bank) => {
+const toggleStatus = async (bank) => {
+    const confirmed = await confirmStatusChange({
+        title: '¿Cambiar estado del banco?',
+        text: `Se actualizará el estado de ${bank.name}.`,
+    });
+
+    if (!confirmed) {
+        return;
+    }
+
     router.patch(
         route('banks.toggle-status', bank.id),
         {},
