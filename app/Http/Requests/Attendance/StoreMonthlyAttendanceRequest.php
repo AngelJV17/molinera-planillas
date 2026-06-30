@@ -71,7 +71,7 @@ class StoreMonthlyAttendanceRequest extends FormRequest
             if ($exists) {
                 $validator->errors()->add(
                     'employee_id',
-                    'Este trabajador ya tiene una asistencia mensual registrada para el mes y año seleccionados.'
+                    'Este trabajador ya tiene asistencia registrada para el periodo seleccionado. Abre el registro existente para revisarlo o editarlo. [ATT-001]'
                 );
             }
 
@@ -82,14 +82,14 @@ class StoreMonthlyAttendanceRequest extends FormRequest
             if ($employee && ! $employee->status) {
                 $validator->errors()->add(
                     'employee_id',
-                    'Solo puedes registrar asistencia para trabajadores activos.'
+                    'Este trabajador esta inactivo. Activalo o selecciona un trabajador vigente antes de registrar asistencia. [ATT-015]'
                 );
             }
 
             if ($employee && ! $employee->work_shift_id) {
                 $validator->errors()->add(
                     'employee_id',
-                    'Solo puedes registrar asistencia para trabajadores con turno asignado.'
+                    'Este trabajador no tiene un turno asignado. Asigna un turno en su ficha antes de registrar asistencia. [ATT-010]'
                 );
             }
 
@@ -108,12 +108,12 @@ class StoreMonthlyAttendanceRequest extends FormRequest
             if (! $isAllowedPeriod) {
                 $validator->errors()->add(
                     'period',
-                    'Solo puedes registrar asistencia del mes actual o del mes anterior.'
+                    'Solo puedes registrar asistencia del mes actual o del mes anterior. Selecciona uno de los periodos disponibles. [ATT-014]'
                 );
 
                 $validator->errors()->add(
                     'month',
-                    'Solo puedes registrar asistencia del mes actual o del mes anterior.'
+                    'Solo puedes registrar asistencia del mes actual o del mes anterior. Selecciona uno de los periodos disponibles. [ATT-014]'
                 );
             }
         });

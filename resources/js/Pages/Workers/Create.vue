@@ -36,6 +36,7 @@ const form = useForm({
     cuspp: '',
     status: true,
     has_system_access: false,
+    bank_accounts: [],
 });
 
 const submit = () => {

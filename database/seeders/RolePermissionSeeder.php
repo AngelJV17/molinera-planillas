@@ -58,6 +58,11 @@ class RolePermissionSeeder extends Seeder
             'payrolls.reject',
             'payrolls.pay',
 
+            'payroll-parameters.view',
+            'payroll-parameters.create',
+            'payroll-parameters.edit',
+            'payroll-parameters.toggle-status',
+
             // Boletas
             'payment-slips.view',
             'payment-slips.generate',
@@ -151,6 +156,11 @@ class RolePermissionSeeder extends Seeder
             'payrolls.create',
             'payrolls.review',
 
+            'payroll-parameters.view',
+            'payroll-parameters.create',
+            'payroll-parameters.edit',
+            'payroll-parameters.toggle-status',
+
             'payment-slips.view',
             'payment-slips.generate',
             'payment-slips.download',
@@ -176,6 +186,8 @@ class RolePermissionSeeder extends Seeder
             'payrolls.approve',
             'payrolls.reject',
 
+            'payroll-parameters.view',
+
             'payment-slips.view',
 
             'reports.view',
@@ -191,6 +203,9 @@ class RolePermissionSeeder extends Seeder
             'payrolls.view',
             'payrolls.review',
             'payrolls.pay',
+
+            'payroll-parameters.view',
+            'payroll-parameters.edit',
 
             'payment-slips.view',
             'payment-slips.generate',

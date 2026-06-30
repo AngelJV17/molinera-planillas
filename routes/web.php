@@ -4,8 +4,12 @@ use App\Http\Controllers\AttendanceController;
 use App\Http\Controllers\BankController;
 use App\Http\Controllers\CatalogController;
 use App\Http\Controllers\ChangeTemporaryPasswordController;
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\EmployeeController;
 use App\Http\Controllers\OrganizationalStructureController;
+use App\Http\Controllers\PayrollController;
+use App\Http\Controllers\PayrollParameterController;
+use App\Http\Controllers\PaymentSlipController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\UserController;
@@ -82,9 +86,9 @@ Route::middleware(['auth', 'verified', 'password.changed'])->group(function () {
     |
     */
 
-    Route::get('/dashboard', function () {
-        return Inertia::render('Dashboard');
-    })->name('dashboard');
+    Route::get('/dashboard', DashboardController::class)
+        ->middleware('permission:dashboard.view')
+        ->name('dashboard');
 
     /*
     |--------------------------------------------------------------------------
@@ -129,12 +133,15 @@ Route::middleware(['auth', 'verified', 'password.changed'])->group(function () {
     */
 
     Route::resource('catalogs', CatalogController::class)
-        ->except(['show', 'destroy']);
+        ->except(['show', 'destroy'])
+        ->middlewareFor(['index'], 'permission:catalogs.view')
+        ->middlewareFor(['create', 'store'], 'permission:catalogs.create')
+        ->middlewareFor(['edit', 'update'], 'permission:catalogs.edit');
 
     Route::patch(
         'catalogs/{catalog}/toggle-status',
         [CatalogController::class, 'toggleStatus']
-    )->name('catalogs.toggle-status');
+    )->middleware('permission:catalogs.toggle-status')->name('catalogs.toggle-status');
 
     /*
     |--------------------------------------------------------------------------
@@ -150,7 +157,7 @@ Route::middleware(['auth', 'verified', 'password.changed'])->group(function () {
     Route::get(
         'organizational-structure',
         [OrganizationalStructureController::class, 'index']
-    )->name('organizational-structure.index');
+    )->middleware('permission:banks.view|work-shifts.view')->name('organizational-structure.index');
 
     /*
     |--------------------------------------------------------------------------
@@ -162,12 +169,15 @@ Route::middleware(['auth', 'verified', 'password.changed'])->group(function () {
     */
 
     Route::resource('banks', BankController::class)
-        ->except(['show', 'destroy']);
+        ->except(['show', 'destroy'])
+        ->middlewareFor(['index'], 'permission:banks.view')
+        ->middlewareFor(['create', 'store'], 'permission:banks.create')
+        ->middlewareFor(['edit', 'update'], 'permission:banks.edit');
 
     Route::patch(
         'banks/{bank}/toggle-status',
         [BankController::class, 'toggleStatus']
-    )->name('banks.toggle-status');
+    )->middleware('permission:banks.toggle-status')->name('banks.toggle-status');
 
     /*
     |--------------------------------------------------------------------------
@@ -179,12 +189,15 @@ Route::middleware(['auth', 'verified', 'password.changed'])->group(function () {
     */
 
     Route::resource('work-shifts', WorkShiftController::class)
-        ->except(['show', 'destroy']);
+        ->except(['show', 'destroy'])
+        ->middlewareFor(['index'], 'permission:work-shifts.view')
+        ->middlewareFor(['create', 'store'], 'permission:work-shifts.create')
+        ->middlewareFor(['edit', 'update'], 'permission:work-shifts.edit');
 
     Route::patch(
         'work-shifts/{work_shift}/toggle-status',
         [WorkShiftController::class, 'toggleStatus']
-    )->name('work-shifts.toggle-status');
+    )->middleware('permission:work-shifts.toggle-status')->name('work-shifts.toggle-status');
 
     /*
     |--------------------------------------------------------------------------
@@ -199,12 +212,15 @@ Route::middleware(['auth', 'verified', 'password.changed'])->group(function () {
 
     Route::resource('workers', EmployeeController::class)
         ->parameters(['workers' => 'worker'])
-        ->except(['show', 'destroy']);
+        ->except(['show', 'destroy'])
+        ->middlewareFor(['index'], 'permission:workers.view')
+        ->middlewareFor(['create', 'store'], 'permission:workers.create')
+        ->middlewareFor(['edit', 'update'], 'permission:workers.edit');
 
     Route::patch(
         'workers/{worker}/toggle-status',
         [EmployeeController::class, 'toggleStatus']
-    )->name('workers.toggle-status');
+    )->middleware('permission:workers.toggle-status')->name('workers.toggle-status');
 
     /*
     |--------------------------------------------------------------------------
@@ -220,25 +236,30 @@ Route::middleware(['auth', 'verified', 'password.changed'])->group(function () {
         ->name('attendance.')
         ->group(function () {
             Route::get('/', 'index')
+                ->middleware('permission:attendance.view')
                 ->name('index');
 
             Route::post('/', 'store')
+                ->middleware('permission:attendance.create')
                 ->name('store');
 
             Route::get('{monthlyAttendance}/edit', 'edit')
+                ->middleware('permission:attendance.edit')
                 ->name('edit');
 
             Route::patch('{monthlyAttendance}/close', 'close')
+                ->middleware('permission:attendance.close')
                 ->name('close');
 
             Route::patch('{monthlyAttendance}/days/bulk', 'bulkUpdateDays')
+                ->middleware('permission:attendance.edit')
                 ->name('days.bulk-update');
         });
 
     Route::patch(
         'attendance-days/{attendanceDay}',
         [AttendanceController::class, 'updateDay']
-    )->name('attendance.days.update');
+    )->middleware('permission:attendance.edit')->name('attendance.days.update');
 
     /*
     |--------------------------------------------------------------------------
@@ -250,9 +271,28 @@ Route::middleware(['auth', 'verified', 'password.changed'])->group(function () {
     |
     */
 
-    Route::get('/payrolls', function () {
-        return Inertia::render('Payrolls/Index');
-    })->name('payrolls.index');
+    Route::controller(PayrollController::class)
+        ->prefix('payrolls')
+        ->name('payrolls.')
+        ->group(function () {
+            Route::get('/', 'index')->middleware('permission:payrolls.view')->name('index');
+            Route::post('/', 'store')->middleware('permission:payrolls.create')->name('store');
+            Route::patch('{payroll}/approve', 'approve')->middleware('permission:payrolls.approve')->name('approve');
+            Route::patch('{payroll}/reject', 'reject')->middleware('permission:payrolls.reject')->name('reject');
+            Route::patch('{payroll}/pay', 'pay')->middleware('permission:payrolls.pay')->name('pay');
+        });
+
+    Route::resource('payroll-parameters', PayrollParameterController::class)
+        ->parameters(['payroll-parameters' => 'payroll_parameter'])
+        ->except(['show', 'destroy'])
+        ->middlewareFor(['index'], 'permission:payroll-parameters.view')
+        ->middlewareFor(['create', 'store'], 'permission:payroll-parameters.create')
+        ->middlewareFor(['edit', 'update'], 'permission:payroll-parameters.edit');
+
+    Route::patch(
+        'payroll-parameters/{payroll_parameter}/toggle-status',
+        [PayrollParameterController::class, 'toggleStatus']
+    )->middleware('permission:payroll-parameters.toggle-status')->name('payroll-parameters.toggle-status');
 
     /*
     |--------------------------------------------------------------------------
@@ -264,9 +304,9 @@ Route::middleware(['auth', 'verified', 'password.changed'])->group(function () {
     |
     */
 
-    Route::get('/payment-slips', function () {
-        return Inertia::render('PaymentSlips/Index');
-    })->name('payment-slips.index');
+    Route::get('/payment-slips', [PaymentSlipController::class, 'index'])
+        ->middleware('permission:payment-slips.view')
+        ->name('payment-slips.index');
 
     /*
     |--------------------------------------------------------------------------
@@ -280,7 +320,7 @@ Route::middleware(['auth', 'verified', 'password.changed'])->group(function () {
 
     Route::get('/reports', function () {
         return Inertia::render('Reports/Index');
-    })->name('reports.index');
+    })->middleware('permission:reports.view')->name('reports.index');
 
     /*
     |--------------------------------------------------------------------------
@@ -293,17 +333,20 @@ Route::middleware(['auth', 'verified', 'password.changed'])->group(function () {
     */
 
     Route::resource('users', UserController::class)
-        ->except(['show', 'destroy']);
+        ->except(['show', 'destroy'])
+        ->middlewareFor(['index'], 'permission:users.view')
+        ->middlewareFor(['create', 'store'], 'permission:users.create')
+        ->middlewareFor(['edit', 'update'], 'permission:users.edit');
 
     Route::patch(
         'users/{user}/toggle-status',
         [UserController::class, 'toggleStatus']
-    )->name('users.toggle-status');
+    )->middleware('permission:users.toggle-status')->name('users.toggle-status');
 
     Route::patch(
         'users/{user}/reset-password',
         [UserController::class, 'resetPassword']
-    )->name('users.reset-password');
+    )->middleware('permission:users.edit')->name('users.reset-password');
 
     /*
     |--------------------------------------------------------------------------
@@ -316,7 +359,10 @@ Route::middleware(['auth', 'verified', 'password.changed'])->group(function () {
     */
 
     Route::resource('roles', RoleController::class)
-        ->except(['show', 'destroy']);
+        ->except(['show', 'destroy'])
+        ->middlewareFor(['index'], 'permission:roles.view')
+        ->middlewareFor(['create', 'store'], 'permission:roles.create')
+        ->middlewareFor(['edit', 'update'], 'permission:roles.edit|roles.assign-permissions');
 });
 
 /*

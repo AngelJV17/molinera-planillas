@@ -70,7 +70,7 @@ class AttendanceService
 
             if ($exists) {
                 throw ValidationException::withMessages([
-                    'employee_id' => 'Ya existe una asistencia mensual registrada para este trabajador en el periodo seleccionado.',
+                    'employee_id' => 'Este trabajador ya tiene asistencia registrada para el periodo seleccionado. Abre el registro existente para revisarlo o editarlo. [ATT-001]',
                 ]);
             }
 
@@ -173,7 +173,7 @@ class AttendanceService
 
             if (! $attendance->isEditable()) {
                 throw ValidationException::withMessages([
-                    'day_ids' => 'No se puede modificar una asistencia mensual cerrada.',
+                    'day_ids' => 'La asistencia mensual ya esta cerrada y no puede modificarse. Si necesitas corregirla, solicita la reapertura del periodo. [ATT-002]',
                 ]);
             }
 
@@ -185,7 +185,7 @@ class AttendanceService
 
             if (! in_array($statusCode, $allowedStatusCodes, true)) {
                 throw ValidationException::withMessages([
-                    'status_code' => 'Solo puedes aplicar Asistió, Faltó o Descanso de forma masiva.',
+                    'status_code' => 'Para actualizar varios dias a la vez, elige Asistio, Falto o Descanso. Otros estados deben registrarse dia por dia. [ATT-003]',
                 ]);
             }
 
@@ -200,7 +200,7 @@ class AttendanceService
 
             if ($days->count() !== $uniqueDayIds->count()) {
                 throw ValidationException::withMessages([
-                    'day_ids' => 'Uno o más días seleccionados no pertenecen a esta asistencia mensual.',
+                    'day_ids' => 'Algunos dias seleccionados no pertenecen a esta asistencia mensual. Recarga la pagina y vuelve a seleccionar los dias. [ATT-004]',
                 ]);
             }
 
@@ -264,14 +264,14 @@ class AttendanceService
 
         if (! $day->monthlyAttendance->isEditable()) {
             throw ValidationException::withMessages([
-                'status_id' => 'No se puede modificar una asistencia mensual cerrada.',
+                'status_id' => 'La asistencia mensual ya esta cerrada y no puede modificarse. Si necesitas corregirla, solicita la reapertura del periodo. [ATT-002]',
             ]);
         }
 
         if ($day->attendance_date->startOfDay()->greaterThan(now()->startOfDay())) {
             throw ValidationException::withMessages([
-                'attendance_date' => 'No puedes registrar asistencia de días futuros.',
-                'status_id'       => 'No puedes registrar asistencia de días futuros.',
+                'attendance_date' => 'Todavia no puedes registrar asistencia para una fecha futura. Selecciona una fecha de hoy o anterior. [ATT-005]',
+                'status_id'       => 'Todavia no puedes registrar asistencia para una fecha futura. Selecciona una fecha de hoy o anterior. [ATT-005]',
             ]);
         }
     }
@@ -290,7 +290,7 @@ class AttendanceService
 
             if ($periodEndDate->greaterThan(now()->startOfDay())) {
                 throw ValidationException::withMessages([
-                    'attendance' => 'No puedes cerrar esta asistencia mensual porque el periodo todavía no ha terminado.',
+                    'attendance' => 'Aun no puedes cerrar esta asistencia mensual porque el periodo todavia no termina. Intentalo al finalizar el mes. [ATT-006]',
                 ]);
             }
 
@@ -304,7 +304,7 @@ class AttendanceService
 
             if ($unmarkedDays > 0) {
                 throw ValidationException::withMessages([
-                    'attendance' => 'No puedes cerrar la asistencia mientras existan días sin marcar.',
+                    'attendance' => "Faltan {$unmarkedDays} dias por marcar. Completa todos los dias antes de cerrar la asistencia mensual. [ATT-007]",
                 ]);
             }
 
@@ -533,7 +533,7 @@ class AttendanceService
 
         if (! $status) {
             throw ValidationException::withMessages([
-                'status_id' => 'El estado seleccionado no es válido para asistencia diaria.',
+                'status_id' => 'El estado seleccionado no esta disponible para asistencia diaria. Recarga la pagina y vuelve a intentarlo. [ATT-008]',
             ]);
         }
 
@@ -562,7 +562,7 @@ class AttendanceService
 
         if (! $employee) {
             throw ValidationException::withMessages([
-                'status_id' => 'No se encontró el trabajador asociado a esta asistencia.',
+                'status_id' => 'No se encontro el trabajador de esta asistencia. Solicita a soporte revisar el registro. [ATT-009]',
             ]);
         }
 
@@ -570,13 +570,13 @@ class AttendanceService
 
         if (! $workShift) {
             throw ValidationException::withMessages([
-                'status_id' => 'No se puede registrar asistencia porque el trabajador no tiene un turno de trabajo asignado.',
+                'status_id' => 'Este trabajador no tiene un turno asignado. Asigna un turno en su ficha antes de registrar asistencia. [ATT-010]',
             ]);
         }
 
         if (! $workShift->status) {
             throw ValidationException::withMessages([
-                'status_id' => 'No se puede registrar asistencia porque el turno asignado al trabajador está inactivo.',
+                'status_id' => 'El turno asignado al trabajador esta inactivo. Activa el turno o asigna uno vigente antes de registrar asistencia. [ATT-011]',
             ]);
         }
 
@@ -594,8 +594,8 @@ class AttendanceService
     ): array {
         if (! $entryTime || ! $exitTime) {
             throw ValidationException::withMessages([
-                'entry_time' => 'La hora de ingreso es obligatoria.',
-                'exit_time'  => 'La hora de salida es obligatoria.',
+                'entry_time' => 'Ingresa la hora de entrada y salida para calcular la asistencia del dia. [ATT-012]',
+                'exit_time'  => 'Ingresa la hora de entrada y salida para calcular la asistencia del dia. [ATT-012]',
             ]);
         }
 
@@ -609,7 +609,7 @@ class AttendanceService
         if ($exitAt->lessThanOrEqualTo($entryAt)) {
             if (! $workShift->crosses_midnight) {
                 throw ValidationException::withMessages([
-                    'exit_time' => 'La hora de salida debe ser posterior a la hora de ingreso.',
+                    'exit_time' => 'La hora de salida debe ser posterior a la hora de entrada. Si el turno cruza medianoche, marca el turno como nocturno. [ATT-013]',
                 ]);
             }
 
@@ -711,7 +711,7 @@ class AttendanceService
 
         if (! $catalog) {
             throw ValidationException::withMessages([
-                'catalog' => "No se encontró el catálogo activo {$type} / {$code}. Ejecuta el seeder de catálogos.",
+                'catalog' => "No se pudo completar la accion porque falta una configuracion interna. Solicita a soporte revisar el catalogo {$type}/{$code}. [CFG-001]",
             ]);
         }
 
@@ -831,9 +831,9 @@ class AttendanceService
 
         if (! in_array($selectedPeriod->format('Y-m'), $allowedPeriods, true)) {
             throw ValidationException::withMessages([
-                'period' => 'Solo puedes registrar asistencia del mes actual o del mes anterior.',
-                'month'  => 'Solo puedes registrar asistencia del mes actual o del mes anterior.',
-                'year'   => 'Solo puedes registrar asistencia del mes actual o del mes anterior.',
+                'period' => 'Solo puedes registrar asistencia del mes actual o del mes anterior. Selecciona uno de los periodos disponibles. [ATT-014]',
+                'month'  => 'Solo puedes registrar asistencia del mes actual o del mes anterior. Selecciona uno de los periodos disponibles. [ATT-014]',
+                'year'   => 'Solo puedes registrar asistencia del mes actual o del mes anterior. Selecciona uno de los periodos disponibles. [ATT-014]',
             ]);
         }
     }

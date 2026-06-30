@@ -2,6 +2,7 @@
 namespace App\Services;
 
 use App\Models\Catalog;
+use App\Models\Bank;
 use App\Models\Department;
 use App\Models\District;
 use App\Models\Employee;
@@ -60,6 +61,9 @@ class EmployeeService
     {
         return [
             'catalogs'    => $this->catalogOptions(),
+            'banks'       => Bank::active()
+                ->orderBy('name')
+                ->get(['id', 'name', 'code']),
             'workShifts'  => WorkShift::active()
                 ->orderBy('name')
                 ->get(['id', 'name', 'start_time', 'end_time']),
@@ -80,6 +84,7 @@ class EmployeeService
 
             $employeeData = Arr::except($data, [
                 'has_system_access',
+                'bank_accounts',
             ]);
 
             $employeeData['employee_code'] = $this->generateEmployeeCode();
@@ -107,7 +112,10 @@ class EmployeeService
                 $employeeData['user_id'] = $user->id;
             }
 
-            return Employee::create($employeeData);
+            $employee = Employee::create($employeeData);
+            $this->syncBankAccounts($employee, $data['bank_accounts'] ?? []);
+
+            return $employee;
         });
     }
 
@@ -122,6 +130,7 @@ class EmployeeService
 
             $employeeData = Arr::except($data, [
                 'has_system_access',
+                'bank_accounts',
             ]);
 
             // Crear usuario si antes no tenía
@@ -173,6 +182,7 @@ class EmployeeService
             }
 
             $employee->update($employeeData);
+            $this->syncBankAccounts($employee, $data['bank_accounts'] ?? []);
 
             return $employee;
         });
@@ -204,6 +214,7 @@ class EmployeeService
                 'WORK_AREA',
                 'WORKER_STATUS',
                 'PENSION_SYSTEM',
+                'ACCOUNT_TYPE',
             ])
             ->orderBy('type')
             ->orderBy('name')
@@ -219,5 +230,48 @@ class EmployeeService
         $lastId = Employee::withTrashed()->max('id') + 1;
 
         return 'EMP-' . str_pad($lastId, 4, '0', STR_PAD_LEFT);
+    }
+
+    private function syncBankAccounts(Employee $employee, array $accounts): void
+    {
+        $normalized = collect($accounts)
+            ->filter(fn(array $account) => ! empty($account['bank_id']) && ! empty($account['account_type_id']) && ! empty($account['account_number']))
+            ->values()
+            ->map(fn(array $account, int $index) => [
+                'bank_id' => $account['bank_id'],
+                'account_type_id' => $account['account_type_id'],
+                'account_number' => $account['account_number'],
+                'cci' => $account['cci'] ?? null,
+                'is_primary' => (bool) ($account['is_primary'] ?? false),
+                'status' => (bool) ($account['status'] ?? true),
+            ]);
+
+        if ($normalized->isNotEmpty() && ! $normalized->contains('is_primary', true)) {
+            $first = $normalized->first();
+            $first['is_primary'] = true;
+            $normalized = $normalized->replace([0 => $first]);
+        }
+
+        if ($normalized->where('is_primary', true)->count() > 1) {
+            $primaryAssigned = false;
+            $normalized = $normalized->map(function (array $account) use (&$primaryAssigned) {
+                if (! $account['is_primary']) {
+                    return $account;
+                }
+
+                if (! $primaryAssigned) {
+                    $primaryAssigned = true;
+
+                    return $account;
+                }
+
+                $account['is_primary'] = false;
+
+                return $account;
+            });
+        }
+
+        $employee->bankAccounts()->delete();
+        $employee->bankAccounts()->createMany($normalized->all());
     }
 }

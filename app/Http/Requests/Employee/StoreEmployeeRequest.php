@@ -45,6 +45,13 @@ class StoreEmployeeRequest extends FormRequest
             'cuspp'                => ['nullable', 'string', 'max:50'],
             'status'               => ['required', 'boolean'],
             'has_system_access' => ['required', 'boolean'],
+            'bank_accounts' => ['nullable', 'array', 'max:5'],
+            'bank_accounts.*.bank_id' => ['required_with:bank_accounts.*.account_number', 'nullable', 'exists:banks,id'],
+            'bank_accounts.*.account_type_id' => ['required_with:bank_accounts.*.account_number', 'nullable', Rule::exists('catalogs', 'id')->where('type', 'ACCOUNT_TYPE')],
+            'bank_accounts.*.account_number' => ['required_with:bank_accounts.*.bank_id', 'nullable', 'string', 'max:50'],
+            'bank_accounts.*.cci' => ['nullable', 'string', 'max:50'],
+            'bank_accounts.*.is_primary' => ['nullable', 'boolean'],
+            'bank_accounts.*.status' => ['nullable', 'boolean'],
         ];
     }
 

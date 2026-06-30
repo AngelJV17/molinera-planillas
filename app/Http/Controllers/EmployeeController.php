@@ -78,6 +78,8 @@ class EmployeeController extends Controller
         return Inertia::render('Workers/Edit', [
             'worker'  => $worker->load([
                 'district.province.department',
+                'bankAccounts.bank',
+                'bankAccounts.accountType',
             ]),
 
             'options' => $this->service->formOptions(),

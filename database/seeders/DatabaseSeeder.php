@@ -34,6 +34,8 @@ class DatabaseSeeder extends Seeder
             DistrictSeeder::class,
 
             RolePermissionSeeder::class,
+
+            PayrollParameterSeeder::class,
         ]);
     }
 }

@@ -120,6 +120,7 @@ class RoleService
             'workers'       => 'Trabajadores',
             'attendance'    => 'Asistencia',
             'payrolls'      => 'Planillas',
+            'payroll-parameters' => 'Parametros de planilla',
             'payment-slips' => 'Boletas de pago',
             'reports'       => 'Reportes',
             'users'         => 'Usuarios',

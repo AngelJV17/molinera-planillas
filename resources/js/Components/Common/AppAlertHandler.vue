@@ -1,41 +1,25 @@
 <script setup>
 import { usePage } from '@inertiajs/vue3';
-import { computed, watch } from 'vue';
+import { X } from 'lucide-vue-next';
+import { computed, ref, watch } from 'vue';
 
 import {
-    showErrorAlert,
     showInfoAlert,
     showSuccessAlert,
     showWarningAlert,
 } from '@/Utils/alerts';
 
 const page = usePage();
+const visibleErrorMessages = ref([]);
 
-/**
- * Mensajes flash enviados desde Laravel.
- *
- * Ejemplo:
- * return back()->with('success', 'Registro guardado correctamente.');
- */
 const flash = computed(() => {
     return page.props.flash ?? {};
 });
 
-/**
- * Errores de validación enviados por Laravel/Inertia.
- *
- * Ejemplo:
- * throw ValidationException::withMessages([
- *     'attendance' => 'No puedes cerrar esta asistencia mensual...'
- * ]);
- */
 const errors = computed(() => {
     return page.props.errors ?? {};
 });
 
-/**
- * Normaliza mensajes que pueden venir como string o array.
- */
 const normalizeMessage = (message) => {
     if (!message) {
         return '';
@@ -48,10 +32,15 @@ const normalizeMessage = (message) => {
     return String(message);
 };
 
-/**
- * Muestra una alerta según su tipo.
- */
-const showAlert = (type, message) => {
+const normalizeMessages = (messages) => {
+    return Object.values(messages ?? {})
+        .flatMap((message) => (Array.isArray(message) ? message : [message]))
+        .map(normalizeMessage)
+        .filter(Boolean)
+        .filter((message, index, allMessages) => allMessages.indexOf(message) === index);
+};
+
+const showFlashAlert = (type, message) => {
     const normalizedMessage = normalizeMessage(message);
 
     if (!normalizedMessage) {
@@ -64,7 +53,7 @@ const showAlert = (type, message) => {
     }
 
     if (type === 'error') {
-        showErrorAlert(normalizedMessage);
+        visibleErrorMessages.value = [normalizedMessage];
         return;
     }
 
@@ -78,9 +67,6 @@ const showAlert = (type, message) => {
     }
 };
 
-/**
- * Escucha mensajes flash.
- */
 watch(
     () => flash.value,
     (messages) => {
@@ -89,23 +75,23 @@ watch(
         }
 
         if (messages.success) {
-            showAlert('success', messages.success);
+            showFlashAlert('success', messages.success);
         }
 
         if (messages.error) {
-            showAlert('error', messages.error);
+            showFlashAlert('error', messages.error);
         }
 
         if (messages.warning) {
-            showAlert('warning', messages.warning);
+            showFlashAlert('warning', messages.warning);
         }
 
         if (messages.info) {
-            showAlert('info', messages.info);
+            showFlashAlert('info', messages.info);
         }
 
         if (messages.status) {
-            showAlert('info', messages.status);
+            showFlashAlert('info', messages.status);
         }
     },
     {
@@ -114,31 +100,69 @@ watch(
     },
 );
 
-/**
- * Escucha errores de validación.
- *
- * Esto permite mostrar errores como:
- * - No puedes cerrar porque el periodo todavía no terminó.
- * - No puedes cerrar porque existen días sin marcar.
- */
 watch(
     () => errors.value,
     (validationErrors) => {
         if (!validationErrors || Object.keys(validationErrors).length === 0) {
+            visibleErrorMessages.value = [];
             return;
         }
 
-        const firstError = Object.values(validationErrors)[0];
-
-        showAlert('error', firstError);
+        visibleErrorMessages.value = normalizeMessages(validationErrors);
     },
     {
         deep: true,
         immediate: true,
     },
 );
+
+const dismissErrors = () => {
+    visibleErrorMessages.value = [];
+};
 </script>
 
 <template>
-    <div class="hidden"></div>
+    <Teleport to="body">
+        <div
+            v-if="visibleErrorMessages.length"
+            class="fixed inset-x-0 top-4 z-[80] mx-auto w-[calc(100%-2rem)] max-w-3xl px-0 sm:top-6"
+            role="alert"
+            aria-live="assertive"
+        >
+            <div class="rounded-t border border-red-600 bg-red-600 px-4 py-2 text-white shadow-lg">
+                <div class="flex items-center justify-between gap-3">
+                    <p class="text-sm font-bold">
+                        No pudimos completar la accion
+                    </p>
+
+                    <button
+                        type="button"
+                        class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded text-white transition hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-white/80"
+                        title="Cerrar alerta"
+                        aria-label="Cerrar alerta"
+                        @click="dismissErrors"
+                    >
+                        <X class="h-4 w-4" aria-hidden="true" />
+                    </button>
+                </div>
+            </div>
+
+            <div class="rounded-b border border-t-0 border-red-400 bg-red-50 px-4 py-3 text-red-800 shadow-lg">
+                <p
+                    v-for="message in visibleErrorMessages.slice(0, 3)"
+                    :key="message"
+                    class="text-sm font-semibold leading-relaxed"
+                >
+                    {{ message }}
+                </p>
+
+                <p
+                    v-if="visibleErrorMessages.length > 3"
+                    class="mt-2 text-xs font-semibold text-red-700"
+                >
+                    Hay {{ visibleErrorMessages.length - 3 }} error(es) adicional(es). Revisa los campos marcados en el formulario.
+                </p>
+            </div>
+        </div>
+    </Teleport>
 </template>

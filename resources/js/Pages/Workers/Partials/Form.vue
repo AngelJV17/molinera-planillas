@@ -42,6 +42,32 @@ const showCuspp = computed(() => {
     return selectedPensionSystem.value?.code?.startsWith('AFP');
 });
 
+const addBankAccount = () => {
+    props.form.bank_accounts.push({
+        bank_id: '',
+        account_type_id: '',
+        account_number: '',
+        cci: '',
+        is_primary: props.form.bank_accounts.length === 0,
+        status: true,
+    });
+};
+
+const removeBankAccount = (index) => {
+    props.form.bank_accounts.splice(index, 1);
+
+    if (props.form.bank_accounts.length && !props.form.bank_accounts.some((account) => account.is_primary)) {
+        props.form.bank_accounts[0].is_primary = true;
+    }
+};
+
+const markPrimaryBankAccount = (index) => {
+    props.form.bank_accounts = props.form.bank_accounts.map((account, accountIndex) => ({
+        ...account,
+        is_primary: accountIndex === index,
+    }));
+};
+
 watch(selectedDepartmentId, () => {
     selectedProvinceId.value = '';
     props.form.district_id = '';
@@ -309,6 +335,109 @@ watch(
                         </span>
                     </label>
                 </div>
+            </div>
+        </SectionCard>
+
+        <SectionCard title="Cuentas bancarias" description="Registra las cuentas usadas para pagos de planilla.">
+            <div class="space-y-4">
+                <div
+                    v-for="(account, index) in form.bank_accounts"
+                    :key="index"
+                    class="rounded-2xl border border-slate-200 bg-slate-50 p-4"
+                >
+                    <div class="grid gap-4 md:grid-cols-2">
+                        <div>
+                            <InputLabel :for="`bank_id_${index}`" value="Banco" />
+                            <select
+                                :id="`bank_id_${index}`"
+                                v-model="account.bank_id"
+                                class="mt-1 block w-full rounded-xl border-gray-300 text-sm shadow-sm focus:border-primary focus:ring-primary"
+                            >
+                                <option value="">Seleccionar</option>
+                                <option v-for="bank in options.banks" :key="bank.id" :value="bank.id">
+                                    {{ bank.name }}
+                                </option>
+                            </select>
+                            <InputError class="mt-2" :message="form.errors[`bank_accounts.${index}.bank_id`]" />
+                        </div>
+
+                        <div>
+                            <InputLabel :for="`account_type_id_${index}`" value="Tipo de cuenta" />
+                            <select
+                                :id="`account_type_id_${index}`"
+                                v-model="account.account_type_id"
+                                class="mt-1 block w-full rounded-xl border-gray-300 text-sm shadow-sm focus:border-primary focus:ring-primary"
+                            >
+                                <option value="">Seleccionar</option>
+                                <option v-for="item in catalogOptions('ACCOUNT_TYPE')" :key="item.id" :value="item.id">
+                                    {{ item.name }}
+                                </option>
+                            </select>
+                            <InputError class="mt-2" :message="form.errors[`bank_accounts.${index}.account_type_id`]" />
+                        </div>
+
+                        <div>
+                            <InputLabel :for="`account_number_${index}`" value="Numero de cuenta" />
+                            <TextInput
+                                :id="`account_number_${index}`"
+                                v-model="account.account_number"
+                                class="mt-1 block w-full"
+                                placeholder="Numero de cuenta"
+                            />
+                            <InputError class="mt-2" :message="form.errors[`bank_accounts.${index}.account_number`]" />
+                        </div>
+
+                        <div>
+                            <InputLabel :for="`cci_${index}`" value="CCI" />
+                            <TextInput
+                                :id="`cci_${index}`"
+                                v-model="account.cci"
+                                class="mt-1 block w-full"
+                                placeholder="Codigo de cuenta interbancaria"
+                            />
+                            <InputError class="mt-2" :message="form.errors[`bank_accounts.${index}.cci`]" />
+                        </div>
+                    </div>
+
+                    <div class="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                        <div class="flex flex-wrap gap-3">
+                            <label class="inline-flex items-center gap-2 text-sm font-semibold text-gray-700">
+                                <input
+                                    type="radio"
+                                    class="border-slate-300 text-primary focus:ring-primary"
+                                    :checked="account.is_primary"
+                                    @change="markPrimaryBankAccount(index)"
+                                >
+                                Cuenta principal
+                            </label>
+
+                            <label class="inline-flex items-center gap-2 text-sm font-semibold text-gray-700">
+                                <input
+                                    v-model="account.status"
+                                    type="checkbox"
+                                    class="rounded border-slate-300 text-primary focus:ring-primary"
+                                >
+                                Activa
+                            </label>
+                        </div>
+
+                        <button
+                            type="button"
+                            class="text-sm font-bold text-danger hover:text-red-700"
+                            @click="removeBankAccount(index)"
+                        >
+                            Quitar cuenta
+                        </button>
+                    </div>
+                </div>
+
+                <button
+                    type="button"
+                    class="inline-flex items-center justify-center rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-bold text-gray-700 shadow-sm transition hover:bg-slate-50"
+                    @click="addBankAccount"
+                >
+                    Agregar cuenta bancaria
+                </button>
             </div>
         </SectionCard>
 

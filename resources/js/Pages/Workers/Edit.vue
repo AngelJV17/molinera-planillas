@@ -53,6 +53,14 @@ const form = useForm({
     cuspp: props.worker.cuspp ?? '',
     status: props.worker.status,
     has_system_access: !!props.worker.user_id,
+    bank_accounts: (props.worker.bank_accounts ?? []).map((account) => ({
+        bank_id: account.bank_id ?? '',
+        account_type_id: account.account_type_id ?? '',
+        account_number: account.account_number ?? '',
+        cci: account.cci ?? '',
+        is_primary: Boolean(account.is_primary),
+        status: Boolean(account.status),
+    })),
 });
 
 const submit = () => {

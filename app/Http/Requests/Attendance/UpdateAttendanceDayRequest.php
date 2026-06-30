@@ -95,7 +95,7 @@ class UpdateAttendanceDayRequest extends FormRequest
             if ($attendanceDay->attendance_date->startOfDay()->greaterThan(now()->startOfDay())) {
                 $validator->errors()->add(
                     'status_id',
-                    'No puedes registrar asistencia de días futuros.'
+                    'Todavia no puedes registrar asistencia para una fecha futura. Selecciona una fecha de hoy o anterior. [ATT-005]'
                 );
 
                 return;
@@ -123,14 +123,14 @@ class UpdateAttendanceDayRequest extends FormRequest
             if (! $this->filled('entry_time')) {
                 $validator->errors()->add(
                     'entry_time',
-                    'La hora de ingreso es obligatoria cuando el día se marca como asistido o trabajado como canje.'
+                    'Ingresa la hora de entrada cuando el dia se marca como asistido o trabajado como canje. [ATT-012]'
                 );
             }
 
             if (! $this->filled('exit_time')) {
                 $validator->errors()->add(
                     'exit_time',
-                    'La hora de salida es obligatoria cuando el día se marca como asistido o trabajado como canje.'
+                    'Ingresa la hora de salida cuando el dia se marca como asistido o trabajado como canje. [ATT-012]'
                 );
             }
         });

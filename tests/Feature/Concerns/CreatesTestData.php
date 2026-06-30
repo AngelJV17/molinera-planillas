@@ -5,6 +5,7 @@ namespace Tests\Feature\Concerns;
 use App\Models\Bank;
 use App\Models\Catalog;
 use App\Models\Employee;
+use App\Models\PayrollParameter;
 use App\Models\WorkShift;
 use Carbon\Carbon;
 use Spatie\Permission\Models\Permission;
@@ -95,6 +96,36 @@ trait CreatesTestData
             'exchange_worked' => $this->catalog('ATTENDANCE_DAY_STATUS', 'EXCHANGE_WORKED', ['name' => 'Canje trabajado']),
             'exchange_applied' => $this->catalog('ATTENDANCE_EXCHANGE_STATUS', 'APPLIED', ['name' => 'Aplicado']),
         ];
+    }
+
+    protected function payrollCatalogs(): array
+    {
+        return [
+            'in_review' => $this->catalog('PAYROLL_STATUS', 'IN_REVIEW', ['name' => 'En revision']),
+            'approved' => $this->catalog('PAYROLL_STATUS', 'APPROVED', ['name' => 'Aprobada']),
+            'rejected' => $this->catalog('PAYROLL_STATUS', 'REJECTED', ['name' => 'Rechazada']),
+            'paid' => $this->catalog('PAYROLL_STATUS', 'PAID', ['name' => 'Pagada']),
+            'income' => $this->catalog('PAYMENT_CONCEPT_TYPE', 'INCOME', ['name' => 'Ingreso']),
+            'discount' => $this->catalog('PAYMENT_CONCEPT_TYPE', 'DISCOUNT', ['name' => 'Descuento']),
+            'contribution' => $this->catalog('PAYMENT_CONCEPT_TYPE', 'EMPLOYER_CONTRIBUTION', ['name' => 'Aporte empleador']),
+        ];
+    }
+
+    protected function payrollParameters(): void
+    {
+        foreach ([
+            'ONP_RATE' => 0.13,
+            'AFP_RATE' => 0.13,
+            'ESSALUD_RATE' => 0.09,
+            'OVERTIME_RATE' => 1.25,
+        ] as $code => $value) {
+            PayrollParameter::create([
+                'code' => $code,
+                'name' => $code,
+                'value' => $value,
+                'status' => true,
+            ]);
+        }
     }
 
     protected function currentPeriodPayload(array $overrides = []): array

@@ -174,6 +174,14 @@ class Employee extends Model
     }
 
     /**
+     * Detalles de planilla calculados para el trabajador.
+     */
+    public function payrollDetails(): HasMany
+    {
+        return $this->hasMany(PayrollDetail::class);
+    }
+
+    /**
      * Canjes de asistencia registrados para el trabajador.
      */
     public function attendanceExchanges(): HasMany
