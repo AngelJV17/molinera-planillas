@@ -7,6 +7,16 @@ import PageHeader from '@/Components/Common/PageHeader.vue';
 import SectionCard from '@/Components/Common/SectionCard.vue';
 import Form from './Partials/Form.vue';
 
+const defaultDailyRules = () => [
+    { day_of_week: 1, label: 'Lunes', is_working_day: true, start_time: '08:00', break_start_time: '12:00', break_end_time: '13:00', end_time: '17:00', tolerance_minutes: 10, expected_hours: 8, crosses_midnight: false, counts_as_full_day: true, overtime_pay_enabled: true, overtime_after_hours: '' },
+    { day_of_week: 2, label: 'Martes', is_working_day: true, start_time: '08:00', break_start_time: '12:00', break_end_time: '13:00', end_time: '17:00', tolerance_minutes: 10, expected_hours: 8, crosses_midnight: false, counts_as_full_day: true, overtime_pay_enabled: true, overtime_after_hours: '' },
+    { day_of_week: 3, label: 'Miercoles', is_working_day: true, start_time: '08:00', break_start_time: '12:00', break_end_time: '13:00', end_time: '17:00', tolerance_minutes: 10, expected_hours: 8, crosses_midnight: false, counts_as_full_day: true, overtime_pay_enabled: true, overtime_after_hours: '' },
+    { day_of_week: 4, label: 'Jueves', is_working_day: true, start_time: '08:00', break_start_time: '12:00', break_end_time: '13:00', end_time: '17:00', tolerance_minutes: 10, expected_hours: 8, crosses_midnight: false, counts_as_full_day: true, overtime_pay_enabled: true, overtime_after_hours: '' },
+    { day_of_week: 5, label: 'Viernes', is_working_day: true, start_time: '08:00', break_start_time: '12:00', break_end_time: '13:00', end_time: '17:00', tolerance_minutes: 10, expected_hours: 8, crosses_midnight: false, counts_as_full_day: true, overtime_pay_enabled: true, overtime_after_hours: '' },
+    { day_of_week: 6, label: 'Sabado', is_working_day: true, start_time: '08:00', break_start_time: '', break_end_time: '', end_time: '12:00', tolerance_minutes: 10, expected_hours: 4, crosses_midnight: false, counts_as_full_day: true, overtime_pay_enabled: false, overtime_after_hours: '' },
+    { day_of_week: 7, label: 'Domingo', is_working_day: false, start_time: '08:00', break_start_time: '', break_end_time: '', end_time: '12:00', tolerance_minutes: 10, expected_hours: 0, crosses_midnight: false, counts_as_full_day: false, overtime_pay_enabled: false, overtime_after_hours: '' },
+];
+
 const form = useForm({
     name: '',
     description: '',
@@ -16,8 +26,14 @@ const form = useForm({
     end_time: '18:00',
     tolerance_minutes: 10,
     daily_hours: 8,
+    uses_daily_rules: true,
     crosses_midnight: false,
+    rotation_enabled: false,
+    rotation_work_days: 6,
+    rotation_rest_days: 1,
+    rotation_start_date: '',
     status: true,
+    daily_rules: defaultDailyRules(),
 });
 
 const submit = () => {

@@ -33,6 +33,7 @@ class AttendanceDay extends Model
         'exit_time',
         'worked_hours',
         'overtime_hours',
+        'payable_overtime_hours',
         'observation',
     ];
 
@@ -43,6 +44,7 @@ class AttendanceDay extends Model
         'attendance_date' => 'date',
         'worked_hours'    => 'decimal:2',
         'overtime_hours'  => 'decimal:2',
+        'payable_overtime_hours' => 'decimal:2',
     ];
 
     /**

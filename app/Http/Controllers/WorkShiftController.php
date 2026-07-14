@@ -64,6 +64,8 @@ class WorkShiftController extends Controller
      */
     public function edit(WorkShift $workShift): Response
     {
+        $workShift->load('rules');
+
         return Inertia::render('WorkShifts/Edit', [
             'workShift' => $workShift,
         ]);

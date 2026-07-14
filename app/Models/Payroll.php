@@ -11,6 +11,7 @@ class Payroll extends Model
 {
     public const CATALOG_TYPE_STATUS = 'PAYROLL_STATUS';
     public const STATUS_IN_REVIEW = 'IN_REVIEW';
+    public const STATUS_OBSERVED = 'OBSERVED';
     public const STATUS_APPROVED = 'APPROVED';
     public const STATUS_REJECTED = 'REJECTED';
     public const STATUS_PAID = 'PAID';
@@ -91,6 +92,16 @@ class Payroll extends Model
     public function isApproved(): bool
     {
         return $this->status?->code === self::STATUS_APPROVED;
+    }
+
+    public function isObserved(): bool
+    {
+        return $this->status?->code === self::STATUS_OBSERVED;
+    }
+
+    public function isRejected(): bool
+    {
+        return $this->status?->code === self::STATUS_REJECTED;
     }
 
     public function isPaid(): bool

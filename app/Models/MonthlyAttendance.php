@@ -37,6 +37,7 @@ class MonthlyAttendance extends Model
         'exchange_days',
         'rest_days',
         'overtime_hours',
+        'payable_overtime_hours',
         'observations',
         'created_by',
         'closed_by',
@@ -58,6 +59,7 @@ class MonthlyAttendance extends Model
             'exchange_days'              => 'integer',
             'rest_days'                  => 'integer',
             'overtime_hours'             => 'decimal:2',
+            'payable_overtime_hours'     => 'decimal:2',
             'closed_at'                  => 'datetime',
         ];
     }

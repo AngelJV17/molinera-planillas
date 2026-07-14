@@ -65,9 +65,11 @@ class AttendanceController extends Controller
                     'exchange_days'              => $attendance->exchange_days,
                     'rest_days'                  => $attendance->rest_days,
                     'overtime_hours'             => $attendance->overtime_hours,
+                    'payable_overtime_hours'     => $attendance->payable_overtime_hours,
                     'observations'               => $attendance->observations,
                     'is_editable'                => $attendance->isEditable(),
                     'is_closed'                  => $attendance->isClosed(),
+                    'can_reopen'                 => $this->canReopenAttendance($attendance),
                 ];
             });
 
@@ -108,7 +110,11 @@ class AttendanceController extends Controller
     public function edit(MonthlyAttendance $monthlyAttendance): Response
     {
         $monthlyAttendance->load([
-            'employee.workShift',
+            'employee.workShift.rules',
+            'employee.position',
+            'employee.workArea',
+            'employee.employmentStatus',
+            'employee.pensionSystem',
             'status',
             'days.status',
             'days.workShift',
@@ -126,6 +132,10 @@ class AttendanceController extends Controller
                     'name'       => $this->service->employeeDisplayName($monthlyAttendance->employee),
                     'code'       => $this->service->employeeCode($monthlyAttendance->employee),
                     'document'   => $this->service->employeeDocument($monthlyAttendance->employee),
+                    'position'   => $monthlyAttendance->employee?->position?->name ?? 'Sin cargo',
+                    'work_area'  => $monthlyAttendance->employee?->workArea?->name ?? 'Sin area',
+                    'employment_status' => $monthlyAttendance->employee?->employmentStatus?->name ?? 'Sin estado laboral',
+                    'pension_system' => $monthlyAttendance->employee?->pensionSystem?->name ?? 'Sin regimen',
 
                     'work_shift' => $monthlyAttendance->employee?->workShift
                         ? [
@@ -134,6 +144,9 @@ class AttendanceController extends Controller
                         'start_time'  => optional($monthlyAttendance->employee->workShift->start_time)->format('H:i'),
                         'end_time'    => optional($monthlyAttendance->employee->workShift->end_time)->format('H:i'),
                         'daily_hours' => $monthlyAttendance->employee->workShift->daily_hours,
+                        'rotation_enabled' => $monthlyAttendance->employee->workShift->rotation_enabled,
+                        'rotation_work_days' => $monthlyAttendance->employee->workShift->rotation_work_days,
+                        'rotation_rest_days' => $monthlyAttendance->employee->workShift->rotation_rest_days,
                     ]
                         : null,
                 ],
@@ -148,9 +161,13 @@ class AttendanceController extends Controller
                 'year'           => $monthlyAttendance->year,
                 'worked_days'    => $monthlyAttendance->worked_days,
                 'absence_days'   => $monthlyAttendance->absence_days,
+                'compensated_absence_days' => $monthlyAttendance->compensated_absence_days,
+                'uncompensated_absence_days' => $monthlyAttendance->uncompensated_absence_days,
                 'exchange_days'  => $monthlyAttendance->exchange_days,
                 'rest_days'      => $monthlyAttendance->rest_days,
                 'overtime_hours' => $monthlyAttendance->overtime_hours,
+                'payable_overtime_hours' => $monthlyAttendance->payable_overtime_hours,
+                'can_reopen'     => $this->canReopenAttendance($monthlyAttendance),
 
                 'days'           => $monthlyAttendance->days
                     ->sortBy('attendance_date')
@@ -179,6 +196,7 @@ class AttendanceController extends Controller
                             'exit_time'        => $day->exit_time,
                             'worked_hours'     => $day->worked_hours,
                             'overtime_hours'   => $day->overtime_hours,
+                            'payable_overtime_hours' => $day->payable_overtime_hours,
                             'observation'      => $day->observation,
 
                             'absence_exchange' => $day->absenceExchange,
@@ -231,5 +249,25 @@ class AttendanceController extends Controller
         );
 
         return back()->with('success', 'Asistencia mensual cerrada correctamente.');
+    }
+
+    public function reopen(MonthlyAttendance $monthlyAttendance): RedirectResponse
+    {
+        $this->service->reopen($monthlyAttendance);
+
+        return back()->with('success', 'Asistencia mensual reabierta correctamente. Realiza las correcciones y vuelve a cerrarla.');
+    }
+
+    private function canReopenAttendance(MonthlyAttendance $attendance): bool
+    {
+        $attendance->loadMissing(['status', 'payrollDetail.payroll.status']);
+
+        if (! $attendance->isClosed()) {
+            return false;
+        }
+
+        $payroll = $attendance->payrollDetail?->payroll;
+
+        return ! $payroll || $payroll->isObserved() || $payroll->isRejected();
     }
 }

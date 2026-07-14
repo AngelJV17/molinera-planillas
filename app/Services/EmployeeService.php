@@ -107,6 +107,7 @@ class EmployeeService
                     ),
 
                     'status'   => true,
+                    'must_change_password' => true,
                 ]);
 
                 $employeeData['user_id'] = $user->id;
@@ -151,6 +152,7 @@ class EmployeeService
                     ),
 
                     'status'   => true,
+                    'must_change_password' => true,
                 ]);
 
                 $employeeData['user_id'] = $user->id;

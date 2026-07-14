@@ -100,12 +100,87 @@ class PayrollService
      */
     public function reject(Payroll $payroll, ?int $userId = null, ?string $reason = null): Payroll
     {
+        if (! $reason) {
+            throw ValidationException::withMessages([
+                'reason' => 'Ingresa el motivo del rechazo para dejar trazabilidad de la decision. [PAY-007]',
+            ]);
+        }
+
         return $this->transitionFromReview(
             payroll: $payroll,
             statusCode: Payroll::STATUS_REJECTED,
             userId: $userId,
             extra: ['rejection_reason' => $reason]
         );
+    }
+
+    public function observe(Payroll $payroll, ?int $userId = null, ?string $reason = null): Payroll
+    {
+        if (! $reason) {
+            throw ValidationException::withMessages([
+                'reason' => 'Ingresa la observacion que debe corregirse antes de aprobar la planilla. [PAY-008]',
+            ]);
+        }
+
+        return $this->transitionFromReview(
+            payroll: $payroll,
+            statusCode: Payroll::STATUS_OBSERVED,
+            userId: $userId,
+            extra: ['rejection_reason' => $reason]
+        );
+    }
+
+    public function recalculate(Payroll $payroll, ?int $userId = null): Payroll
+    {
+        return DB::transaction(function () use ($payroll, $userId) {
+            $payroll->loadMissing('status');
+
+            if (! $payroll->isObserved() && ! $payroll->isRejected()) {
+                throw ValidationException::withMessages([
+                    'payroll' => 'Solo puedes recalcular planillas observadas o rechazadas. [PAY-009]',
+                ]);
+            }
+
+            $attendances = MonthlyAttendance::query()
+                ->with(['employee.pensionSystem', 'status'])
+                ->where('month', $payroll->month)
+                ->where('year', $payroll->year)
+                ->whereHas('status', fn(Builder $query) => $query->where('code', MonthlyAttendance::STATUS_CLOSED))
+                ->orderBy('employee_id')
+                ->get();
+
+            if ($attendances->isEmpty()) {
+                throw ValidationException::withMessages([
+                    'payroll' => 'No hay asistencias cerradas para recalcular esta planilla. Cierra las asistencias corregidas y vuelve a intentarlo. [PAY-010]',
+                ]);
+            }
+
+            $parameters = $this->activeParameters();
+            $this->ensureRequiredParameters($parameters, $attendances);
+
+            $payroll->details()->each(function (PayrollDetail $detail) {
+                $detail->concepts()->delete();
+                $detail->delete();
+            });
+
+            $payroll->update([
+                'status_id' => $this->catalogId(Payroll::CATALOG_TYPE_STATUS, Payroll::STATUS_IN_REVIEW),
+                'rejection_reason' => null,
+                'reviewed_by' => null,
+                'reviewed_at' => null,
+                'paid_by' => null,
+                'paid_at' => null,
+                'generated_by' => $userId ?? $payroll->generated_by,
+            ]);
+
+            foreach ($attendances as $attendance) {
+                $this->createPayrollDetail($payroll, $attendance, $parameters);
+            }
+
+            $this->recalculateTotals($payroll);
+
+            return $payroll->refresh()->load(['status', 'details.concepts.conceptType']);
+        });
     }
 
     /**
@@ -199,7 +274,8 @@ class PayrollService
 
         $dailyRate = round($baseSalary / 30, 2);
         $hourlyRate = round($dailyRate / 8, 2);
-        $overtimeIncome = round($hourlyRate * (float) $attendance->overtime_hours * ($parameters['OVERTIME_RATE'] ?? 0), 2);
+        $payableOvertimeHours = (float) ($attendance->payable_overtime_hours ?? $attendance->overtime_hours);
+        $overtimeIncome = round($hourlyRate * $payableOvertimeHours * ($parameters['OVERTIME_RATE'] ?? 0), 2);
         $absenceDiscount = round($dailyRate * (int) $attendance->uncompensated_absence_days, 2);
         $pensionRate = $this->pensionRate($employee->pensionSystem?->code, $parameters);
         $pensionDiscount = round(($baseSalary + $overtimeIncome) * $pensionRate, 2);
@@ -222,7 +298,7 @@ class PayrollService
             'absence_days' => $attendance->absence_days,
             'uncompensated_absence_days' => $attendance->uncompensated_absence_days,
             'rest_days' => $attendance->rest_days,
-            'overtime_hours' => $attendance->overtime_hours,
+            'overtime_hours' => $payableOvertimeHours,
             'daily_rate' => $dailyRate,
             'hourly_rate' => $hourlyRate,
             'total_income' => $totalIncome,
@@ -239,7 +315,7 @@ class PayrollService
             pensionDiscount: $pensionDiscount,
             employerContribution: $employerContribution,
             pensionRate: $pensionRate,
-            overtimeHours: (float) $attendance->overtime_hours,
+            overtimeHours: $payableOvertimeHours,
             uncompensatedAbsences: (int) $attendance->uncompensated_absence_days
         );
     }
@@ -358,7 +434,7 @@ class PayrollService
             $required->push('AFP_RATE');
         }
 
-        if ($attendances->contains(fn(MonthlyAttendance $attendance) => (float) $attendance->overtime_hours > 0)) {
+        if ($attendances->contains(fn(MonthlyAttendance $attendance) => (float) ($attendance->payable_overtime_hours ?? $attendance->overtime_hours) > 0)) {
             $required->push('OVERTIME_RATE');
         }
 

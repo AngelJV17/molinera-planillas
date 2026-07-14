@@ -4,6 +4,7 @@ namespace App\Http\Requests\Employee;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Validator;
 
 class UpdateEmployeeRequest extends FormRequest
 {
@@ -99,6 +100,38 @@ class UpdateEmployeeRequest extends FormRequest
             'bank_accounts.*.is_primary' => ['nullable', 'boolean'],
             'bank_accounts.*.status' => ['nullable', 'boolean'],
         ];
+    }
+
+    public function withValidator(Validator $validator): void
+    {
+        $validator->after(function (Validator $validator) {
+            if (! $this->boolean('has_system_access')) {
+                return;
+            }
+
+            $worker = $this->route('worker');
+            $userId = $worker?->user_id;
+
+            if ($this->filled('document_number') && \App\Models\User::query()
+                ->where('username', $this->input('document_number'))
+                ->when($userId, fn($query) => $query->where('id', '!=', $userId))
+                ->exists()) {
+                $validator->errors()->add(
+                    'document_number',
+                    'Ya existe un usuario con este documento como nombre de acceso. Usa otro documento o revisa el usuario existente. [USR-010]'
+                );
+            }
+
+            if ($this->filled('email') && \App\Models\User::query()
+                ->where('email', $this->input('email'))
+                ->when($userId, fn($query) => $query->where('id', '!=', $userId))
+                ->exists()) {
+                $validator->errors()->add(
+                    'email',
+                    'Ya existe un usuario con este correo. Usa otro correo o revisa el usuario existente. [USR-011]'
+                );
+            }
+        });
     }
 
     public function messages(): array

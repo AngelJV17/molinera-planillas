@@ -7,6 +7,8 @@ use App\Models\Payroll;
 use App\Models\PayrollParameter;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use PhpOffice\PhpSpreadsheet\IOFactory;
+use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 use Tests\Feature\Concerns\CreatesTestData;
 use Tests\TestCase;
 
@@ -38,6 +40,7 @@ class PayrollModuleTest extends TestCase
             'uncompensated_absence_days' => 2,
             'rest_days' => 4,
             'overtime_hours' => 4,
+            'payable_overtime_hours' => 4,
             'closed_at' => now(),
         ]);
 
@@ -232,6 +235,128 @@ class PayrollModuleTest extends TestCase
         $this->assertSame($user->id, $payroll->paid_by);
     }
 
+    public function test_reports_and_payment_slips_can_be_exported_as_excel_and_pdf(): void
+    {
+        $user = User::factory()->create();
+        $payroll = $this->generatedPayrollForPeriod($user, 5, 2026);
+
+        $this->actingAs($user)
+            ->patch(route('payrolls.approve', $payroll))
+            ->assertSessionHasNoErrors();
+
+        $detail = $payroll->details()->firstOrFail();
+
+        $reportExcel = $this->actingAs($user)->get(route('reports.export', [
+            'type' => 'payroll_summary',
+            'format' => 'xlsx',
+            'period' => '2026-05',
+        ]));
+
+        $reportExcel
+            ->assertOk()
+            ->assertHeader('content-type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        $this->assertStringStartsWith('PK', $reportExcel->streamedContent());
+
+        $reportPdf = $this->actingAs($user)->get(route('reports.export', [
+            'type' => 'payroll_summary',
+            'format' => 'pdf',
+            'period' => '2026-05',
+        ]));
+
+        $reportPdf->assertOk();
+        $this->assertStringStartsWith('%PDF', $reportPdf->getContent());
+
+        $slipExcel = $this->actingAs($user)->get(route('payment-slips.excel', $detail));
+
+        $slipExcel
+            ->assertOk()
+            ->assertHeader('content-type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        $this->assertStringStartsWith('PK', $slipExcel->streamedContent());
+
+        $slipPdf = $this->actingAs($user)->get(route('payment-slips.pdf', $detail));
+
+        $slipPdf->assertOk();
+        $this->assertStringStartsWith('%PDF', $slipPdf->getContent());
+    }
+
+    public function test_report_excel_contains_expected_headers_and_rows(): void
+    {
+        $user = User::factory()->create();
+        $payroll = $this->generatedPayrollForPeriod($user, 5, 2026);
+
+        $response = $this->actingAs($user)->get(route('reports.export', [
+            'type' => 'attendance_summary',
+            'format' => 'xlsx',
+            'period' => '2026-05',
+        ]));
+
+        $response->assertOk();
+
+        $sheet = $this->sheetFromStreamedExcel($response->streamedContent());
+
+        $this->assertSame('Resumen de asistencias', $sheet->getCell('A1')->getValue());
+        $this->assertSame('Trabajador', $sheet->getCell('A4')->getValue());
+        $this->assertSame('Horas extra registradas', $sheet->getCell('J4')->getValue());
+        $this->assertSame('Horas extra remunerables', $sheet->getCell('K4')->getValue());
+        $this->assertSame($payroll->details()->firstOrFail()->employee_name, $sheet->getCell('A5')->getValue());
+    }
+
+    public function test_payment_slip_excel_contains_worker_concepts_and_totals(): void
+    {
+        $user = User::factory()->create();
+        $payroll = $this->generatedPayrollForPeriod($user, 5, 2026);
+
+        $this->actingAs($user)
+            ->patch(route('payrolls.approve', $payroll))
+            ->assertSessionHasNoErrors();
+
+        $detail = $payroll->details()->firstOrFail();
+
+        $response = $this->actingAs($user)->get(route('payment-slips.excel', $detail));
+
+        $response->assertOk();
+
+        $sheet = $this->sheetFromStreamedExcel($response->streamedContent());
+
+        $this->assertSame('Boleta de pago', $sheet->getCell('A1')->getValue());
+        $this->assertSame('Trabajador', $sheet->getCell('A4')->getValue());
+        $this->assertSame($detail->employee_name, $sheet->getCell('B4')->getValue());
+        $this->assertSame('Concepto', $sheet->getCell('A9')->getValue());
+        $this->assertSame('Sueldo basico', $sheet->getCell('A10')->getValue());
+        $netRow = $this->findRowByCellValue($sheet, 'D', 'Neto a pagar');
+
+        $this->assertNotNull($netRow);
+        $this->assertEquals((float) $detail->net_pay, (float) $sheet->getCell("E{$netRow}")->getValue());
+    }
+
+    public function test_unapproved_payment_slips_cannot_be_downloaded(): void
+    {
+        $user = User::factory()->create();
+        $payroll = $this->generatedPayrollForPeriod($user, 5, 2026);
+        $detail = $payroll->details()->firstOrFail();
+
+        $this->actingAs($user)
+            ->get(route('payment-slips.pdf', $detail))
+            ->assertNotFound();
+
+        $this->actingAs($user)
+            ->get(route('payment-slips.excel', $detail))
+            ->assertNotFound();
+    }
+
+    public function test_report_export_validates_type_format_and_period(): void
+    {
+        $user = User::factory()->create();
+
+        $this->actingAs($user)
+            ->get(route('reports.export', [
+                'type' => 'invalid',
+                'format' => 'docx',
+                'period' => '2026/05',
+            ]))
+            ->assertSessionHasErrors(['type', 'format', 'period']);
+    }
+
     public function test_payroll_can_not_be_paid_before_approval(): void
     {
         $user = User::factory()->create();
@@ -240,6 +365,45 @@ class PayrollModuleTest extends TestCase
         $this->actingAs($user)
             ->patch(route('payrolls.pay', $payroll))
             ->assertSessionHasErrors('payroll');
+    }
+
+    public function test_payroll_can_be_observed_reopened_and_recalculated(): void
+    {
+        $user = User::factory()->create();
+        $payroll = $this->generatedPayrollForPeriod($user, 5, 2026);
+        $attendance = MonthlyAttendance::firstOrFail();
+
+        $this->actingAs($user)
+            ->patch(route('attendance.reopen', $attendance))
+            ->assertSessionHasErrors('attendance');
+
+        $this->actingAs($user)
+            ->patch(route('payrolls.observe', $payroll), [
+                'reason' => 'Revisar faltas antes de aprobar.',
+            ])
+            ->assertSessionHasNoErrors();
+
+        $payroll->refresh();
+        $this->assertSame('OBSERVED', $payroll->status->code);
+        $this->assertSame('Revisar faltas antes de aprobar.', $payroll->rejection_reason);
+
+        $this->actingAs($user)
+            ->patch(route('attendance.reopen', $attendance))
+            ->assertSessionHasNoErrors();
+
+        $this->assertTrue($attendance->refresh()->isEditable());
+
+        $this->actingAs($user)
+            ->patch(route('attendance.close', $attendance))
+            ->assertSessionHasNoErrors();
+
+        $this->actingAs($user)
+            ->patch(route('payrolls.recalculate', $payroll))
+            ->assertSessionHasNoErrors();
+
+        $payroll->refresh();
+        $this->assertSame('IN_REVIEW', $payroll->status->code);
+        $this->assertNull($payroll->rejection_reason);
     }
 
     private function generatedPayrollForPeriod(User $user, int $month, int $year): Payroll
@@ -269,5 +433,27 @@ class PayrollModuleTest extends TestCase
             ->assertSessionHasNoErrors();
 
         return Payroll::firstOrFail();
+    }
+
+    private function sheetFromStreamedExcel(string $content): Worksheet
+    {
+        $path = tempnam(sys_get_temp_dir(), 'xlsx-test-');
+        file_put_contents($path, $content);
+
+        $spreadsheet = IOFactory::load($path);
+        @unlink($path);
+
+        return $spreadsheet->getActiveSheet();
+    }
+
+    private function findRowByCellValue(Worksheet $sheet, string $column, string $value): ?int
+    {
+        for ($row = 1; $row <= 100; $row++) {
+            if ($sheet->getCell("{$column}{$row}")->getValue() === $value) {
+                return $row;
+            }
+        }
+
+        return null;
     }
 }

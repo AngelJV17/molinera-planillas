@@ -3,6 +3,7 @@ namespace Database\Seeders;
 
 use App\Models\User;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Hash;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\PermissionRegistrar;
@@ -49,13 +50,19 @@ class RolePermissionSeeder extends Seeder
             'attendance.create',
             'attendance.edit',
             'attendance.close',
+            'attendance.reopen',
+
+            // Canjes de asistencia
+            'attendance-exchanges.view',
 
             // Planillas
             'payrolls.view',
             'payrolls.create',
             'payrolls.review',
             'payrolls.approve',
+            'payrolls.observe',
             'payrolls.reject',
+            'payrolls.recalculate',
             'payrolls.pay',
 
             'payroll-parameters.view',
@@ -151,10 +158,18 @@ class RolePermissionSeeder extends Seeder
             'attendance.create',
             'attendance.edit',
             'attendance.close',
+            'attendance.reopen',
+
+            'attendance-exchanges.view',
 
             'payrolls.view',
             'payrolls.create',
             'payrolls.review',
+            'payrolls.approve',
+            'payrolls.observe',
+            'payrolls.reject',
+            'payrolls.recalculate',
+            'payrolls.pay',
 
             'payroll-parameters.view',
             'payroll-parameters.create',
@@ -166,6 +181,7 @@ class RolePermissionSeeder extends Seeder
             'payment-slips.download',
 
             'reports.view',
+            'reports.export',
 
             'users.view',
             'users.create',
@@ -181,9 +197,12 @@ class RolePermissionSeeder extends Seeder
             'workers.view',
             'attendance.view',
 
+            'attendance-exchanges.view',
+
             'payrolls.view',
             'payrolls.review',
             'payrolls.approve',
+            'payrolls.observe',
             'payrolls.reject',
 
             'payroll-parameters.view',
@@ -200,8 +219,12 @@ class RolePermissionSeeder extends Seeder
             'workers.view',
             'attendance.view',
 
+            'attendance-exchanges.view',
+
             'payrolls.view',
             'payrolls.review',
+            'payrolls.observe',
+            'payrolls.recalculate',
             'payrolls.pay',
 
             'payroll-parameters.view',
@@ -226,6 +249,9 @@ class RolePermissionSeeder extends Seeder
             'attendance.view',
             'attendance.create',
             'attendance.edit',
+            'attendance.reopen',
+
+            'attendance-exchanges.view',
 
             'work-shifts.view',
 
@@ -240,14 +266,31 @@ class RolePermissionSeeder extends Seeder
         ]);
 
         /*
-         * Asignar Super Admin al primer usuario existente.
-         * Esto evita que el sistema quede sin un usuario con control total.
-         */
-        $firstUser = User::query()->orderBy('id')->first();
+        |--------------------------------------------------------------------------
+        | Usuario Super Admin principal
+        |--------------------------------------------------------------------------
+        */
+        $superAdminUser = User::updateOrCreate(
+            [
+                'email' => 'admin@molicente.com',
+            ],
+            [
+                'name'                 => 'Super Administrador',
+                'username'             => 'admin',
+                'email'                => 'admin@molicente.com',
+                'password'             => Hash::make('Admin123456*'),
+                'must_change_password' => true,
+                'email_verified_at'    => now(),
+            ]
+        );
 
-        if ($firstUser && ! $firstUser->hasRole('Super Admin')) {
-            $firstUser->assignRole('Super Admin');
-        }
+        $allPermissions = Permission::query()
+            ->where('guard_name', 'web')
+            ->get();
+
+        $superAdmin->syncPermissions($allPermissions);
+
+        $superAdminUser->syncRoles([$superAdmin]);
 
         app(PermissionRegistrar::class)->forgetCachedPermissions();
     }

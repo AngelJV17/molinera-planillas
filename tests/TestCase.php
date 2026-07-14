@@ -8,12 +8,16 @@ use Illuminate\Support\Facades\Gate;
 
 abstract class TestCase extends BaseTestCase
 {
+    protected bool $grantAllPermissions = true;
+
     protected function setUp(): void
     {
         parent::setUp();
 
-        Gate::before(function (User $user, string $ability) {
-            return true;
+        $testCase = $this;
+
+        Gate::before(function (User $user, string $ability) use ($testCase) {
+            return $testCase->grantAllPermissions ? true : null;
         });
     }
 }

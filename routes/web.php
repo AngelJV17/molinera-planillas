@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AttendanceController;
+use App\Http\Controllers\AttendanceExchangeController;
 use App\Http\Controllers\BankController;
 use App\Http\Controllers\CatalogController;
 use App\Http\Controllers\ChangeTemporaryPasswordController;
@@ -11,6 +12,7 @@ use App\Http\Controllers\PayrollController;
 use App\Http\Controllers\PayrollParameterController;
 use App\Http\Controllers\PaymentSlipController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\ReportController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\WorkShiftController;
@@ -35,7 +37,7 @@ Route::get('/', function () {
         'laravelVersion' => Application::VERSION,
         'phpVersion'     => PHP_VERSION,
     ]);
-});
+})->name('welcome');
 
 /*
 |--------------------------------------------------------------------------
@@ -251,6 +253,10 @@ Route::middleware(['auth', 'verified', 'password.changed'])->group(function () {
                 ->middleware('permission:attendance.close')
                 ->name('close');
 
+            Route::patch('{monthlyAttendance}/reopen', 'reopen')
+                ->middleware('permission:attendance.reopen')
+                ->name('reopen');
+
             Route::patch('{monthlyAttendance}/days/bulk', 'bulkUpdateDays')
                 ->middleware('permission:attendance.edit')
                 ->name('days.bulk-update');
@@ -260,6 +266,10 @@ Route::middleware(['auth', 'verified', 'password.changed'])->group(function () {
         'attendance-days/{attendanceDay}',
         [AttendanceController::class, 'updateDay']
     )->middleware('permission:attendance.edit')->name('attendance.days.update');
+
+    Route::get('attendance-exchanges', [AttendanceExchangeController::class, 'index'])
+        ->middleware('permission:attendance-exchanges.view')
+        ->name('attendance-exchanges.index');
 
     /*
     |--------------------------------------------------------------------------
@@ -278,7 +288,9 @@ Route::middleware(['auth', 'verified', 'password.changed'])->group(function () {
             Route::get('/', 'index')->middleware('permission:payrolls.view')->name('index');
             Route::post('/', 'store')->middleware('permission:payrolls.create')->name('store');
             Route::patch('{payroll}/approve', 'approve')->middleware('permission:payrolls.approve')->name('approve');
+            Route::patch('{payroll}/observe', 'observe')->middleware('permission:payrolls.observe')->name('observe');
             Route::patch('{payroll}/reject', 'reject')->middleware('permission:payrolls.reject')->name('reject');
+            Route::patch('{payroll}/recalculate', 'recalculate')->middleware('permission:payrolls.recalculate')->name('recalculate');
             Route::patch('{payroll}/pay', 'pay')->middleware('permission:payrolls.pay')->name('pay');
         });
 
@@ -304,9 +316,26 @@ Route::middleware(['auth', 'verified', 'password.changed'])->group(function () {
     |
     */
 
-    Route::get('/payment-slips', [PaymentSlipController::class, 'index'])
-        ->middleware('permission:payment-slips.view')
-        ->name('payment-slips.index');
+    Route::controller(PaymentSlipController::class)
+        ->prefix('payment-slips')
+        ->name('payment-slips.')
+        ->group(function () {
+            Route::get('/', 'index')
+                ->middleware('permission:payment-slips.view')
+                ->name('index');
+
+            Route::get('{paymentSlip}/print', 'print')
+                ->middleware('permission:payment-slips.download')
+                ->name('print');
+
+            Route::get('{paymentSlip}/pdf', 'pdf')
+                ->middleware('permission:payment-slips.download')
+                ->name('pdf');
+
+            Route::get('{paymentSlip}/excel', 'excel')
+                ->middleware('permission:payment-slips.download')
+                ->name('excel');
+        });
 
     /*
     |--------------------------------------------------------------------------
@@ -318,9 +347,18 @@ Route::middleware(['auth', 'verified', 'password.changed'])->group(function () {
     |
     */
 
-    Route::get('/reports', function () {
-        return Inertia::render('Reports/Index');
-    })->middleware('permission:reports.view')->name('reports.index');
+    Route::controller(ReportController::class)
+        ->prefix('reports')
+        ->name('reports.')
+        ->group(function () {
+            Route::get('/', 'index')
+                ->middleware('permission:reports.view')
+                ->name('index');
+
+            Route::get('export', 'export')
+                ->middleware('permission:reports.export')
+                ->name('export');
+        });
 
     /*
     |--------------------------------------------------------------------------

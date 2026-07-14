@@ -35,6 +35,10 @@ class UpdateAttendanceDayRequest extends FormRequest
             'observation' => $this->filled('observation')
                 ? trim((string) $this->input('observation'))
                 : null,
+
+            'absence_attendance_day_id' => $this->filled('absence_attendance_day_id')
+                ? (int) $this->input('absence_attendance_day_id')
+                : null,
         ]);
     }
 
@@ -68,6 +72,12 @@ class UpdateAttendanceDayRequest extends FormRequest
                 'nullable',
                 'string',
                 'max:255',
+            ],
+
+            'absence_attendance_day_id' => [
+                'nullable',
+                'integer',
+                Rule::exists('attendance_days', 'id'),
             ],
         ];
     }
@@ -131,6 +141,13 @@ class UpdateAttendanceDayRequest extends FormRequest
                 $validator->errors()->add(
                     'exit_time',
                     'Ingresa la hora de salida cuando el dia se marca como asistido o trabajado como canje. [ATT-012]'
+                );
+            }
+
+            if ($status->code === AttendanceDay::STATUS_EXCHANGE_WORKED && ! $this->filled('absence_attendance_day_id')) {
+                $validator->errors()->add(
+                    'absence_attendance_day_id',
+                    'Selecciona la falta que este dia trabajado va a compensar. [ATT-015]'
                 );
             }
         });

@@ -67,7 +67,7 @@ class PayrollController extends Controller
     public function reject(Payroll $payroll, Request $request): RedirectResponse
     {
         $request->validate([
-            'reason' => ['nullable', 'string', 'max:2000'],
+            'reason' => ['required', 'string', 'max:2000'],
         ]);
 
         $this->service->reject(
@@ -77,6 +77,28 @@ class PayrollController extends Controller
         );
 
         return back()->with('success', 'Planilla rechazada correctamente.');
+    }
+
+    public function observe(Payroll $payroll, Request $request): RedirectResponse
+    {
+        $request->validate([
+            'reason' => ['required', 'string', 'max:2000'],
+        ]);
+
+        $this->service->observe(
+            $payroll,
+            $request->user()?->id,
+            $request->input('reason')
+        );
+
+        return back()->with('success', 'Planilla observada correctamente. Corrige las asistencias necesarias y recalcula la planilla.');
+    }
+
+    public function recalculate(Payroll $payroll, Request $request): RedirectResponse
+    {
+        $this->service->recalculate($payroll, $request->user()?->id);
+
+        return back()->with('success', 'Planilla recalculada correctamente y enviada nuevamente a revision.');
     }
 
     public function pay(Payroll $payroll, Request $request): RedirectResponse
@@ -114,8 +136,10 @@ class PayrollController extends Controller
             'observations' => $payroll->observations,
             'rejection_reason' => $payroll->rejection_reason,
             'can_approve' => $payroll->isInReview(),
+            'can_observe' => $payroll->isInReview(),
             'can_reject' => $payroll->isInReview(),
             'can_pay' => $payroll->isApproved(),
+            'can_recalculate' => $payroll->isObserved() || $payroll->isRejected(),
             'details' => $payroll->details
                 ->sortBy('employee_name')
                 ->values()

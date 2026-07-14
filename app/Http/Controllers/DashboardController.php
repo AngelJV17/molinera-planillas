@@ -5,6 +5,7 @@ use App\Models\Employee;
 use App\Models\MonthlyAttendance;
 use App\Models\Payroll;
 use App\Services\PayrollService;
+use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -15,10 +16,11 @@ class DashboardController extends Controller
     ) {
     }
 
-    public function __invoke(): Response
+    public function __invoke(Request $request): Response
     {
-        $currentMonth = (int) now()->month;
-        $currentYear  = (int) now()->year;
+        $period = $this->resolvePeriod($request->input('period'));
+        $currentMonth = $period['month'];
+        $currentYear  = $period['year'];
 
         /*
         |--------------------------------------------------------------------------
@@ -89,7 +91,7 @@ class DashboardController extends Controller
         $absenceDays   = (int) $closedMonthlyAttendances->sum('absence_days');
         $restDays      = (int) $closedMonthlyAttendances->sum('rest_days');
         $exchangeDays  = (int) $closedMonthlyAttendances->sum('exchange_days');
-        $overtimeHours = (float) $closedMonthlyAttendances->sum('overtime_hours');
+        $overtimeHours = (float) $closedMonthlyAttendances->sum('payable_overtime_hours');
 
         $totalEvaluatedDays = $workedDays + $absenceDays;
 
@@ -169,6 +171,13 @@ class DashboardController extends Controller
                     ->count(),
             ],
 
+            'filters' => [
+                'period' => $period['value'],
+            ],
+
+            'periodOptions' => $this->periodOptions($period),
+            'currentPeriodLabel' => $this->payrollService->monthName($currentMonth) . ' ' . $currentYear,
+
             'latestPayrolls'   => $latestPayrolls,
 
             'attendanceStatus' => [
@@ -186,6 +195,82 @@ class DashboardController extends Controller
 
             'recentActivities' => $this->recentActivities(),
         ]);
+    }
+
+    private function resolvePeriod(?string $requestedPeriod): array
+    {
+        $requested = $this->payrollService->parsePeriod($requestedPeriod);
+
+        if ($requested['month'] && $requested['year']) {
+            return [
+                'month' => $requested['month'],
+                'year' => $requested['year'],
+                'value' => sprintf('%04d-%02d', $requested['year'], $requested['month']),
+            ];
+        }
+
+        $current = [
+            'month' => (int) now()->month,
+            'year' => (int) now()->year,
+        ];
+
+        $hasCurrentPeriodData = MonthlyAttendance::query()
+            ->where('month', $current['month'])
+            ->where('year', $current['year'])
+            ->exists();
+
+        if ($hasCurrentPeriodData) {
+            return [
+                ...$current,
+                'value' => sprintf('%04d-%02d', $current['year'], $current['month']),
+            ];
+        }
+
+        $latestAttendancePeriod = MonthlyAttendance::query()
+            ->select(['month', 'year'])
+            ->orderByDesc('year')
+            ->orderByDesc('month')
+            ->first();
+
+        if ($latestAttendancePeriod) {
+            return [
+                'month' => (int) $latestAttendancePeriod->month,
+                'year' => (int) $latestAttendancePeriod->year,
+                'value' => sprintf('%04d-%02d', $latestAttendancePeriod->year, $latestAttendancePeriod->month),
+            ];
+        }
+
+        return [
+            ...$current,
+            'value' => sprintf('%04d-%02d', $current['year'], $current['month']),
+        ];
+    }
+
+    private function periodOptions(array $selectedPeriod): array
+    {
+        $options = MonthlyAttendance::query()
+            ->select(['month', 'year'])
+            ->distinct()
+            ->orderByDesc('year')
+            ->orderByDesc('month')
+            ->limit(12)
+            ->get()
+            ->map(fn(MonthlyAttendance $attendance) => [
+                'value' => sprintf('%04d-%02d', $attendance->year, $attendance->month),
+                'label' => $this->payrollService->monthName((int) $attendance->month) . ' ' . $attendance->year,
+            ])
+            ->values();
+
+        $selectedValue = $selectedPeriod['value'];
+
+        if (! $options->contains('value', $selectedValue)) {
+            $options->prepend([
+                'value' => $selectedValue,
+                'label' => $this->payrollService->monthName($selectedPeriod['month']) . ' ' . $selectedPeriod['year'],
+            ]);
+        }
+
+        return $options->values()->all();
     }
 
     private function recentActivities(): array

@@ -1,5 +1,5 @@
 <script setup>
-import { Head, router, useForm } from '@inertiajs/vue3';
+import { Head, router, useForm, usePage } from '@inertiajs/vue3';
 import { computed, ref, watch } from 'vue';
 import {
     Calculator,
@@ -10,6 +10,8 @@ import {
     FileSpreadsheet,
     Play,
     ReceiptText,
+    RotateCcw,
+    TriangleAlert,
     XCircle,
 } from 'lucide-vue-next';
 
@@ -28,7 +30,7 @@ import TableActionButton from '@/Components/Table/TableActionButton.vue';
 import TableActions from '@/Components/Table/TableActions.vue';
 import TableEntityCell from '@/Components/Table/TableEntityCell.vue';
 import PerPageFilter from '@/Components/Filters/PerPageFilter.vue';
-import { confirmAction } from '@/Utils/alerts';
+import { confirmAction, promptActionReason } from '@/Utils/alerts';
 
 const props = defineProps({
     payrolls: {
@@ -57,11 +59,15 @@ const props = defineProps({
     },
 });
 
+const page = usePage();
 const selectedPayrollId = ref(props.payrolls.data[0]?.id ?? null);
 const period = ref(props.filters.period ?? '');
 const statusId = ref(props.filters.status_id ?? '');
 const perPage = ref(props.filters.per_page ?? 10);
 let filterTimeout = null;
+
+const permissions = computed(() => page.props.auth?.permissions ?? []);
+const can = (permission) => permissions.value.includes(permission);
 
 const form = useForm({
     month: props.defaultPeriod ? Number(props.defaultPeriod.slice(5, 7)) : new Date().getMonth() + 1,
@@ -153,6 +159,7 @@ const money = (amount) => {
 const statusClass = (statusCode) => {
     const classes = {
         IN_REVIEW: 'bg-amber-100 text-amber-800',
+        OBSERVED: 'bg-blue-100 text-blue-800',
         APPROVED: 'bg-primary/15 text-primary',
         REJECTED: 'bg-danger/15 text-danger',
         PAID: 'bg-emerald-100 text-emerald-800',
@@ -208,6 +215,51 @@ const rejectPayroll = async (payroll) => {
     }
 
     router.patch(route('payrolls.reject', payroll.id), {}, { preserveScroll: true });
+};
+
+const observePayroll = async (payroll) => {
+    const reason = await promptActionReason({
+        title: 'Observar planilla',
+        text: `Indica que debe corregirse en la planilla ${payroll.code}.`,
+        placeholder: 'Describe la observacion...',
+        confirmButtonText: 'Observar planilla',
+    });
+
+    if (!reason) {
+        return;
+    }
+
+    router.patch(route('payrolls.observe', payroll.id), { reason }, { preserveScroll: true });
+};
+
+const rejectPayrollWithReason = async (payroll) => {
+    const reason = await promptActionReason({
+        title: 'Rechazar planilla',
+        text: `Indica por que la planilla ${payroll.code} sera rechazada.`,
+        placeholder: 'Describe el motivo del rechazo...',
+        confirmButtonText: 'Rechazar planilla',
+    });
+
+    if (!reason) {
+        return;
+    }
+
+    router.patch(route('payrolls.reject', payroll.id), { reason }, { preserveScroll: true });
+};
+
+const recalculatePayroll = async (payroll) => {
+    const confirmed = await confirmAction({
+        title: 'Recalcular planilla',
+        text: `Se recalculara la planilla ${payroll.code} con las asistencias cerradas corregidas.`,
+        icon: 'question',
+        confirmButtonText: 'Recalcular',
+    });
+
+    if (!confirmed) {
+        return;
+    }
+
+    router.patch(route('payrolls.recalculate', payroll.id), {}, { preserveScroll: true });
 };
 
 const payPayroll = async (payroll) => {
@@ -373,21 +425,35 @@ const payPayroll = async (payroll) => {
                                 :icon="CheckCircle2"
                                 title="Aprobar"
                                 variant="success"
-                                :disabled="!payroll.can_approve"
+                                :disabled="!payroll.can_approve || !can('payrolls.approve')"
                                 @click="approvePayroll(payroll)"
+                            />
+                            <TableActionButton
+                                :icon="TriangleAlert"
+                                title="Observar"
+                                variant="warning"
+                                :disabled="!payroll.can_observe || !can('payrolls.observe')"
+                                @click="observePayroll(payroll)"
                             />
                             <TableActionButton
                                 :icon="XCircle"
                                 title="Rechazar"
                                 variant="danger"
-                                :disabled="!payroll.can_reject"
-                                @click="rejectPayroll(payroll)"
+                                :disabled="!payroll.can_reject || !can('payrolls.reject')"
+                                @click="rejectPayrollWithReason(payroll)"
+                            />
+                            <TableActionButton
+                                :icon="RotateCcw"
+                                title="Recalcular"
+                                variant="neutral"
+                                :disabled="!payroll.can_recalculate || !can('payrolls.recalculate')"
+                                @click="recalculatePayroll(payroll)"
                             />
                             <TableActionButton
                                 :icon="ClipboardCheck"
                                 title="Marcar pagada"
                                 variant="warning"
-                                :disabled="!payroll.can_pay"
+                                :disabled="!payroll.can_pay || !can('payrolls.pay')"
                                 @click="payPayroll(payroll)"
                             />
                         </TableActions>
@@ -413,6 +479,13 @@ const payPayroll = async (payroll) => {
                 :title="`Detalle ${selectedPayroll.code}`"
                 :description="`${selectedPayroll.period} · ${selectedPayroll.employee_count} trabajadores`"
             >
+                <div
+                    v-if="selectedPayroll.rejection_reason"
+                    class="mb-5 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-800"
+                >
+                    Observacion registrada: {{ selectedPayroll.rejection_reason }}
+                </div>
+
                 <div class="mb-5 grid gap-3 md:grid-cols-4">
                     <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
                         <p class="text-xs font-bold uppercase text-gray-500">Ingresos</p>

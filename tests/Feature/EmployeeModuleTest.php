@@ -63,10 +63,33 @@ class EmployeeModuleTest extends TestCase
 
         $this->assertNotNull($createdUser);
         $this->assertTrue(Hash::check('11223344', $createdUser->password));
+        $this->assertTrue($createdUser->must_change_password);
         $this->assertDatabaseHas('employees', [
             'document_number' => '11223344',
             'user_id' => $createdUser->id,
         ]);
+    }
+
+    public function test_employee_with_system_access_rejects_existing_user_credentials(): void
+    {
+        $user = User::factory()->create();
+        $documentType = $this->catalog('DOCUMENT_TYPE', 'DNI');
+        User::factory()->create([
+            'username' => '44556677',
+            'email' => 'ocupado@example.com',
+        ]);
+
+        $this->actingAs($user)->post(route('workers.store'), [
+            'document_type_id' => $documentType->id,
+            'document_number' => '44556677',
+            'first_name' => 'Carlos',
+            'last_name' => 'Rios',
+            'email' => 'ocupado@example.com',
+            'hire_date' => '2025-02-01',
+            'base_salary' => 2500,
+            'status' => true,
+            'has_system_access' => true,
+        ])->assertSessionHasErrors(['document_number', 'email']);
     }
 
     public function test_employee_validates_required_fields_and_unique_document(): void

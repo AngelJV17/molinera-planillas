@@ -81,6 +81,13 @@ const toggleStatus = async (workShift) => {
 
 const formatTime = (time) => time?.slice(0, 5) ?? '--:--';
 const formatHours = (hours) => `${Number(hours).toLocaleString('es-PE', { minimumFractionDigits: 2 })} h`;
+const rotationLabel = (workShift) => {
+    if (!workShift.rotation_enabled) {
+        return null;
+    }
+
+    return `${workShift.rotation_work_days}x${workShift.rotation_rest_days}`;
+};
 </script>
 
 <template>
@@ -153,6 +160,10 @@ const formatHours = (hours) => `${Number(hours).toLocaleString('es-PE', { minimu
                             <Moon v-if="workShift.crosses_midnight" class="h-4 w-4 text-secondary" />
                         </div>
                         <p class="text-xs text-gray-500">{{ workShift.tolerance_minutes }} min. tolerancia</p>
+                        <p v-if="workShift.uses_daily_rules" class="text-xs font-bold text-primary">Reglas por dia</p>
+                        <p v-if="rotationLabel(workShift)" class="text-xs font-bold text-blue-700">
+                            Rotativo {{ rotationLabel(workShift) }}
+                        </p>
                     </td>
 
                     <td class="px-6 py-4 font-bold text-gray-800">

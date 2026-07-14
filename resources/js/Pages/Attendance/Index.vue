@@ -1,9 +1,9 @@
 <script setup>
-import { Head, router, useForm } from '@inertiajs/vue3';
+import { Head, router, useForm, usePage } from '@inertiajs/vue3';
 import { computed, ref, watch } from 'vue';
 
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
-import { confirmCloseAttendance } from '@/Utils/alerts';
+import { confirmAction, confirmCloseAttendance } from '@/Utils/alerts';
 
 import EmptyState from '@/Components/Common/EmptyState.vue';
 import FilterCard from '@/Components/Common/FilterCard.vue';
@@ -93,8 +93,11 @@ const search = ref(props.filters.search ?? '');
 const statusId = ref(props.filters.status_id ?? '');
 const period = ref(props.filters.period ?? '');
 const perPage = ref(props.filters.per_page ?? 10);
+const page = usePage();
 
 let filterTimeout = null;
+const permissions = computed(() => page.props.auth?.permissions ?? []);
+const can = (permission) => permissions.value.includes(permission);
 
 /**
  * Formulario para crear una asistencia mensual.
@@ -195,6 +198,27 @@ const closeAttendance = async (attendance) => {
 
     router.patch(
         route('attendance.close', attendance.id),
+        {},
+        {
+            preserveScroll: true,
+        },
+    );
+};
+
+const reopenAttendance = async (attendance) => {
+    const confirmed = await confirmAction({
+        title: 'Reabrir asistencia',
+        text: `Se habilitara la edicion de la asistencia de ${attendance.employee.name} correspondiente a ${attendance.period}.`,
+        icon: 'warning',
+        confirmButtonText: 'Reabrir asistencia',
+    });
+
+    if (!confirmed) {
+        return;
+    }
+
+    router.patch(
+        route('attendance.reopen', attendance.id),
         {},
         {
             preserveScroll: true,
@@ -386,6 +410,10 @@ const statusLabel = (status) => {
                             <span class="rounded-full bg-slate-100 px-3 py-1 text-[11px] font-bold text-slate-700">
                                 H. extras: {{ attendance.overtime_hours }}
                             </span>
+
+                            <span class="rounded-full bg-primary/10 px-3 py-1 text-[11px] font-bold text-primary">
+                                H. extra pago: {{ attendance.payable_overtime_hours }}
+                            </span>
                         </div>
                     </td>
 
@@ -405,6 +433,9 @@ const statusLabel = (status) => {
 
                             <TableActionButton v-if="attendance.is_editable" :icon="CheckCircle2"
                                 title="Cerrar asistencia" variant="success" @click="closeAttendance(attendance)" />
+
+                            <TableActionButton v-if="attendance.can_reopen && can('attendance.reopen')" :icon="RefreshCcw"
+                                title="Reabrir asistencia" variant="warning" @click="reopenAttendance(attendance)" />
                         </TableActions>
                     </td>
                 </tr>

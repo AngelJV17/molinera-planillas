@@ -187,6 +187,40 @@ export const confirmAction = async ({
     return result.isConfirmed;
 };
 
+export const promptActionReason = async ({
+    title = "Ingresa el motivo",
+    text = "Este motivo quedara registrado para auditoria.",
+    placeholder = "Describe el motivo...",
+    confirmButtonText = "Confirmar",
+    cancelButtonText = "Cancelar",
+    icon = "warning",
+} = {}) => {
+    const result = await Swal.fire({
+        ...baseModalConfig,
+        title,
+        text,
+        icon,
+        iconColor: themeColors().warning,
+        input: "textarea",
+        inputPlaceholder: placeholder,
+        inputAttributes: {
+            maxlength: 2000,
+        },
+        inputValidator: (value) => {
+            if (!value || !value.trim()) {
+                return "Ingresa un motivo para continuar.";
+            }
+
+            return null;
+        },
+        confirmButtonText,
+        cancelButtonText,
+        showCancelButton: true,
+    });
+
+    return result.isConfirmed ? result.value.trim() : null;
+};
+
 /**
  * Confirmación para cerrar asistencia mensual.
  */

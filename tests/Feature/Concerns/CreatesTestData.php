@@ -102,6 +102,7 @@ trait CreatesTestData
     {
         return [
             'in_review' => $this->catalog('PAYROLL_STATUS', 'IN_REVIEW', ['name' => 'En revision']),
+            'observed' => $this->catalog('PAYROLL_STATUS', 'OBSERVED', ['name' => 'Observada']),
             'approved' => $this->catalog('PAYROLL_STATUS', 'APPROVED', ['name' => 'Aprobada']),
             'rejected' => $this->catalog('PAYROLL_STATUS', 'REJECTED', ['name' => 'Rechazada']),
             'paid' => $this->catalog('PAYROLL_STATUS', 'PAID', ['name' => 'Pagada']),

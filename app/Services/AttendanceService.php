@@ -108,12 +108,18 @@ class AttendanceService
             $day->load([
                 'monthlyAttendance.status',
                 'monthlyAttendance.employee.workShift',
+                'absenceExchange',
+                'workedExchange',
             ]);
 
             $this->ensureDayCanBeUpdated($day);
 
             $status     = $this->attendanceDayStatus((int) $data['status_id']);
             $statusCode = $status->code;
+
+            if ($statusCode !== AttendanceDay::STATUS_ABSENT) {
+                $day->absenceExchange()->delete();
+            }
 
             if ($this->isWorkedStatus($statusCode)) {
                 $workShift = $this->resolveEmployeeWorkShift($day);
@@ -132,9 +138,21 @@ class AttendanceService
                     'exit_time'      => $data['exit_time'],
                     'worked_hours'   => $calculatedHours['worked_hours'],
                     'overtime_hours' => $calculatedHours['overtime_hours'],
+                    'payable_overtime_hours' => $calculatedHours['payable_overtime_hours'],
                     'observation'    => $data['observation'] ?? null,
                 ]);
+
+                if ($statusCode === AttendanceDay::STATUS_EXCHANGE_WORKED) {
+                    $this->syncExchangeForWorkedDay(
+                        workedDay: $day->refresh(),
+                        absenceDayId: (int) ($data['absence_attendance_day_id'] ?? 0)
+                    );
+                } else {
+                    $day->workedExchange()->delete();
+                }
             } else {
+                $day->workedExchange()->delete();
+
                 $day->update([
                     'status_id'      => $status->id,
                     'work_shift_id'  => null,
@@ -142,6 +160,7 @@ class AttendanceService
                     'exit_time'      => null,
                     'worked_hours'   => 0,
                     'overtime_hours' => 0,
+                    'payable_overtime_hours' => 0,
                     'observation'    => $data['observation'] ?? null,
                 ]);
             }
@@ -150,6 +169,71 @@ class AttendanceService
 
             return $day->refresh();
         });
+    }
+
+    private function syncExchangeForWorkedDay(AttendanceDay $workedDay, int $absenceDayId): void
+    {
+        $workedDay->loadMissing('monthlyAttendance');
+
+        $absenceDay = AttendanceDay::query()
+            ->with(['status', 'monthlyAttendance'])
+            ->where('id', $absenceDayId)
+            ->first();
+
+        if (! $absenceDay) {
+            throw ValidationException::withMessages([
+                'absence_attendance_day_id' => 'Selecciona una falta valida para compensar con este dia trabajado. [ATT-015]',
+            ]);
+        }
+
+        if ((int) $absenceDay->id === (int) $workedDay->id) {
+            throw ValidationException::withMessages([
+                'absence_attendance_day_id' => 'El dia trabajado como canje no puede compensarse a si mismo. Selecciona una falta diferente. [ATT-016]',
+            ]);
+        }
+
+        if ((int) $absenceDay->monthly_attendance_id !== (int) $workedDay->monthly_attendance_id) {
+            throw ValidationException::withMessages([
+                'absence_attendance_day_id' => 'La falta seleccionada no pertenece a esta asistencia mensual. Selecciona una falta del mismo trabajador y periodo. [ATT-017]',
+            ]);
+        }
+
+        if ($absenceDay->status?->code !== AttendanceDay::STATUS_ABSENT) {
+            throw ValidationException::withMessages([
+                'absence_attendance_day_id' => 'Solo puedes compensar dias marcados como Falto. Selecciona una falta valida. [ATT-018]',
+            ]);
+        }
+
+        $existingAbsenceExchange = AttendanceExchange::query()
+            ->where('absence_attendance_day_id', $absenceDay->id)
+            ->where('exchange_attendance_day_id', '!=', $workedDay->id)
+            ->exists();
+
+        if ($existingAbsenceExchange) {
+            throw ValidationException::withMessages([
+                'absence_attendance_day_id' => 'Esta falta ya esta vinculada a otro canje. Selecciona una falta pendiente. [ATT-019]',
+            ]);
+        }
+
+        $appliedStatusId = $this->catalogId(
+            AttendanceExchange::CATALOG_TYPE_STATUS,
+            AttendanceExchange::STATUS_APPLIED
+        );
+
+        AttendanceExchange::query()->updateOrCreate(
+            [
+                'exchange_attendance_day_id' => $workedDay->id,
+            ],
+            [
+                'employee_id' => $workedDay->monthlyAttendance->employee_id,
+                'status_id' => $appliedStatusId,
+                'absence_attendance_day_id' => $absenceDay->id,
+                'absence_date' => $absenceDay->attendance_date?->toDateString(),
+                'exchange_date' => $workedDay->attendance_date?->toDateString(),
+                'observation' => $workedDay->observation,
+                'registered_by' => auth()->id(),
+            ]
+        );
     }
 
         /**
@@ -216,9 +300,10 @@ class AttendanceService
 
                 if ($statusCode === AttendanceDay::STATUS_PRESENT) {
                     $workShift = $this->resolveEmployeeWorkShift($day);
+                    $schedule = $this->workScheduleForDate($workShift, $day->attendance_date->toDateString());
 
-                    $entryTime = $this->formatTimeValue($workShift->start_time);
-                    $exitTime = $this->formatTimeValue($workShift->end_time);
+                    $entryTime = $schedule['start_time'];
+                    $exitTime = $schedule['end_time'];
 
                     $calculatedHours = $this->calculateWorkedAndOvertimeHours(
                         attendanceDate: $day->attendance_date,
@@ -234,6 +319,7 @@ class AttendanceService
                         'exit_time' => $exitTime,
                         'worked_hours' => $calculatedHours['worked_hours'],
                         'overtime_hours' => $calculatedHours['overtime_hours'],
+                        'payable_overtime_hours' => $calculatedHours['payable_overtime_hours'],
                         'observation' => $day->observation,
                     ]);
 
@@ -247,6 +333,7 @@ class AttendanceService
                     'exit_time' => null,
                     'worked_hours' => 0,
                     'overtime_hours' => 0,
+                    'payable_overtime_hours' => 0,
                     'observation' => $day->observation,
                 ]);
             }
@@ -319,6 +406,38 @@ class AttendanceService
                 'status_id' => $closedStatusId,
                 'closed_by' => $userId,
                 'closed_at' => now(),
+            ]);
+
+            return $attendance->refresh();
+        });
+    }
+
+    public function reopen(MonthlyAttendance $attendance): MonthlyAttendance
+    {
+        return DB::transaction(function () use ($attendance) {
+            $attendance->loadMissing(['status', 'payrollDetail.payroll.status']);
+
+            if (! $attendance->isClosed()) {
+                return $attendance;
+            }
+
+            $payroll = $attendance->payrollDetail?->payroll;
+
+            if ($payroll && ! $payroll->isObserved() && ! $payroll->isRejected()) {
+                throw ValidationException::withMessages([
+                    'attendance' => 'Esta asistencia ya pertenece a una planilla aprobada, pagada o en revision. Solo puede reabrirse si la planilla fue observada o rechazada. [ATT-020]',
+                ]);
+            }
+
+            $draftStatusId = $this->catalogId(
+                MonthlyAttendance::CATALOG_TYPE_STATUS,
+                MonthlyAttendance::STATUS_DRAFT
+            );
+
+            $attendance->update([
+                'status_id' => $draftStatusId,
+                'closed_by' => null,
+                'closed_at' => null,
             ]);
 
             return $attendance->refresh();
@@ -436,22 +555,37 @@ class AttendanceService
             AttendanceDay::CATALOG_TYPE_STATUS,
             AttendanceDay::STATUS_UNMARKED
         );
+        $restStatusId = $this->catalogId(
+            AttendanceDay::CATALOG_TYPE_STATUS,
+            AttendanceDay::STATUS_REST
+        );
+
+        $attendance->loadMissing('employee.workShift.rules');
+        $workShift = $attendance->employee?->workShift;
 
         $startDate = Carbon::create($attendance->year, $attendance->month, 1)->startOfDay();
         $endDate   = $startDate->copy()->endOfMonth();
 
         foreach (CarbonPeriod::create($startDate, $endDate) as $date) {
+            $statusId = $unmarkedStatusId;
+
+            if ($workShift) {
+                $schedule = $this->workScheduleForDate($workShift, $date->toDateString());
+                $statusId = $schedule['is_working_day'] ? $unmarkedStatusId : $restStatusId;
+            }
+
             $attendance->days()->firstOrCreate(
                 [
                     'attendance_date' => $date->toDateString(),
                 ],
                 [
-                    'status_id'      => $unmarkedStatusId,
+                    'status_id'      => $statusId,
                     'work_shift_id'  => null,
                     'entry_time'     => null,
                     'exit_time'      => null,
                     'worked_hours'   => 0,
                     'overtime_hours' => 0,
+                    'payable_overtime_hours' => 0,
                 ]
             );
         }
@@ -469,6 +603,7 @@ class AttendanceService
         $exchangeDays  = 0;
         $restDays      = 0;
         $overtimeHours = 0;
+        $payableOvertimeHours = 0;
 
         foreach ($attendance->days as $day) {
             $statusCode = $day->status?->code;
@@ -490,6 +625,7 @@ class AttendanceService
             }
 
             $overtimeHours += (float) $day->overtime_hours;
+            $payableOvertimeHours += (float) $day->payable_overtime_hours;
         }
 
         $appliedExchangeStatusId = $this->catalogId(
@@ -517,6 +653,7 @@ class AttendanceService
             'exchange_days'              => $exchangeDays,
             'rest_days'                  => $restDays,
             'overtime_hours'             => $overtimeHours,
+            'payable_overtime_hours'     => $payableOvertimeHours,
         ]);
     }
 
@@ -603,11 +740,12 @@ class AttendanceService
             ? $attendanceDate->toDateString()
             : Carbon::parse($attendanceDate)->toDateString();
 
+        $schedule = $this->workScheduleForDate($workShift, $date);
         $entryAt = Carbon::parse("{$date} {$entryTime}");
         $exitAt  = Carbon::parse("{$date} {$exitTime}");
 
         if ($exitAt->lessThanOrEqualTo($entryAt)) {
-            if (! $workShift->crosses_midnight) {
+            if (! $schedule['crosses_midnight']) {
                 throw ValidationException::withMessages([
                     'exit_time' => 'La hora de salida debe ser posterior a la hora de entrada. Si el turno cruza medianoche, marca el turno como nocturno. [ATT-013]',
                 ]);
@@ -622,19 +760,86 @@ class AttendanceService
             date: $date,
             entryAt: $entryAt,
             exitAt: $exitAt,
-            workShift: $workShift
+            schedule: $schedule
         );
 
         $workedMinutes = max($workedMinutes - $breakMinutes, 0);
 
         $workedHours   = round($workedMinutes / 60, 2);
-        $expectedHours = (float) $workShift->daily_hours;
+        $expectedHours = (float) $schedule['expected_hours'];
+        $overtimeAfterHours = $schedule['overtime_after_hours'] !== null
+            ? (float) $schedule['overtime_after_hours']
+            : $expectedHours;
         $overtimeHours = round(max($workedHours - $expectedHours, 0), 2);
+        $payableOvertimeHours = $schedule['overtime_pay_enabled']
+            ? round(max($workedHours - $overtimeAfterHours, 0), 2)
+            : 0.0;
 
         return [
             'worked_hours'   => $workedHours,
             'overtime_hours' => $overtimeHours,
+            'payable_overtime_hours' => $payableOvertimeHours,
         ];
+    }
+
+    private function workScheduleForDate(WorkShift $workShift, string $date): array
+    {
+        $workShift->loadMissing('rules');
+
+        $dayOfWeek = Carbon::parse($date)->isoWeekday();
+        $rule = $workShift->uses_daily_rules || $workShift->rotation_enabled
+            ? $workShift->rules->firstWhere('day_of_week', $dayOfWeek)
+            : null;
+        $hasDailyRule = (bool) $rule;
+
+        $schedule = [
+            'is_working_day' => $rule?->is_working_day ?? true,
+            'start_time' => $this->formatTimeValue($rule?->start_time ?? $workShift->start_time),
+            'break_start_time' => $hasDailyRule
+                ? ($rule->break_start_time ? $this->formatTimeValue($rule->break_start_time) : null)
+                : ($workShift->break_start_time ? $this->formatTimeValue($workShift->break_start_time) : null),
+            'break_end_time' => $hasDailyRule
+                ? ($rule->break_end_time ? $this->formatTimeValue($rule->break_end_time) : null)
+                : ($workShift->break_end_time ? $this->formatTimeValue($workShift->break_end_time) : null),
+            'end_time' => $this->formatTimeValue($rule?->end_time ?? $workShift->end_time),
+            'expected_hours' => (float) ($rule?->expected_hours ?? $workShift->daily_hours),
+            'crosses_midnight' => (bool) ($rule?->crosses_midnight ?? $workShift->crosses_midnight),
+            'overtime_pay_enabled' => (bool) ($rule?->overtime_pay_enabled ?? true),
+            'overtime_after_hours' => $rule?->overtime_after_hours,
+        ];
+
+        if ($this->isRotationRestDay($workShift, $date)) {
+            $schedule['is_working_day'] = false;
+            $schedule['expected_hours'] = 0.0;
+        }
+
+        return $schedule;
+    }
+
+    private function isRotationRestDay(WorkShift $workShift, string $date): bool
+    {
+        if (! $workShift->rotation_enabled || ! $workShift->rotation_start_date) {
+            return false;
+        }
+
+        $workDays = (int) $workShift->rotation_work_days;
+        $restDays = (int) $workShift->rotation_rest_days;
+        $cycleDays = $workDays + $restDays;
+
+        if ($workDays <= 0 || $restDays <= 0 || $cycleDays <= 0) {
+            return false;
+        }
+
+        $startDate = $workShift->rotation_start_date->copy()->startOfDay();
+        $attendanceDate = Carbon::parse($date)->startOfDay();
+
+        if ($attendanceDate->lessThan($startDate)) {
+            return false;
+        }
+
+        $cyclePosition = $startDate->diffInDays($attendanceDate) % $cycleDays;
+
+        return $cyclePosition >= $workDays;
     }
 
     /**
@@ -647,20 +852,20 @@ class AttendanceService
         string $date,
         CarbonInterface $entryAt,
         CarbonInterface $exitAt,
-        WorkShift $workShift
+        array $schedule
     ): int {
-        if (! $workShift->break_start_time || ! $workShift->break_end_time) {
+        if (! $schedule['break_start_time'] || ! $schedule['break_end_time']) {
             return 0;
         }
 
-        $breakStartTime = $this->formatTimeValue($workShift->break_start_time);
-        $breakEndTime   = $this->formatTimeValue($workShift->break_end_time);
-        $shiftStartTime = $this->formatTimeValue($workShift->start_time);
+        $breakStartTime = $schedule['break_start_time'];
+        $breakEndTime   = $schedule['break_end_time'];
+        $shiftStartTime = $schedule['start_time'];
 
         $breakStartAt = Carbon::parse("{$date} {$breakStartTime}");
         $breakEndAt   = Carbon::parse("{$date} {$breakEndTime}");
 
-        if ($workShift->crosses_midnight && $breakStartTime < $shiftStartTime) {
+        if ($schedule['crosses_midnight'] && $breakStartTime < $shiftStartTime) {
             $breakStartAt->addDay();
         }
 

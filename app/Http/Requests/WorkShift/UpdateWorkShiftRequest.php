@@ -8,6 +8,16 @@ use Illuminate\Validation\Rule;
 
 class UpdateWorkShiftRequest extends FormRequest
 {
+    protected function prepareForValidation(): void
+    {
+        $this->merge([
+            'uses_daily_rules' => $this->boolean('uses_daily_rules'),
+            'rotation_enabled' => $this->boolean('rotation_enabled'),
+            'crosses_midnight' => $this->boolean('crosses_midnight'),
+            'status' => $this->has('status') ? $this->boolean('status') : true,
+        ]);
+    }
+
     /**
      * Determina si el usuario puede ejecutar esta solicitud.
      */
@@ -40,8 +50,26 @@ class UpdateWorkShiftRequest extends FormRequest
             'break_end_time'    => ['nullable', 'date_format:H:i', 'required_with:break_start_time'],
             'tolerance_minutes' => ['required', 'integer', 'min:0', 'max:240'],
             'daily_hours' => ['required', 'numeric', 'min:0.5', 'max:24'],
+            'uses_daily_rules' => ['required', 'boolean'],
             'crosses_midnight' => ['required', 'boolean'],
+            'rotation_enabled' => ['required', 'boolean'],
+            'rotation_work_days' => ['nullable', 'required_if:rotation_enabled,true', 'integer', 'min:1', 'max:31'],
+            'rotation_rest_days' => ['nullable', 'required_if:rotation_enabled,true', 'integer', 'min:1', 'max:31'],
+            'rotation_start_date' => ['nullable', 'required_if:rotation_enabled,true', 'date'],
             'status' => ['required', 'boolean'],
+            'daily_rules' => ['nullable', 'array'],
+            'daily_rules.*.day_of_week' => ['required_with:daily_rules', 'integer', 'min:1', 'max:7'],
+            'daily_rules.*.is_working_day' => ['required_with:daily_rules', 'boolean'],
+            'daily_rules.*.start_time' => ['nullable', 'date_format:H:i'],
+            'daily_rules.*.end_time' => ['nullable', 'date_format:H:i'],
+            'daily_rules.*.break_start_time' => ['nullable', 'date_format:H:i'],
+            'daily_rules.*.break_end_time' => ['nullable', 'date_format:H:i'],
+            'daily_rules.*.tolerance_minutes' => ['required_with:daily_rules', 'integer', 'min:0', 'max:240'],
+            'daily_rules.*.expected_hours' => ['required_with:daily_rules', 'numeric', 'min:0', 'max:24'],
+            'daily_rules.*.crosses_midnight' => ['required_with:daily_rules', 'boolean'],
+            'daily_rules.*.counts_as_full_day' => ['required_with:daily_rules', 'boolean'],
+            'daily_rules.*.overtime_pay_enabled' => ['required_with:daily_rules', 'boolean'],
+            'daily_rules.*.overtime_after_hours' => ['nullable', 'numeric', 'min:0', 'max:24'],
         ];
     }
 

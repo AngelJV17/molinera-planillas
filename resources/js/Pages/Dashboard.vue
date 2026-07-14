@@ -1,5 +1,6 @@
 <script setup>
-import { Head, Link } from "@inertiajs/vue3";
+import { Head, Link, router } from "@inertiajs/vue3";
+import { computed, ref, watch } from "vue";
 import {
     Activity,
     AlertTriangle,
@@ -38,6 +39,39 @@ const props = defineProps({
         type: Array,
         default: () => [],
     },
+
+    filters: {
+        type: Object,
+        default: () => ({}),
+    },
+
+    periodOptions: {
+        type: Array,
+        default: () => [],
+    },
+
+    currentPeriodLabel: {
+        type: String,
+        default: "",
+    },
+});
+
+const period = ref(props.filters.period ?? "");
+let filterTimeout = null;
+
+watch(period, () => {
+    clearTimeout(filterTimeout);
+    filterTimeout = setTimeout(() => {
+        router.get(
+            route("dashboard"),
+            { period: period.value || undefined },
+            {
+                preserveState: true,
+                preserveScroll: true,
+                replace: true,
+            },
+        );
+    }, 250);
 });
 
 const money = (amount) =>
@@ -64,7 +98,7 @@ const hasPendingAttendances = () => {
     return Number(props.metrics.pending_attendances ?? 0) > 0;
 };
 
-const stats = [
+const stats = computed(() => [
     {
         title: "Trabajadores",
         value: props.metrics.active_workers ?? 0,
@@ -97,9 +131,9 @@ const stats = [
         color: "text-danger",
         bg: "bg-danger/10",
     },
-];
+]);
 
-const monthlySummary = [
+const monthlySummary = computed(() => [
     {
         title: "Pendientes de cierre",
         value: props.metrics.pending_attendances ?? 0,
@@ -132,11 +166,12 @@ const monthlySummary = [
         color: "text-danger",
         bg: "bg-danger/10",
     },
-];
+]);
 
 const statusClass = (statusCode) =>
     ({
         IN_REVIEW: "bg-amber-100 text-amber-800",
+        OBSERVED: "bg-blue-100 text-blue-800",
         APPROVED: "bg-primary/15 text-primary",
         REJECTED: "bg-danger/15 text-danger",
         PAID: "bg-emerald-100 text-emerald-800",
@@ -158,6 +193,19 @@ const statusClass = (statusCode) =>
 
                 <template #actions>
                     <div class="flex flex-wrap items-center gap-3">
+                        <select
+                            v-model="period"
+                            class="rounded-xl border-slate-300 bg-white text-sm font-bold text-gray-700 shadow-sm focus:border-primary focus:ring-primary"
+                        >
+                            <option
+                                v-for="option in periodOptions"
+                                :key="option.value"
+                                :value="option.value"
+                            >
+                                {{ option.label }}
+                            </option>
+                        </select>
+
                         <Link
                             :href="route('attendance.index')"
                             class="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-bold text-white shadow transition hover:bg-primary-dark"
@@ -175,6 +223,10 @@ const statusClass = (statusCode) =>
                     </div>
                 </template>
             </PageHeader>
+
+            <p class="text-sm font-bold text-gray-500">
+                Mostrando datos de {{ currentPeriodLabel }}
+            </p>
 
             <!-- Métricas principales -->
             <section class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">

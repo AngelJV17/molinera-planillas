@@ -167,6 +167,133 @@ class AttendanceModuleTest extends TestCase
         $this->assertSame('1.00', $attendance->overtime_hours);
     }
 
+    public function test_saturday_overtime_can_be_registered_without_being_payable(): void
+    {
+        $user = User::factory()->create();
+        $catalogs = $this->attendanceCatalogs();
+        $workShift = $this->workShift([
+            'uses_daily_rules' => true,
+        ]);
+        $workShift->rules()->createMany(collect(range(1, 7))->map(fn(int $day) => [
+            'day_of_week' => $day,
+            'is_working_day' => $day !== 7,
+            'start_time' => $day === 6 ? '08:00' : '08:00',
+            'end_time' => $day === 6 ? '12:00' : '17:00',
+            'expected_hours' => $day === 6 ? 4 : 8,
+            'tolerance_minutes' => 10,
+            'crosses_midnight' => false,
+            'counts_as_full_day' => $day !== 7,
+            'overtime_pay_enabled' => $day !== 6,
+        ])->all());
+        $employee = $this->employee(['work_shift_id' => $workShift->id]);
+
+        $this->actingAs($user)->post(route('attendance.store'), $this->currentPeriodPayload([
+            'employee_id' => $employee->id,
+        ]));
+
+        $attendance = MonthlyAttendance::first();
+        $day = AttendanceDay::whereDate('attendance_date', '2026-06-13')->first();
+
+        $this->actingAs($user)->patch(route('attendance.days.update', $day), [
+            'status_id' => $catalogs['present']->id,
+            'entry_time' => '08:00',
+            'exit_time' => '14:00',
+        ])->assertSessionHasNoErrors();
+
+        $this->assertDatabaseHas('attendance_days', [
+            'id' => $day->id,
+            'worked_hours' => 6,
+            'overtime_hours' => 2,
+            'payable_overtime_hours' => 0,
+        ]);
+
+        $attendance->refresh();
+        $this->assertSame('2.00', $attendance->overtime_hours);
+        $this->assertSame('0.00', $attendance->payable_overtime_hours);
+    }
+
+    public function test_rotating_night_shift_marks_cycle_rest_days(): void
+    {
+        $user = User::factory()->create();
+        $this->attendanceCatalogs();
+        $workShift = $this->workShift([
+            'name' => 'Vigilancia 6x1',
+            'start_time' => '18:00',
+            'break_start_time' => null,
+            'break_end_time' => null,
+            'end_time' => '06:00',
+            'daily_hours' => 12,
+            'crosses_midnight' => true,
+            'rotation_enabled' => true,
+            'rotation_work_days' => 6,
+            'rotation_rest_days' => 1,
+            'rotation_start_date' => '2026-06-01',
+        ]);
+        $employee = $this->employee(['work_shift_id' => $workShift->id]);
+
+        $this->actingAs($user)->post(route('attendance.store'), $this->currentPeriodPayload([
+            'employee_id' => $employee->id,
+        ]))->assertSessionHasNoErrors();
+
+        $attendance = MonthlyAttendance::first();
+        $restDay = AttendanceDay::whereDate('attendance_date', '2026-06-07')->first();
+        $workDay = AttendanceDay::whereDate('attendance_date', '2026-06-06')->first();
+
+        $this->assertSame(AttendanceDay::STATUS_REST, $restDay->status->code);
+        $this->assertSame(AttendanceDay::STATUS_UNMARKED, $workDay->status->code);
+        $this->assertSame(4, $attendance->refresh()->rest_days);
+    }
+
+    public function test_exchange_worked_day_requires_and_creates_formal_absence_exchange(): void
+    {
+        $user = User::factory()->create();
+        $catalogs = $this->attendanceCatalogs();
+        $employee = $this->employee(['work_shift_id' => $this->workShift()->id]);
+
+        $this->actingAs($user)->post(route('attendance.store'), $this->currentPeriodPayload([
+            'employee_id' => $employee->id,
+        ]));
+
+        $attendance = MonthlyAttendance::first();
+        $absenceDay = AttendanceDay::whereDate('attendance_date', '2026-06-09')->first();
+        $exchangeDay = AttendanceDay::whereDate('attendance_date', '2026-06-10')->first();
+
+        $this->actingAs($user)->patch(route('attendance.days.update', $absenceDay), [
+            'status_id' => $catalogs['absent']->id,
+        ])->assertSessionHasNoErrors();
+
+        $this->actingAs($user)->patch(route('attendance.days.update', $exchangeDay), [
+            'status_id' => $catalogs['exchange_worked']->id,
+            'entry_time' => '08:00',
+            'exit_time' => '17:00',
+        ])->assertSessionHasErrors('absence_attendance_day_id');
+
+        $this->actingAs($user)->patch(route('attendance.days.update', $exchangeDay), [
+            'status_id' => $catalogs['exchange_worked']->id,
+            'entry_time' => '08:00',
+            'exit_time' => '17:00',
+            'absence_attendance_day_id' => $absenceDay->id,
+            'observation' => 'Compensa falta del dia anterior',
+        ])->assertSessionHasNoErrors();
+
+        $this->assertDatabaseHas('attendance_exchanges', [
+            'employee_id' => $employee->id,
+            'status_id' => $catalogs['exchange_applied']->id,
+            'absence_attendance_day_id' => $absenceDay->id,
+            'exchange_attendance_day_id' => $exchangeDay->id,
+            'absence_date' => '2026-06-09 00:00:00',
+            'exchange_date' => '2026-06-10 00:00:00',
+            'registered_by' => $user->id,
+        ]);
+
+        $attendance->refresh();
+
+        $this->assertSame(1, $attendance->absence_days);
+        $this->assertSame(1, $attendance->exchange_days);
+        $this->assertSame(1, $attendance->compensated_absence_days);
+        $this->assertSame(0, $attendance->uncompensated_absence_days);
+    }
+
     public function test_bulk_update_marks_multiple_days_and_close_requires_no_unmarked_days(): void
     {
         $user = User::factory()->create();

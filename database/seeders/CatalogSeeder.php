@@ -388,6 +388,12 @@ class CatalogSeeder extends Seeder
             ],
             [
                 'type'        => 'PAYROLL_STATUS',
+                'code'        => 'OBSERVED',
+                'name'        => 'Observada',
+                'description' => 'Planilla observada para correccion antes de su aprobacion',
+            ],
+            [
+                'type'        => 'PAYROLL_STATUS',
                 'code'        => 'REJECTED',
                 'name'        => 'Rechazada',
                 'description' => 'Planilla rechazada por gerencia',

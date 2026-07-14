@@ -22,7 +22,12 @@ class WorkShift extends Model
         'end_time',
         'tolerance_minutes',
         'daily_hours',
+        'uses_daily_rules',
         'crosses_midnight',
+        'rotation_enabled',
+        'rotation_work_days',
+        'rotation_rest_days',
+        'rotation_start_date',
         'status',
     ];
 
@@ -36,7 +41,12 @@ class WorkShift extends Model
         'end_time'          => 'datetime:H:i',
         'tolerance_minutes' => 'integer',
         'daily_hours'       => 'decimal:2',
+        'uses_daily_rules'  => 'boolean',
         'crosses_midnight'  => 'boolean',
+        'rotation_enabled'  => 'boolean',
+        'rotation_work_days' => 'integer',
+        'rotation_rest_days' => 'integer',
+        'rotation_start_date' => 'date',
         'status'            => 'boolean',
     ];
 
@@ -54,5 +64,10 @@ class WorkShift extends Model
     public function employees(): HasMany
     {
         return $this->hasMany(Employee::class);
+    }
+
+    public function rules(): HasMany
+    {
+        return $this->hasMany(WorkShiftRule::class);
     }
 }
