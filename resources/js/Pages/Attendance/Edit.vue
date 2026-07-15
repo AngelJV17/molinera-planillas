@@ -4,6 +4,7 @@ import { computed, ref } from "vue";
 
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout.vue";
 import { confirmAction, confirmCloseAttendance } from "@/Utils/alerts";
+import { formatDate } from "@/Utils/dates";
 
 import InputError from "@/Components/InputError.vue";
 import InputLabel from "@/Components/InputLabel.vue";
@@ -218,7 +219,7 @@ const absenceOptions = computed(() => {
 });
 
 /**
- * Convierte una fecha YYYY-MM-DD a fecha local.
+ * Convierte la fecha tecnica recibida desde Laravel a fecha local.
  */
 const parseLocalDate = (dateString) => {
   return new Date(`${dateString}T00:00:00`);
@@ -1031,7 +1032,7 @@ const monthlyStatusClasses = computed(() => {
                     >
                       {{
                         cell.worked_exchange
-                          ? `Compensa: ${cell.worked_exchange.absence_date}`
+                          ? `Compensa: ${formatDate(cell.worked_exchange.absence_date)}`
                           : "Falta por vincular"
                       }}
                     </p>
@@ -1077,7 +1078,7 @@ const monthlyStatusClasses = computed(() => {
               </p>
 
               <p class="mt-1 text-lg font-black text-gray-900">
-                {{ selectedDay.attendance_date }}
+                {{ formatDate(selectedDay.attendance_date) }}
               </p>
 
               <p class="text-sm font-semibold text-gray-500">
@@ -1126,7 +1127,7 @@ const monthlyStatusClasses = computed(() => {
                   :key="absence.id"
                   :value="absence.id"
                 >
-                  {{ absence.attendance_date }} -
+                  {{ formatDate(absence.attendance_date) }} -
                   {{ absence.observation || "Falta registrada" }}
                 </option>
               </select>

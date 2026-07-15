@@ -31,6 +31,7 @@ import TableActions from '@/Components/Table/TableActions.vue';
 import TableEntityCell from '@/Components/Table/TableEntityCell.vue';
 import PerPageFilter from '@/Components/Filters/PerPageFilter.vue';
 import { confirmAction, promptActionReason } from '@/Utils/alerts';
+import { formatDate, formatPeriod, periodForRequest } from '@/Utils/dates';
 
 const props = defineProps({
     payrolls: {
@@ -53,6 +54,10 @@ const props = defineProps({
         type: Array,
         default: () => [],
     },
+    payrollGroupOptions: {
+        type: Array,
+        default: () => [],
+    },
     defaultPeriod: {
         type: String,
         default: '',
@@ -61,8 +66,9 @@ const props = defineProps({
 
 const page = usePage();
 const selectedPayrollId = ref(props.payrolls.data[0]?.id ?? null);
-const period = ref(props.filters.period ?? '');
+const period = ref(formatPeriod(props.filters.period ?? ''));
 const statusId = ref(props.filters.status_id ?? '');
+const payrollGroupId = ref(props.filters.payroll_group_id ?? '');
 const perPage = ref(props.filters.per_page ?? 10);
 let filterTimeout = null;
 
@@ -72,6 +78,7 @@ const can = (permission) => permissions.value.includes(permission);
 const form = useForm({
     month: props.defaultPeriod ? Number(props.defaultPeriod.slice(5, 7)) : new Date().getMonth() + 1,
     year: props.defaultPeriod ? Number(props.defaultPeriod.slice(0, 4)) : new Date().getFullYear(),
+    payroll_group_id: props.payrollGroupOptions[0]?.id ?? '',
     payment_date: '',
     observations: '',
 });
@@ -123,8 +130,9 @@ const applyFilters = () => {
     router.get(
         route('payrolls.index'),
         {
-            period: period.value || undefined,
+            period: periodForRequest(period.value) || undefined,
             status_id: statusId.value || undefined,
+            payroll_group_id: payrollGroupId.value || undefined,
             per_page: perPage.value || 10,
         },
         {
@@ -135,7 +143,7 @@ const applyFilters = () => {
     );
 };
 
-watch([period, statusId, perPage], () => {
+watch([period, statusId, payrollGroupId, perPage], () => {
     clearTimeout(filterTimeout);
     filterTimeout = setTimeout(() => applyFilters(), 350);
 });
@@ -170,10 +178,11 @@ const statusClass = (statusCode) => {
 
 const generatePayroll = async () => {
     const monthLabel = props.monthOptions.find((month) => Number(month.value) === Number(form.month))?.label;
+    const groupLabel = props.payrollGroupOptions.find((group) => Number(group.id) === Number(form.payroll_group_id))?.name;
 
     const confirmed = await confirmAction({
         title: '¿Generar planilla?',
-        text: `Se calculará la planilla de ${monthLabel ?? 'este mes'} ${form.year} usando asistencias cerradas.`,
+        text: `Se calculará la planilla de ${monthLabel ?? 'este mes'} ${form.year} para ${groupLabel ?? 'el grupo seleccionado'} usando asistencias cerradas.`,
         icon: 'question',
         confirmButtonText: 'Sí, generar',
     });
@@ -293,7 +302,7 @@ const payPayroll = async (payroll) => {
             </PageHeader>
 
             <SectionCard title="Generar planilla" description="Selecciona el periodo y calcula la planilla con asistencias mensuales cerradas.">
-                <form class="grid gap-4 lg:grid-cols-[1fr_1fr_1fr_2fr_auto]" @submit.prevent="generatePayroll">
+                <form class="grid gap-4 lg:grid-cols-[1fr_1fr_1.4fr_1fr_2fr_auto]" @submit.prevent="generatePayroll">
                     <div>
                         <InputLabel for="month" value="Mes" />
                         <select
@@ -320,6 +329,21 @@ const payPayroll = async (payroll) => {
                             </option>
                         </select>
                         <InputError class="mt-2" :message="fieldError('year')" />
+                    </div>
+
+                    <div>
+                        <InputLabel for="payroll_group_id" value="Grupo de planilla" />
+                        <select
+                            id="payroll_group_id"
+                            v-model="form.payroll_group_id"
+                            class="mt-2 block w-full rounded-xl border-slate-300 text-sm shadow-sm focus:border-primary focus:ring-primary"
+                        >
+                            <option value="">Selecciona un grupo</option>
+                            <option v-for="group in payrollGroupOptions" :key="group.id" :value="group.id">
+                                {{ group.name }}
+                            </option>
+                        </select>
+                        <InputError class="mt-2" :message="fieldError('payroll_group_id')" />
                     </div>
 
                     <div>
@@ -360,7 +384,7 @@ const payPayroll = async (payroll) => {
 
             <FilterCard>
                 <template #filters>
-                    <SearchInput v-model="period" placeholder="Periodo YYYY-MM..." />
+                    <SearchInput v-model="period" placeholder="Periodo MM-YYYY..." />
 
                     <select
                         v-model="statusId"
@@ -369,6 +393,16 @@ const payPayroll = async (payroll) => {
                         <option value="">Todos los estados</option>
                         <option v-for="status in statuses" :key="status.id" :value="status.id">
                             {{ status.name }}
+                        </option>
+                    </select>
+
+                    <select
+                        v-model="payrollGroupId"
+                        class="rounded-xl border-slate-300 bg-white text-sm font-medium text-gray-700 shadow-sm focus:border-primary focus:ring-primary"
+                    >
+                        <option value="">Todos los grupos</option>
+                        <option v-for="group in payrollGroupOptions" :key="group.id" :value="group.id">
+                            {{ group.name }}
                         </option>
                     </select>
 
@@ -399,8 +433,8 @@ const payPayroll = async (payroll) => {
                         <TableEntityCell
                             :icon="ReceiptText"
                             :title="payroll.code"
-                            :subtitle="payroll.period"
-                            :meta="payroll.payment_date ? `Pago: ${payroll.payment_date}` : 'Sin fecha de pago'"
+                            :subtitle="`${payroll.period} · ${payroll.payroll_group?.name ?? 'Sin grupo'}`"
+                            :meta="payroll.payment_date ? `Pago: ${formatDate(payroll.payment_date)}` : 'Sin fecha de pago'"
                         />
                     </td>
 

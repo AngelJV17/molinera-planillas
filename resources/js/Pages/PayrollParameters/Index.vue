@@ -19,6 +19,7 @@ import TableActionButton from '@/Components/Table/TableActionButton.vue';
 import TableActions from '@/Components/Table/TableActions.vue';
 import TableEntityCell from '@/Components/Table/TableEntityCell.vue';
 import { confirmStatusChange } from '@/Utils/alerts';
+import { formatDate } from '@/Utils/dates';
 
 const props = defineProps({
     parameters: {
@@ -148,7 +149,7 @@ const toggleStatus = async (parameter) => {
                     </td>
 
                     <td class="px-6 py-4 text-gray-600">
-                        {{ parameter.effective_from ?? 'Sin fecha' }}
+                        {{ parameter.effective_from ? formatDate(parameter.effective_from) : 'Sin fecha' }}
                     </td>
 
                     <td class="px-6 py-4">

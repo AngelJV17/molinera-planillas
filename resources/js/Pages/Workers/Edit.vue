@@ -46,6 +46,7 @@ const form = useForm({
     termination_date: dateValue(props.worker.termination_date),
     position_id: props.worker.position_id ?? '',
     work_area_id: props.worker.work_area_id ?? '',
+    payroll_group_id: props.worker.payroll_group_id ?? '',
     work_shift_id: props.worker.work_shift_id ?? '',
     employment_status_id: props.worker.employment_status_id ?? '',
     base_salary: props.worker.base_salary,

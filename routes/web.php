@@ -8,9 +8,9 @@ use App\Http\Controllers\ChangeTemporaryPasswordController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\EmployeeController;
 use App\Http\Controllers\OrganizationalStructureController;
+use App\Http\Controllers\PaymentSlipController;
 use App\Http\Controllers\PayrollController;
 use App\Http\Controllers\PayrollParameterController;
-use App\Http\Controllers\PaymentSlipController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\RoleController;
@@ -32,10 +32,10 @@ use Inertia\Inertia;
 
 Route::get('/', function () {
     return Inertia::render('Welcome', [
-        'canLogin'       => Route::has('login'),
-        'canRegister'    => Route::has('register'),
+        'canLogin' => Route::has('login'),
+        'canRegister' => Route::has('register'),
         'laravelVersion' => Application::VERSION,
-        'phpVersion'     => PHP_VERSION,
+        'phpVersion' => PHP_VERSION,
     ]);
 })->name('welcome');
 
@@ -260,6 +260,14 @@ Route::middleware(['auth', 'verified', 'password.changed'])->group(function () {
             Route::patch('{monthlyAttendance}/days/bulk', 'bulkUpdateDays')
                 ->middleware('permission:attendance.edit')
                 ->name('days.bulk-update');
+
+            Route::post('import-excel', 'importExcel')
+                ->middleware('permission:attendance.edit')
+                ->name('import-excel');
+
+            Route::get('import-template', 'downloadImportTemplate')
+                ->middleware('permission:attendance.edit')
+                ->name('import-template');
         });
 
     Route::patch(
@@ -276,8 +284,8 @@ Route::middleware(['auth', 'verified', 'password.changed'])->group(function () {
     | Planillas
     |--------------------------------------------------------------------------
     |
-    | Módulo pendiente de implementar con controlador propio.
-    | Por ahora mantiene una vista base en Inertia.
+    | Generacion, revision, aprobacion, observacion, rechazo, recalculo
+    | y pago de planillas por grupo de planilla.
     |
     */
 
@@ -311,8 +319,8 @@ Route::middleware(['auth', 'verified', 'password.changed'])->group(function () {
     | Boletas de pago
     |--------------------------------------------------------------------------
     |
-    | Módulo pendiente de implementar con controlador propio.
-    | Por ahora mantiene una vista base en Inertia.
+    | Consulta, impresion y exportacion de boletas emitidas desde planillas
+    | aprobadas o pagadas.
     |
     */
 
@@ -342,8 +350,7 @@ Route::middleware(['auth', 'verified', 'password.changed'])->group(function () {
     | Reportes
     |--------------------------------------------------------------------------
     |
-    | Módulo pendiente de implementar con controlador propio.
-    | Por ahora mantiene una vista base en Inertia.
+    | Exportacion de informacion operativa en Excel y PDF.
     |
     */
 
@@ -417,4 +424,4 @@ Route::middleware(['auth', 'verified', 'password.changed'])->group(function () {
 |
 */
 
-require __DIR__ . '/auth.php';
+require __DIR__.'/auth.php';

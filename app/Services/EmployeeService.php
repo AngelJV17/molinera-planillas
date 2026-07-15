@@ -1,8 +1,9 @@
 <?php
+
 namespace App\Services;
 
-use App\Models\Catalog;
 use App\Models\Bank;
+use App\Models\Catalog;
 use App\Models\Department;
 use App\Models\District;
 use App\Models\Employee;
@@ -33,6 +34,7 @@ class EmployeeService
                 'workShift:id,name,start_time,end_time',
                 'position:id,name',
                 'workArea:id,name',
+                'payrollGroup:id,name',
                 'employmentStatus:id,name',
                 'pensionSystem:id,name',
             ])
@@ -45,9 +47,9 @@ class EmployeeService
                         ->orWhere('email', 'like', "%{$search}%");
                 });
             })
-            ->when($status !== null && $status !== '', fn($query) => $query->where('status', (bool) $status))
-            ->when($workShiftId, fn($query) => $query->where('work_shift_id', $workShiftId))
-            ->when($workAreaId, fn($query) => $query->where('work_area_id', $workAreaId))
+            ->when($status !== null && $status !== '', fn ($query) => $query->where('status', (bool) $status))
+            ->when($workShiftId, fn ($query) => $query->where('work_shift_id', $workShiftId))
+            ->when($workAreaId, fn ($query) => $query->where('work_area_id', $workAreaId))
             ->orderBy('last_name')
             ->orderBy('first_name')
             ->paginate(min($perPage, 100))
@@ -60,16 +62,16 @@ class EmployeeService
     public function formOptions(): array
     {
         return [
-            'catalogs'    => $this->catalogOptions(),
-            'banks'       => Bank::active()
+            'catalogs' => $this->catalogOptions(),
+            'banks' => Bank::active()
                 ->orderBy('name')
                 ->get(['id', 'name', 'code']),
-            'workShifts'  => WorkShift::active()
+            'workShifts' => WorkShift::active()
                 ->orderBy('name')
                 ->get(['id', 'name', 'start_time', 'end_time']),
             'departments' => Department::orderBy('name')->get(['id', 'name']),
-            'provinces'   => Province::orderBy('name')->get(['id', 'department_id', 'name']),
-            'districts'   => District::orderBy('name')->get(['id', 'province_id', 'name']),
+            'provinces' => Province::orderBy('name')->get(['id', 'department_id', 'name']),
+            'districts' => District::orderBy('name')->get(['id', 'province_id', 'name']),
         ];
     }
 
@@ -92,21 +94,21 @@ class EmployeeService
             if ($hasSystemAccess) {
 
                 $user = User::create([
-                    'name'     => trim(
-                        $employeeData['first_name'] . ' ' .
+                    'name' => trim(
+                        $employeeData['first_name'].' '.
                         $employeeData['last_name']
                     ),
 
                     'username' => $employeeData['document_number'],
 
-                    'email'    => $employeeData['email'] ?: null,
+                    'email' => $employeeData['email'] ?: null,
 
                     // contraseña inicial = DNI
                     'password' => Hash::make(
                         $employeeData['document_number']
                     ),
 
-                    'status'   => true,
+                    'status' => true,
                     'must_change_password' => true,
                 ]);
 
@@ -138,20 +140,20 @@ class EmployeeService
             if ($hasSystemAccess && ! $employee->user_id) {
 
                 $user = User::create([
-                    'name'     => trim(
-                        $employeeData['first_name'] . ' ' .
+                    'name' => trim(
+                        $employeeData['first_name'].' '.
                         $employeeData['last_name']
                     ),
 
                     'username' => $employeeData['document_number'],
 
-                    'email'    => $employeeData['email'] ?: null,
+                    'email' => $employeeData['email'] ?: null,
 
                     'password' => Hash::make(
                         $employeeData['document_number']
                     ),
 
-                    'status'   => true,
+                    'status' => true,
                     'must_change_password' => true,
                 ]);
 
@@ -162,14 +164,14 @@ class EmployeeService
             if ($hasSystemAccess && $employee->user_id) {
 
                 $employee->user->update([
-                    'name'     => trim(
-                        $employeeData['first_name'] . ' ' .
+                    'name' => trim(
+                        $employeeData['first_name'].' '.
                         $employeeData['last_name']
                     ),
 
                     'username' => $employeeData['document_number'],
 
-                    'email'    => $employeeData['email'] ?: null,
+                    'email' => $employeeData['email'] ?: null,
                 ]);
             }
 
@@ -214,6 +216,7 @@ class EmployeeService
                 'MARITAL_STATUS',
                 'POSITION',
                 'WORK_AREA',
+                'PAYROLL_GROUP',
                 'WORKER_STATUS',
                 'PENSION_SYSTEM',
                 'ACCOUNT_TYPE',
@@ -231,15 +234,15 @@ class EmployeeService
     {
         $lastId = Employee::withTrashed()->max('id') + 1;
 
-        return 'EMP-' . str_pad($lastId, 4, '0', STR_PAD_LEFT);
+        return 'EMP-'.str_pad($lastId, 4, '0', STR_PAD_LEFT);
     }
 
     private function syncBankAccounts(Employee $employee, array $accounts): void
     {
         $normalized = collect($accounts)
-            ->filter(fn(array $account) => ! empty($account['bank_id']) && ! empty($account['account_type_id']) && ! empty($account['account_number']))
+            ->filter(fn (array $account) => ! empty($account['bank_id']) && ! empty($account['account_type_id']) && ! empty($account['account_number']))
             ->values()
-            ->map(fn(array $account, int $index) => [
+            ->map(fn (array $account, int $index) => [
                 'bank_id' => $account['bank_id'],
                 'account_type_id' => $account['account_type_id'],
                 'account_number' => $account['account_number'],

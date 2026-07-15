@@ -276,6 +276,18 @@ watch(
                 </div>
 
                 <div>
+                    <InputLabel for="payroll_group_id" value="Grupo de planilla" />
+                    <select id="payroll_group_id" v-model="form.payroll_group_id"
+                        class="mt-1 block w-full rounded-xl border-gray-300 text-sm shadow-sm focus:border-primary focus:ring-primary">
+                        <option value="">Seleccionar</option>
+                        <option v-for="item in catalogOptions('PAYROLL_GROUP')" :key="item.id" :value="item.id">
+                            {{ item.name }}
+                        </option>
+                    </select>
+                    <InputError class="mt-2" :message="form.errors.payroll_group_id" />
+                </div>
+
+                <div>
                     <InputLabel for="work_shift_id" value="Turno" />
                     <select id="work_shift_id" v-model="form.work_shift_id"
                         class="mt-1 block w-full rounded-xl border-gray-300 text-sm shadow-sm focus:border-primary focus:ring-primary">

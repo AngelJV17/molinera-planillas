@@ -3,8 +3,10 @@
 namespace Tests\Feature;
 
 use App\Models\User;
+use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
+use Spatie\Permission\Models\Role;
 use Tests\Feature\Concerns\CreatesTestData;
 use Tests\TestCase;
 
@@ -100,7 +102,7 @@ class UserRoleModuleTest extends TestCase
             'permissions' => [$view->name],
         ])->assertSessionHasNoErrors();
 
-        $role = \Spatie\Permission\Models\Role::firstWhere('name', 'Supervisor');
+        $role = Role::firstWhere('name', 'Supervisor');
 
         $this->actingAs($admin)->put(route('roles.update', $role), [
             'name' => 'Supervisor Planta',
@@ -125,5 +127,53 @@ class UserRoleModuleTest extends TestCase
         ]);
 
         $response->assertSessionHasErrors(['name', 'permissions.0']);
+    }
+
+    public function test_base_actor_roles_match_use_case_diagram(): void
+    {
+        $this->seed(RolePermissionSeeder::class);
+
+        $this->assertEqualsCanonicalizing([
+            'Super Admin',
+            'Administrador',
+            'RRHH',
+            'Contabilidad',
+            'Gerente',
+        ], Role::query()->pluck('name')->all());
+    }
+
+    public function test_actor_permission_matrix_matches_expected_restrictions(): void
+    {
+        $this->seed(RolePermissionSeeder::class);
+
+        $superAdmin = Role::findByName('Super Admin');
+        $administrator = Role::findByName('Administrador');
+        $humanResources = Role::findByName('RRHH');
+        $accounting = Role::findByName('Contabilidad');
+        $manager = Role::findByName('Gerente');
+
+        $this->assertTrue($superAdmin->hasPermissionTo('users.create'));
+        $this->assertTrue($superAdmin->hasPermissionTo('roles.assign-permissions'));
+
+        $this->assertTrue($administrator->hasPermissionTo('users.create'));
+        $this->assertTrue($administrator->hasPermissionTo('catalogs.edit'));
+        $this->assertFalse($administrator->hasPermissionTo('payrolls.approve'));
+        $this->assertFalse($administrator->hasPermissionTo('attendance.edit'));
+
+        $this->assertTrue($humanResources->hasPermissionTo('workers.create'));
+        $this->assertTrue($humanResources->hasPermissionTo('attendance.close'));
+        $this->assertFalse($humanResources->hasPermissionTo('payrolls.create'));
+        $this->assertFalse($humanResources->hasPermissionTo('users.create'));
+
+        $this->assertTrue($accounting->hasPermissionTo('payrolls.create'));
+        $this->assertTrue($accounting->hasPermissionTo('payrolls.pay'));
+        $this->assertTrue($accounting->hasPermissionTo('payment-slips.download'));
+        $this->assertFalse($accounting->hasPermissionTo('payrolls.approve'));
+
+        $this->assertTrue($manager->hasPermissionTo('payrolls.approve'));
+        $this->assertTrue($manager->hasPermissionTo('payrolls.observe'));
+        $this->assertTrue($manager->hasPermissionTo('payrolls.reject'));
+        $this->assertFalse($manager->hasPermissionTo('payrolls.create'));
+        $this->assertFalse($manager->hasPermissionTo('payrolls.pay'));
     }
 }

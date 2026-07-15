@@ -31,8 +31,7 @@ class ReportController extends Controller
 
     public function __construct(
         private readonly PayrollService $payrollService
-    ) {
-    }
+    ) {}
 
     public function index(Request $request): Response
     {
@@ -51,14 +50,14 @@ class ReportController extends Controller
     public function export(Request $request): StreamedResponse|HttpResponse
     {
         $request->validate([
-            'type' => ['required', 'in:' . implode(',', self::REPORT_TYPES)],
+            'type' => ['required', 'in:'.implode(',', self::REPORT_TYPES)],
             'format' => ['required', 'in:xlsx,pdf'],
-            'period' => ['nullable', 'date_format:Y-m'],
+            'period' => ['nullable', 'regex:/^(\d{4}-\d{2}|\d{2}-\d{4})$/'],
         ]);
 
         $type = $request->string('type')->toString();
         $format = $request->string('format')->toString();
-        $periodInput = $request->input('period', now()->format('Y-m'));
+        $periodInput = $this->normalizePeriodInput($request->input('period', now()->format('Y-m')));
         $report = $this->reportData($type, $this->payrollService->parsePeriod($periodInput));
 
         return $format === 'pdf'
@@ -69,20 +68,20 @@ class ReportController extends Controller
     private function availableReports(array $period): array
     {
         $payrolls = Payroll::query()
-            ->when($period['month'], fn(Builder $query) => $query->where('month', $period['month']))
-            ->when($period['year'], fn(Builder $query) => $query->where('year', $period['year']));
+            ->when($period['month'], fn (Builder $query) => $query->where('month', $period['month']))
+            ->when($period['year'], fn (Builder $query) => $query->where('year', $period['year']));
 
         $attendances = MonthlyAttendance::query()
-            ->when($period['month'], fn(Builder $query) => $query->where('month', $period['month']))
-            ->when($period['year'], fn(Builder $query) => $query->where('year', $period['year']));
+            ->when($period['month'], fn (Builder $query) => $query->where('month', $period['month']))
+            ->when($period['year'], fn (Builder $query) => $query->where('year', $period['year']));
 
         $slips = PayrollDetail::query()
-            ->whereHas('payroll.status', fn(Builder $query) => $query->whereIn('code', [
+            ->whereHas('payroll.status', fn (Builder $query) => $query->whereIn('code', [
                 Payroll::STATUS_APPROVED,
                 Payroll::STATUS_PAID,
             ]))
-            ->when($period['month'], fn(Builder $query) => $query->whereHas('payroll', fn(Builder $payrollQuery) => $payrollQuery->where('month', $period['month'])))
-            ->when($period['year'], fn(Builder $query) => $query->whereHas('payroll', fn(Builder $payrollQuery) => $payrollQuery->where('year', $period['year'])));
+            ->when($period['month'], fn (Builder $query) => $query->whereHas('payroll', fn (Builder $payrollQuery) => $payrollQuery->where('month', $period['month'])))
+            ->when($period['year'], fn (Builder $query) => $query->whereHas('payroll', fn (Builder $payrollQuery) => $payrollQuery->where('year', $period['year'])));
 
         return [
             [
@@ -106,6 +105,19 @@ class ReportController extends Controller
         ];
     }
 
+    private function normalizePeriodInput(?string $period): string
+    {
+        $period = trim(str_replace('/', '-', (string) $period));
+
+        if (preg_match('/^\d{2}-\d{4}$/', $period)) {
+            [$month, $year] = explode('-', $period);
+
+            return "{$year}-{$month}";
+        }
+
+        return $period;
+    }
+
     private function reportData(string $type, array $period): array
     {
         return match ($type) {
@@ -119,21 +131,21 @@ class ReportController extends Controller
     {
         $rows = Payroll::query()
             ->with('status:id,code,name')
-            ->when($period['month'], fn(Builder $query) => $query->where('month', $period['month']))
-            ->when($period['year'], fn(Builder $query) => $query->where('year', $period['year']))
+            ->when($period['month'], fn (Builder $query) => $query->where('month', $period['month']))
+            ->when($period['year'], fn (Builder $query) => $query->where('year', $period['year']))
             ->orderByDesc('year')
             ->orderByDesc('month')
             ->get()
-            ->map(fn(Payroll $payroll) => [
+            ->map(fn (Payroll $payroll) => [
                 $payroll->code,
-                $this->payrollService->monthName($payroll->month) . ' ' . $payroll->year,
+                $this->payrollService->monthName($payroll->month).' '.$payroll->year,
                 $payroll->status?->name,
                 $payroll->employee_count,
                 (float) $payroll->total_income,
                 (float) $payroll->total_discount,
                 (float) $payroll->total_employer_contribution,
                 (float) $payroll->total_net,
-                $payroll->payment_date?->format('d/m/Y') ?? '',
+                $payroll->payment_date?->format('d-m-Y') ?? '',
             ])
             ->values()
             ->all();
@@ -152,15 +164,15 @@ class ReportController extends Controller
     {
         $rows = MonthlyAttendance::query()
             ->with(['employee:id,employee_code,first_name,last_name', 'status:id,code,name'])
-            ->when($period['month'], fn(Builder $query) => $query->where('month', $period['month']))
-            ->when($period['year'], fn(Builder $query) => $query->where('year', $period['year']))
+            ->when($period['month'], fn (Builder $query) => $query->where('month', $period['month']))
+            ->when($period['year'], fn (Builder $query) => $query->where('year', $period['year']))
             ->orderByDesc('year')
             ->orderByDesc('month')
             ->get()
-            ->map(fn(MonthlyAttendance $attendance) => [
+            ->map(fn (MonthlyAttendance $attendance) => [
                 $attendance->employee?->full_name,
                 $attendance->employee?->employee_code,
-                $this->payrollService->monthName($attendance->month) . ' ' . $attendance->year,
+                $this->payrollService->monthName($attendance->month).' '.$attendance->year,
                 $attendance->status?->name,
                 $attendance->worked_days,
                 $attendance->absence_days,
@@ -187,19 +199,19 @@ class ReportController extends Controller
     {
         $rows = PayrollDetail::query()
             ->with('payroll.status:id,code,name')
-            ->whereHas('payroll.status', fn(Builder $query) => $query->whereIn('code', [
+            ->whereHas('payroll.status', fn (Builder $query) => $query->whereIn('code', [
                 Payroll::STATUS_APPROVED,
                 Payroll::STATUS_PAID,
             ]))
-            ->when($period['month'], fn(Builder $query) => $query->whereHas('payroll', fn(Builder $payrollQuery) => $payrollQuery->where('month', $period['month'])))
-            ->when($period['year'], fn(Builder $query) => $query->whereHas('payroll', fn(Builder $payrollQuery) => $payrollQuery->where('year', $period['year'])))
+            ->when($period['month'], fn (Builder $query) => $query->whereHas('payroll', fn (Builder $payrollQuery) => $payrollQuery->where('month', $period['month'])))
+            ->when($period['year'], fn (Builder $query) => $query->whereHas('payroll', fn (Builder $payrollQuery) => $payrollQuery->where('year', $period['year'])))
             ->get()
-            ->map(fn(PayrollDetail $detail) => [
+            ->map(fn (PayrollDetail $detail) => [
                 $detail->employee_name,
                 $detail->employee_code,
                 $detail->document_number,
                 $detail->payroll->code,
-                $this->payrollService->monthName($detail->payroll->month) . ' ' . $detail->payroll->year,
+                $this->payrollService->monthName($detail->payroll->month).' '.$detail->payroll->year,
                 (float) $detail->total_income,
                 (float) $detail->total_discount,
                 (float) $detail->net_pay,
@@ -219,7 +231,7 @@ class ReportController extends Controller
 
     private function excelResponse(array $report, string $period): StreamedResponse
     {
-        $spreadsheet = new Spreadsheet();
+        $spreadsheet = new Spreadsheet;
         $sheet = $spreadsheet->getActiveSheet();
         $sheet->setTitle(substr($report['title'], 0, 31));
 
@@ -227,7 +239,7 @@ class ReportController extends Controller
         $sheet->mergeCells("A1:{$lastColumn}1");
         $sheet->setCellValue('A1', $report['title']);
         $sheet->mergeCells("A2:{$lastColumn}2");
-        $sheet->setCellValue('A2', 'Periodo: ' . ($period ?: 'Todos') . ' | Generado: ' . now()->format('d/m/Y H:i'));
+        $sheet->setCellValue('A2', 'Periodo: '.($period ?: 'Todos').' | Generado: '.now()->format('d-m-Y H:i'));
         $sheet->fromArray($report['columns'], null, 'A4');
         $sheet->fromArray($report['rows'], null, 'A5');
 
@@ -268,7 +280,7 @@ class ReportController extends Controller
 
     private function pdfResponse(array $report, string $period): HttpResponse
     {
-        $options = new Options();
+        $options = new Options;
         $options->set('defaultFont', 'DejaVu Sans');
         $options->set('isRemoteEnabled', false);
 
@@ -276,14 +288,14 @@ class ReportController extends Controller
         $dompdf->loadHtml(view('reports.export-pdf', [
             'report' => $report,
             'period' => $period ?: 'Todos',
-            'generatedAt' => now()->format('d/m/Y H:i'),
+            'generatedAt' => now()->format('d-m-Y H:i'),
         ])->render());
         $dompdf->setPaper('A4', count($report['columns']) > 8 ? 'landscape' : 'portrait');
         $dompdf->render();
 
         return response($dompdf->output(), 200, [
             'Content-Type' => 'application/pdf',
-            'Content-Disposition' => 'attachment; filename="' . $this->filename($report['type'], $period, 'pdf') . '"',
+            'Content-Disposition' => 'attachment; filename="'.$this->filename($report['type'], $period, 'pdf').'"',
         ]);
     }
 

@@ -47,6 +47,23 @@ const showFlashAlert = (type, message) => {
         return;
     }
 
+    const flashKey = `${type}:${normalizedMessage}`;
+    const historyState = window.history.state ?? {};
+    const shownFlashKeys = new Set(historyState.shownFlashKeys ?? []);
+
+    if (shownFlashKeys.has(flashKey)) {
+        return;
+    }
+
+    shownFlashKeys.add(flashKey);
+    window.history.replaceState(
+        {
+            ...historyState,
+            shownFlashKeys: [...shownFlashKeys].slice(-50),
+        },
+        '',
+    );
+
     if (type === 'success') {
         showSuccessAlert(normalizedMessage);
         return;

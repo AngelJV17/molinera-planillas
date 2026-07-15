@@ -23,9 +23,11 @@ class PayrollModuleTest extends TestCase
         $catalogs = array_merge($this->attendanceCatalogs(), $this->payrollCatalogs());
         $this->payrollParameters();
         $documentType = $this->catalog('DOCUMENT_TYPE', 'DNI');
+        $payrollGroup = $this->catalog('PAYROLL_GROUP', 'PRODUCCION', ['name' => 'Producción']);
         $pensionSystem = $this->catalog('PENSION_SYSTEM', 'ONP', ['name' => 'ONP']);
         $employee = $this->employee([
             'document_type_id' => $documentType->id,
+            'payroll_group_id' => $payrollGroup->id,
             'pension_system_id' => $pensionSystem->id,
             'base_salary' => 3000,
         ]);
@@ -47,18 +49,20 @@ class PayrollModuleTest extends TestCase
         $response = $this->actingAs($user)->post(route('payrolls.store'), [
             'month' => 5,
             'year' => 2026,
+            'payroll_group_id' => $payrollGroup->id,
             'payment_date' => '2026-05-31',
             'observations' => 'Planilla de mayo',
         ]);
 
         $response
             ->assertSessionHasNoErrors()
-            ->assertRedirect(route('payrolls.index', ['period' => '2026-05'], false));
+            ->assertRedirect(route('payrolls.index', ['period' => '2026-05', 'payroll_group_id' => $payrollGroup->id], false));
 
         $payroll = Payroll::with('details.concepts')->first();
         $detail = $payroll->details->first();
 
-        $this->assertSame('PLA-2026-05', $payroll->code);
+        $this->assertSame('PLA-2026-05-PRODUCCION', $payroll->code);
+        $this->assertSame($payrollGroup->id, $payroll->payroll_group_id);
         $this->assertSame($catalogs['in_review']->id, $payroll->status_id);
         $this->assertSame(1, $payroll->employee_count);
         $this->assertSame('2464.37', $detail->net_pay);
@@ -70,13 +74,15 @@ class PayrollModuleTest extends TestCase
         $user = User::factory()->create();
         $this->payrollCatalogs();
         $this->payrollParameters();
+        $payrollGroup = $this->catalog('PAYROLL_GROUP', 'PRODUCCION', ['name' => 'Producción']);
 
         $response = $this->actingAs($user)->post(route('payrolls.store'), [
             'month' => 6,
             'year' => 2026,
+            'payroll_group_id' => $payrollGroup->id,
         ]);
 
-        $response->assertSessionHasErrors(['period', 'month']);
+        $response->assertSessionHasErrors(['period', 'month', 'payroll_group_id']);
         $this->assertDatabaseCount('payrolls', 0);
     }
 
@@ -85,9 +91,11 @@ class PayrollModuleTest extends TestCase
         $user = User::factory()->create();
         $catalogs = array_merge($this->attendanceCatalogs(), $this->payrollCatalogs());
         $documentType = $this->catalog('DOCUMENT_TYPE', 'DNI');
+        $payrollGroup = $this->catalog('PAYROLL_GROUP', 'ADMINISTRATIVA', ['name' => 'Administrativa']);
         $pensionSystem = $this->catalog('PENSION_SYSTEM', 'ONP', ['name' => 'ONP']);
         $employee = $this->employee([
             'document_type_id' => $documentType->id,
+            'payroll_group_id' => $payrollGroup->id,
             'pension_system_id' => $pensionSystem->id,
             'base_salary' => 2000,
         ]);
@@ -121,6 +129,7 @@ class PayrollModuleTest extends TestCase
             ->post(route('payrolls.store'), [
                 'month' => 7,
                 'year' => 2026,
+                'payroll_group_id' => $payrollGroup->id,
             ])
             ->assertSessionHasNoErrors();
 
@@ -132,16 +141,19 @@ class PayrollModuleTest extends TestCase
         $user = User::factory()->create();
         $catalogs = array_merge($this->attendanceCatalogs(), $this->payrollCatalogs());
         $documentType = $this->catalog('DOCUMENT_TYPE', 'DNI');
+        $payrollGroup = $this->catalog('PAYROLL_GROUP', 'PRODUCCION', ['name' => 'Producción']);
         $onp = $this->catalog('PENSION_SYSTEM', 'ONP', ['name' => 'ONP']);
         $afp = $this->catalog('PENSION_SYSTEM', 'AFP_INTEGRA', ['name' => 'AFP Integra']);
         $onpEmployee = $this->employee([
             'document_type_id' => $documentType->id,
+            'payroll_group_id' => $payrollGroup->id,
             'document_number' => '12345678',
             'employee_code' => 'EMP-ONP',
             'pension_system_id' => $onp->id,
         ]);
         $afpEmployee = $this->employee([
             'document_type_id' => $documentType->id,
+            'payroll_group_id' => $payrollGroup->id,
             'document_number' => '87654321',
             'employee_code' => 'EMP-AFP',
             'email' => 'afp@example.com',
@@ -178,6 +190,7 @@ class PayrollModuleTest extends TestCase
         $response = $this->actingAs($user)->post(route('payrolls.store'), [
             'month' => 8,
             'year' => 2026,
+            'payroll_group_id' => $payrollGroup->id,
         ]);
 
         $response->assertSessionHasErrors(['payroll']);
@@ -190,7 +203,8 @@ class PayrollModuleTest extends TestCase
         $user = User::factory()->create();
         $catalogs = array_merge($this->attendanceCatalogs(), $this->payrollCatalogs());
         $this->payrollParameters();
-        $employee = $this->employee();
+        $payrollGroup = $this->catalog('PAYROLL_GROUP', 'PRODUCCION', ['name' => 'Producción']);
+        $employee = $this->employee(['payroll_group_id' => $payrollGroup->id]);
 
         MonthlyAttendance::create([
             'employee_id' => $employee->id,
@@ -202,13 +216,73 @@ class PayrollModuleTest extends TestCase
             'closed_at' => now(),
         ]);
 
-        $payload = ['month' => 5, 'year' => 2026];
+        $payload = ['month' => 5, 'year' => 2026, 'payroll_group_id' => $payrollGroup->id];
 
         $this->actingAs($user)->post(route('payrolls.store'), $payload)->assertSessionHasNoErrors();
 
         $this->actingAs($user)
             ->post(route('payrolls.store'), $payload)
             ->assertSessionHasErrors(['period', 'month']);
+    }
+
+    public function test_payrolls_can_be_generated_separately_by_payroll_group(): void
+    {
+        $user = User::factory()->create();
+        $catalogs = array_merge($this->attendanceCatalogs(), $this->payrollCatalogs());
+        $this->payrollParameters();
+        $production = $this->catalog('PAYROLL_GROUP', 'PRODUCCION', ['name' => 'Producción']);
+        $administration = $this->catalog('PAYROLL_GROUP', 'ADMIN', ['name' => 'Administrativa']);
+        $documentType = $this->catalog('DOCUMENT_TYPE', 'DNI');
+        $productionEmployee = $this->employee([
+            'document_type_id' => $documentType->id,
+            'document_number' => '11111111',
+            'employee_code' => 'EMP-PRO',
+            'payroll_group_id' => $production->id,
+        ]);
+        $adminEmployee = $this->employee([
+            'document_type_id' => $documentType->id,
+            'document_number' => '22222222',
+            'employee_code' => 'EMP-ADM',
+            'email' => 'admin.area@example.com',
+            'payroll_group_id' => $administration->id,
+        ]);
+
+        foreach ([[$productionEmployee, 24], [$adminEmployee, 26]] as [$employee, $workedDays]) {
+            MonthlyAttendance::create([
+                'employee_id' => $employee->id,
+                'status_id' => $catalogs['closed']->id,
+                'month' => 6,
+                'year' => 2026,
+                'worked_days' => $workedDays,
+                'rest_days' => 4,
+                'closed_at' => now(),
+            ]);
+        }
+
+        $this->actingAs($user)->post(route('payrolls.store'), [
+            'month' => 6,
+            'year' => 2026,
+            'payroll_group_id' => $production->id,
+        ])->assertSessionHasNoErrors();
+
+        $this->actingAs($user)->post(route('payrolls.store'), [
+            'month' => 6,
+            'year' => 2026,
+            'payroll_group_id' => $administration->id,
+        ])->assertSessionHasNoErrors();
+
+        $this->assertDatabaseHas('payrolls', [
+            'month' => 6,
+            'year' => 2026,
+            'payroll_group_id' => $production->id,
+            'employee_count' => 1,
+        ]);
+        $this->assertDatabaseHas('payrolls', [
+            'month' => 6,
+            'year' => 2026,
+            'payroll_group_id' => $administration->id,
+            'employee_count' => 1,
+        ]);
     }
 
     public function test_payroll_can_be_approved_and_paid(): void
@@ -357,6 +431,19 @@ class PayrollModuleTest extends TestCase
             ->assertSessionHasErrors(['type', 'format', 'period']);
     }
 
+    public function test_report_export_accepts_local_period_format(): void
+    {
+        $user = User::factory()->create();
+
+        $this->actingAs($user)
+            ->get(route('reports.export', [
+                'type' => 'payroll_summary',
+                'format' => 'xlsx',
+                'period' => '05-2026',
+            ]))
+            ->assertOk();
+    }
+
     public function test_payroll_can_not_be_paid_before_approval(): void
     {
         $user = User::factory()->create();
@@ -410,9 +497,11 @@ class PayrollModuleTest extends TestCase
     {
         $catalogs = array_merge($this->attendanceCatalogs(), $this->payrollCatalogs());
         $this->payrollParameters();
+        $payrollGroup = $this->catalog('PAYROLL_GROUP', 'AREA-'.random_int(1000, 9999), ['name' => 'Area prueba']);
         $employee = $this->employee([
             'document_number' => (string) random_int(10000000, 99999999),
-            'employee_code' => 'EMP-' . random_int(1000, 9999),
+            'employee_code' => 'EMP-'.random_int(1000, 9999),
+            'payroll_group_id' => $payrollGroup->id,
         ]);
 
         MonthlyAttendance::create([
@@ -429,6 +518,7 @@ class PayrollModuleTest extends TestCase
             ->post(route('payrolls.store'), [
                 'month' => $month,
                 'year' => $year,
+                'payroll_group_id' => $payrollGroup->id,
             ])
             ->assertSessionHasNoErrors();
 

@@ -109,7 +109,7 @@
             <h1>Boleta de pago</h1>
             <div class="muted">{{ $slip['period'] }} · {{ $slip['payroll_code'] }}</div>
         </div>
-        <div class="muted">Generado el {{ now()->format('d/m/Y H:i') }}</div>
+        <div class="muted">Generado el {{ now()->format('d-m-Y H:i') }}</div>
     </div>
 
     <section class="grid">

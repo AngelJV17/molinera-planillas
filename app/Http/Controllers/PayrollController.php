@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\Payroll\StorePayrollRequest;
+use App\Models\Catalog;
 use App\Models\Payroll;
 use App\Services\PayrollService;
 use Illuminate\Http\RedirectResponse;
@@ -14,8 +15,7 @@ class PayrollController extends Controller
 {
     public function __construct(
         private readonly PayrollService $service
-    ) {
-    }
+    ) {}
 
     /**
      * Muestra el listado y los controles principales de planillas.
@@ -25,12 +25,13 @@ class PayrollController extends Controller
         $filters = [
             'period' => $request->input('period', ''),
             'status_id' => $request->input('status_id', ''),
+            'payroll_group_id' => $request->input('payroll_group_id', ''),
             'per_page' => $request->input('per_page', 10),
         ];
 
         $payrolls = $this->service
             ->paginate($filters)
-            ->through(fn(Payroll $payroll) => $this->payrollPayload($payroll));
+            ->through(fn (Payroll $payroll) => $this->payrollPayload($payroll));
 
         return Inertia::render('Payrolls/Index', [
             'payrolls' => $payrolls,
@@ -38,6 +39,7 @@ class PayrollController extends Controller
             'statuses' => $this->service->statuses(),
             'monthOptions' => $this->service->monthOptions(),
             'yearOptions' => $this->service->yearOptions(),
+            'payrollGroupOptions' => $this->payrollGroupOptions(),
             'defaultPeriod' => now()->subMonthNoOverflow()->format('Y-m'),
         ]);
     }
@@ -53,7 +55,10 @@ class PayrollController extends Controller
         );
 
         return redirect()
-            ->route('payrolls.index', ['period' => sprintf('%04d-%02d', $payroll->year, $payroll->month)])
+            ->route('payrolls.index', [
+                'period' => sprintf('%04d-%02d', $payroll->year, $payroll->month),
+                'payroll_group_id' => $payroll->payroll_group_id,
+            ])
             ->with('success', 'Planilla generada correctamente y enviada a revision.');
     }
 
@@ -112,13 +117,19 @@ class PayrollController extends Controller
     {
         $payroll->loadMissing([
             'status:id,code,name',
+            'payrollGroup:id,code,name',
             'details.concepts.conceptType:id,code,name',
         ]);
 
         return [
             'id' => $payroll->id,
             'code' => $payroll->code,
-            'period' => $this->service->monthName($payroll->month) . ' ' . $payroll->year,
+            'period' => $this->service->monthName($payroll->month).' '.$payroll->year,
+            'payroll_group' => [
+                'id' => $payroll->payrollGroup?->id,
+                'code' => $payroll->payrollGroup?->code,
+                'name' => $payroll->payrollGroup?->name ?? 'Sin grupo',
+            ],
             'month' => $payroll->month,
             'year' => $payroll->year,
             'payment_date' => $payroll->payment_date?->toDateString(),
@@ -143,7 +154,7 @@ class PayrollController extends Controller
             'details' => $payroll->details
                 ->sortBy('employee_name')
                 ->values()
-                ->map(fn($detail) => [
+                ->map(fn ($detail) => [
                     'id' => $detail->id,
                     'employee_name' => $detail->employee_name,
                     'employee_code' => $detail->employee_code,
@@ -161,7 +172,7 @@ class PayrollController extends Controller
                     'concepts' => $detail->concepts
                         ->sortBy('sort_order')
                         ->values()
-                        ->map(fn($concept) => [
+                        ->map(fn ($concept) => [
                             'id' => $concept->id,
                             'type' => [
                                 'code' => $concept->conceptType?->code,
@@ -175,5 +186,14 @@ class PayrollController extends Controller
                         ]),
                 ]),
         ];
+    }
+
+    private function payrollGroupOptions()
+    {
+        return Catalog::query()
+            ->where('type', 'PAYROLL_GROUP')
+            ->where('status', true)
+            ->orderBy('name')
+            ->get(['id', 'code', 'name']);
     }
 }

@@ -10,6 +10,7 @@ import PageHeader from '@/Components/Common/PageHeader.vue';
 import DataTable from '@/Components/Table/DataTable.vue';
 import SearchInput from '@/Components/Table/SearchInput.vue';
 import TableActions from '@/Components/Table/TableActions.vue';
+import { formatPeriod, periodForRequest } from '@/Utils/dates';
 
 const props = defineProps({
     reports: {
@@ -22,7 +23,7 @@ const props = defineProps({
     },
 });
 
-const period = ref(props.filters.period ?? '');
+const period = ref(formatPeriod(props.filters.period ?? ''));
 let filterTimeout = null;
 
 const columns = [
@@ -37,7 +38,7 @@ watch(period, () => {
     filterTimeout = setTimeout(() => {
         router.get(
             route('reports.index'),
-            { period: period.value || undefined },
+            { period: periodForRequest(period.value) || undefined },
             {
                 preserveState: true,
                 preserveScroll: true,
@@ -50,7 +51,7 @@ watch(period, () => {
 const exportUrl = (type, format) => route('reports.export', {
     type,
     format,
-    period: period.value || undefined,
+    period: periodForRequest(period.value) || undefined,
 });
 </script>
 
@@ -70,7 +71,7 @@ const exportUrl = (type, format) => route('reports.export', {
 
             <FilterCard>
                 <template #filters>
-                    <SearchInput v-model="period" placeholder="Periodo YYYY-MM..." />
+                    <SearchInput v-model="period" placeholder="Periodo MM-YYYY..." />
                 </template>
             </FilterCard>
 

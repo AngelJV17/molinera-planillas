@@ -29,8 +29,11 @@ import {
     CheckCircle2,
     Clock3,
     Database,
+    FileDown,
+    FileSpreadsheet,
     Plus,
     RefreshCcw,
+    Upload,
     UserCheck,
 } from 'lucide-vue-next';
 
@@ -84,6 +87,11 @@ const props = defineProps({
         type: String,
         required: true,
     },
+
+    payrollGroupOptions: {
+        type: Array,
+        default: () => [],
+    },
 });
 
 /**
@@ -94,6 +102,7 @@ const statusId = ref(props.filters.status_id ?? '');
 const period = ref(props.filters.period ?? '');
 const perPage = ref(props.filters.per_page ?? 10);
 const page = usePage();
+const entryMode = ref('manual');
 
 let filterTimeout = null;
 const permissions = computed(() => page.props.auth?.permissions ?? []);
@@ -106,6 +115,12 @@ const form = useForm({
     employee_id: '',
     period: props.defaultPeriod,
     observations: '',
+});
+
+const importForm = useForm({
+    period: props.defaultPeriod,
+    payroll_group_id: props.payrollGroupOptions[0]?.id ?? '',
+    file: null,
 });
 
 /**
@@ -124,6 +139,21 @@ const columns = [
  */
 const totalAttendances = computed(() => {
     return props.attendances.total ?? props.attendances.data.length;
+});
+
+const selectedImportFileName = computed(() => {
+    return importForm.file?.name ?? 'Sin archivo seleccionado';
+});
+
+const templateDownloadUrl = computed(() => {
+    if (!importForm.period || !importForm.payroll_group_id) {
+        return '#';
+    }
+
+    return route('attendance.import-template', {
+        period: importForm.period,
+        payroll_group_id: importForm.payroll_group_id,
+    });
 });
 
 /**
@@ -181,6 +211,18 @@ const submit = () => {
                 form.reset('employee_id', 'observations');
             },
         });
+};
+
+const importBulkExcel = () => {
+    if (!importForm.file || importForm.processing) {
+        return;
+    }
+
+    importForm.post(route('attendance.import-excel'), {
+        preserveScroll: true,
+        forceFormData: true,
+        onSuccess: () => importForm.reset('file'),
+    });
 };
 
 /**
@@ -259,7 +301,25 @@ const statusLabel = (status) => {
             </PageHeader>
 
             <!-- Formulario de creación de asistencia mensual -->
-            <SectionCard title="Nuevo control mensual"
+            <div class="grid max-w-xl grid-cols-2 rounded-xl border border-slate-200 bg-slate-100 p-1">
+                <button type="button"
+                    class="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-black transition"
+                    :class="entryMode === 'manual' ? 'bg-white text-primary shadow-sm' : 'text-slate-600 hover:text-slate-900'"
+                    @click="entryMode = 'manual'">
+                    <Plus class="h-4 w-4" />
+                    Carga manual
+                </button>
+
+                <button type="button"
+                    class="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-black transition"
+                    :class="entryMode === 'bulk' ? 'bg-white text-primary shadow-sm' : 'text-slate-600 hover:text-slate-900'"
+                    @click="entryMode = 'bulk'">
+                    <FileSpreadsheet class="h-4 w-4" />
+                    Carga masiva
+                </button>
+            </div>
+
+            <SectionCard v-if="entryMode === 'manual'" title="Nuevo control mensual"
                 description="Selecciona un trabajador, mes y año para generar automáticamente su calendario de asistencia.">
                 <form class="grid gap-4 lg:grid-cols-[1fr_240px_auto]" @submit.prevent="submit">
                     <!-- Trabajador -->
@@ -319,6 +379,85 @@ const statusLabel = (status) => {
                         <InputError class="mt-2" :message="form.errors.observations" />
                     </div>
                 </form>
+            </SectionCard>
+
+            <SectionCard v-if="entryMode === 'bulk'" title="Importar asistencia masiva"
+                description="Carga la matriz mensual por grupo de planilla. Cada trabajador va en una fila y los dias del mes se llenan con A, F, D, C o S.">
+                <form class="space-y-5" @submit.prevent="importBulkExcel">
+                    <div class="grid gap-4 md:grid-cols-2">
+                        <div>
+                            <InputLabel for="bulk_period" value="Periodo" />
+
+                            <select id="bulk_period" v-model="importForm.period"
+                                class="mt-2 block w-full rounded-xl border-slate-300 text-sm shadow-sm focus:border-primary focus:ring-primary"
+                                required>
+                                <option v-for="option in allowedPeriods" :key="option.value" :value="option.value">
+                                    {{ option.label }}
+                                </option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <InputLabel for="bulk_payroll_group_id" value="Grupo de planilla" />
+
+                            <select id="bulk_payroll_group_id" v-model="importForm.payroll_group_id"
+                                class="mt-2 block w-full rounded-xl border-slate-300 text-sm shadow-sm focus:border-primary focus:ring-primary"
+                                required>
+                                <option value="">Selecciona un grupo</option>
+
+                                <option v-for="group in payrollGroupOptions" :key="group.id" :value="group.id">
+                                    {{ group.name }}
+                                </option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div>
+                        <div>
+                            <InputLabel for="bulk_attendance_file" value="Archivo Excel" />
+
+                            <div class="mt-2 grid gap-3 xl:grid-cols-[minmax(0,1fr)_150px]">
+                                <div class="flex h-12 min-w-0 overflow-hidden rounded-xl border border-slate-300 bg-white shadow-sm focus-within:border-primary focus-within:ring-1 focus-within:ring-primary">
+                                    <input id="bulk_attendance_file" type="file" accept=".xlsx,.xls,.csv"
+                                        class="sr-only"
+                                        @change="importForm.file = $event.target.files[0]" />
+
+                                    <label for="bulk_attendance_file"
+                                        class="inline-flex h-full shrink-0 cursor-pointer items-center justify-center bg-primary px-4 text-sm font-bold text-white transition hover:bg-primary-dark">
+                                        Seleccionar archivo
+                                    </label>
+
+                                    <span class="flex min-w-0 flex-1 items-center truncate px-4 text-sm font-semibold text-slate-700">
+                                        {{ selectedImportFileName }}
+                                    </span>
+                                </div>
+
+                                <button type="submit"
+                                    class="inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-primary px-5 text-sm font-bold text-white shadow transition hover:bg-primary-dark disabled:opacity-60"
+                                    :disabled="!importForm.file || !importForm.payroll_group_id || importForm.processing">
+                                    <Upload class="h-4 w-4" />
+                                    {{ importForm.processing ? 'Importando...' : 'Importar' }}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <p class="-mt-2 text-xs font-semibold text-slate-500">
+                        Usa la hoja Asistencia para la matriz mensual; Horas extras y Canjes solo para casos especiales.
+                    </p>
+                </form>
+
+                <div class="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3">
+                    <p class="text-sm font-semibold text-emerald-800">
+                        Usa la plantilla oficial con trabajadores por fila, dias por columnas e instrucciones incluidas.
+                    </p>
+
+                    <a :href="templateDownloadUrl"
+                        class="inline-flex items-center gap-2 rounded-xl bg-white px-4 py-2 text-sm font-bold text-emerald-700 shadow-sm ring-1 ring-emerald-200 transition hover:bg-emerald-100">
+                        <FileDown class="h-4 w-4" />
+                        Descargar formato
+                    </a>
+                </div>
             </SectionCard>
 
             <!-- Filtros -->

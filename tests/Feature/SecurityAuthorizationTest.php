@@ -2,6 +2,8 @@
 
 namespace Tests\Feature;
 
+use App\Models\MonthlyAttendance;
+use App\Models\Payroll;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\Feature\Concerns\CreatesTestData;
@@ -66,12 +68,14 @@ class SecurityAuthorizationTest extends TestCase
 
         $catalogs = array_merge($this->attendanceCatalogs(), $this->payrollCatalogs());
         $this->payrollParameters();
+        $payrollGroup = $this->catalog('PAYROLL_GROUP', 'AREA-'.random_int(1000, 9999), ['name' => 'Area prueba']);
         $employee = $this->employee([
             'document_number' => (string) random_int(10000000, 99999999),
-            'employee_code' => 'EMP-' . random_int(1000, 9999),
+            'employee_code' => 'EMP-'.random_int(1000, 9999),
+            'payroll_group_id' => $payrollGroup->id,
         ]);
 
-        \App\Models\MonthlyAttendance::create([
+        MonthlyAttendance::create([
             'employee_id' => $employee->id,
             'status_id' => $catalogs['closed']->id,
             'month' => $month,
@@ -85,11 +89,12 @@ class SecurityAuthorizationTest extends TestCase
             ->post(route('payrolls.store'), [
                 'month' => $month,
                 'year' => $year,
+                'payroll_group_id' => $payrollGroup->id,
             ])
             ->assertSessionHasNoErrors();
 
         $this->grantAllPermissions = false;
 
-        return \App\Models\Payroll::firstOrFail();
+        return Payroll::firstOrFail();
     }
 }

@@ -13,6 +13,7 @@ import Pagination from '@/Components/Table/Pagination.vue';
 import PerPageFilter from '@/Components/Filters/PerPageFilter.vue';
 import SearchInput from '@/Components/Table/SearchInput.vue';
 import TableEntityCell from '@/Components/Table/TableEntityCell.vue';
+import { formatDate, formatPeriod, periodForRequest } from '@/Utils/dates';
 
 const props = defineProps({
     exchanges: {
@@ -31,7 +32,7 @@ const props = defineProps({
 
 const search = ref(props.filters.search ?? '');
 const statusId = ref(props.filters.status_id ?? '');
-const period = ref(props.filters.period ?? '');
+const period = ref(formatPeriod(props.filters.period ?? ''));
 const perPage = ref(props.filters.per_page ?? 10);
 let filterTimeout = null;
 
@@ -53,7 +54,7 @@ const applyFilters = () => {
         {
             search: search.value || undefined,
             status_id: statusId.value || undefined,
-            period: period.value || undefined,
+            period: periodForRequest(period.value) || undefined,
             per_page: perPage.value || 10,
         },
         {
@@ -98,7 +99,7 @@ const statusClass = (statusCode) => {
                 <template #filters>
                     <SearchInput v-model="search" placeholder="Buscar trabajador, codigo o DNI..." />
 
-                    <SearchInput v-model="period" placeholder="Periodo falta YYYY-MM..." />
+                    <SearchInput v-model="period" placeholder="Periodo falta MM-YYYY..." />
 
                     <select
                         v-model="statusId"
@@ -139,8 +140,8 @@ const statusClass = (statusCode) => {
                         />
                     </td>
                     <td class="px-6 py-4 text-gray-600">
-                        <p><strong>Falta:</strong> {{ exchange.absence_date }}</p>
-                        <p><strong>Compensa:</strong> {{ exchange.exchange_date }}</p>
+                        <p><strong>Falta:</strong> {{ formatDate(exchange.absence_date) }}</p>
+                        <p><strong>Compensa:</strong> {{ formatDate(exchange.exchange_date) }}</p>
                     </td>
                     <td class="px-6 py-4">
                         <span class="rounded-full px-3 py-1 text-xs font-black" :class="statusClass(exchange.status?.code)">

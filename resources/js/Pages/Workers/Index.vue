@@ -57,6 +57,7 @@ let filterTimeout = null;
 const columns = [
     { key: 'worker', label: 'Trabajador' },
     { key: 'position', label: 'Cargo / Área' },
+    { key: 'payroll_group', label: 'Planilla' },
     { key: 'shift', label: 'Turno' },
     { key: 'salary', label: 'Sueldo' },
     { key: 'status', label: 'Estado' },
@@ -145,6 +146,10 @@ const areaLabel = (worker) => {
     return worker.work_area?.name ?? 'Sin área';
 };
 
+const payrollGroupLabel = (worker) => {
+    return worker.payroll_group?.name ?? 'Sin grupo';
+};
+
 const shiftLabel = (worker) => {
     return worker.work_shift?.name ?? 'Sin turno';
 };
@@ -227,6 +232,10 @@ const money = (amount) => {
                         <p class="text-xs text-gray-500">
                             {{ areaLabel(worker) }}
                         </p>
+                    </td>
+
+                    <td class="px-6 py-4 text-gray-600">
+                        {{ payrollGroupLabel(worker) }}
                     </td>
 
                     <td class="px-6 py-4 text-gray-600">

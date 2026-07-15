@@ -8,7 +8,6 @@ use App\Models\Payroll;
 use App\Models\PayrollDetail;
 use App\Models\PayrollDetailConcept;
 use App\Models\PayrollParameter;
-use Carbon\Carbon;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
@@ -24,11 +23,12 @@ class PayrollService
         $periodParts = $this->parsePeriod($filters['period'] ?? null);
 
         return Payroll::query()
-            ->with(['status:id,code,name'])
+            ->with(['status:id,code,name', 'payrollGroup:id,code,name'])
             ->withCount('details')
-            ->when($periodParts['month'], fn(Builder $query) => $query->where('month', $periodParts['month']))
-            ->when($periodParts['year'], fn(Builder $query) => $query->where('year', $periodParts['year']))
-            ->when($filters['status_id'] ?? null, fn(Builder $query, $statusId) => $query->where('status_id', $statusId))
+            ->when($periodParts['month'], fn (Builder $query) => $query->where('month', $periodParts['month']))
+            ->when($periodParts['year'], fn (Builder $query) => $query->where('year', $periodParts['year']))
+            ->when($filters['payroll_group_id'] ?? null, fn (Builder $query, $payrollGroupId) => $query->where('payroll_group_id', $payrollGroupId))
+            ->when($filters['status_id'] ?? null, fn (Builder $query, $statusId) => $query->where('status_id', $statusId))
             ->latest()
             ->paginate(min((int) ($filters['per_page'] ?? 10), 100))
             ->withQueryString();
@@ -42,20 +42,29 @@ class PayrollService
         return DB::transaction(function () use ($data, $userId) {
             $month = (int) $data['month'];
             $year = (int) $data['year'];
+            $payrollGroupId = (int) $data['payroll_group_id'];
 
-            if (Payroll::period($month, $year)->exists()) {
+            $payrollGroup = Catalog::query()
+                ->where('id', $payrollGroupId)
+                ->where('type', 'PAYROLL_GROUP')
+                ->where('status', true)
+                ->firstOrFail();
+
+            if (Payroll::periodGroup($month, $year, $payrollGroupId)->exists()) {
                 throw ValidationException::withMessages([
-                    'period' => 'Ya hay una planilla generada para este periodo. Revisa el listado antes de crear otra. [PAY-001]',
-                    'month' => 'Ya hay una planilla generada para este periodo. Revisa el listado antes de crear otra. [PAY-001]',
+                    'period' => 'Ya hay una planilla generada para este grupo y periodo. Revisa el listado antes de crear otra. [PAY-001]',
+                    'month' => 'Ya hay una planilla generada para este grupo y periodo. Revisa el listado antes de crear otra. [PAY-001]',
+                    'payroll_group_id' => 'Ya hay una planilla generada para este grupo y periodo. Revisa el listado antes de crear otra. [PAY-001]',
                 ]);
             }
 
-            $attendances = $this->closedAttendances($month, $year);
+            $attendances = $this->closedAttendances($month, $year, $payrollGroupId);
 
             if ($attendances->isEmpty()) {
                 throw ValidationException::withMessages([
-                    'period' => 'No hay asistencias cerradas listas para este periodo. Cierra las asistencias mensuales antes de generar la planilla. [PAY-002]',
-                    'month' => 'No hay asistencias cerradas listas para este periodo. Cierra las asistencias mensuales antes de generar la planilla. [PAY-002]',
+                    'period' => 'No hay asistencias cerradas listas para este grupo de planilla y periodo. Cierra las asistencias mensuales antes de generar la planilla. [PAY-002]',
+                    'month' => 'No hay asistencias cerradas listas para este grupo de planilla y periodo. Cierra las asistencias mensuales antes de generar la planilla. [PAY-002]',
+                    'payroll_group_id' => 'No hay asistencias cerradas listas para este grupo de planilla y periodo. Cierra las asistencias mensuales antes de generar la planilla. [PAY-002]',
                 ]);
             }
 
@@ -63,8 +72,9 @@ class PayrollService
             $this->ensureRequiredParameters($parameters, $attendances);
 
             $payroll = Payroll::create([
-                'code' => $this->generateCode($month, $year),
+                'code' => $this->generateCode($month, $year, $payrollGroup),
                 'status_id' => $this->catalogId(Payroll::CATALOG_TYPE_STATUS, Payroll::STATUS_IN_REVIEW),
+                'payroll_group_id' => $payrollGroupId,
                 'month' => $month,
                 'year' => $year,
                 'payment_date' => $data['payment_date'] ?? null,
@@ -145,7 +155,8 @@ class PayrollService
                 ->with(['employee.pensionSystem', 'status'])
                 ->where('month', $payroll->month)
                 ->where('year', $payroll->year)
-                ->whereHas('status', fn(Builder $query) => $query->where('code', MonthlyAttendance::STATUS_CLOSED))
+                ->whereHas('employee', fn (Builder $query) => $query->where('payroll_group_id', $payroll->payroll_group_id))
+                ->whereHas('status', fn (Builder $query) => $query->where('code', MonthlyAttendance::STATUS_CLOSED))
                 ->orderBy('employee_id')
                 ->get();
 
@@ -237,7 +248,7 @@ class PayrollService
         $currentYear = (int) date('Y');
 
         return collect(range($currentYear - 2, $currentYear + 1))
-            ->map(fn(int $year) => [
+            ->map(fn (int $year) => [
                 'value' => $year,
                 'label' => (string) $year,
             ])
@@ -252,13 +263,25 @@ class PayrollService
 
     public function parsePeriod(?string $period): array
     {
-        if (! $period || ! preg_match('/^\d{4}-\d{2}$/', $period)) {
+        if (! $period) {
             return ['month' => null, 'year' => null];
         }
 
-        [$year, $month] = explode('-', $period);
+        $period = trim(str_replace('/', '-', $period));
 
-        return ['month' => (int) $month, 'year' => (int) $year];
+        if (preg_match('/^\d{4}-\d{2}$/', $period)) {
+            [$year, $month] = explode('-', $period);
+
+            return ['month' => (int) $month, 'year' => (int) $year];
+        }
+
+        if (preg_match('/^\d{2}-\d{4}$/', $period)) {
+            [$month, $year] = explode('-', $period);
+
+            return ['month' => (int) $month, 'year' => (int) $year];
+        }
+
+        return ['month' => null, 'year' => null];
     }
 
     private function createPayrollDetail(Payroll $payroll, MonthlyAttendance $attendance, array $parameters): void
@@ -362,13 +385,14 @@ class PayrollService
         }
     }
 
-    private function closedAttendances(int $month, int $year)
+    private function closedAttendances(int $month, int $year, int $payrollGroupId)
     {
         return MonthlyAttendance::query()
             ->with(['employee.pensionSystem', 'status'])
             ->where('month', $month)
             ->where('year', $year)
-            ->whereHas('status', fn(Builder $query) => $query->where('code', MonthlyAttendance::STATUS_CLOSED))
+            ->whereHas('employee', fn (Builder $query) => $query->where('payroll_group_id', $payrollGroupId))
+            ->whereHas('status', fn (Builder $query) => $query->where('code', MonthlyAttendance::STATUS_CLOSED))
             ->whereDoesntHave('payrollDetail')
             ->orderBy('employee_id')
             ->get();
@@ -418,7 +442,7 @@ class PayrollService
     {
         return PayrollParameter::active()
             ->pluck('value', 'code')
-            ->map(fn($value) => (float) $value)
+            ->map(fn ($value) => (float) $value)
             ->toArray();
     }
 
@@ -426,21 +450,21 @@ class PayrollService
     {
         $required = collect(['ESSALUD_RATE']);
 
-        if ($attendances->contains(fn(MonthlyAttendance $attendance) => $attendance->employee->pensionSystem?->code === 'ONP')) {
+        if ($attendances->contains(fn (MonthlyAttendance $attendance) => $attendance->employee->pensionSystem?->code === 'ONP')) {
             $required->push('ONP_RATE');
         }
 
-        if ($attendances->contains(fn(MonthlyAttendance $attendance) => str_starts_with($attendance->employee->pensionSystem?->code ?? '', 'AFP'))) {
+        if ($attendances->contains(fn (MonthlyAttendance $attendance) => str_starts_with($attendance->employee->pensionSystem?->code ?? '', 'AFP'))) {
             $required->push('AFP_RATE');
         }
 
-        if ($attendances->contains(fn(MonthlyAttendance $attendance) => (float) ($attendance->payable_overtime_hours ?? $attendance->overtime_hours) > 0)) {
+        if ($attendances->contains(fn (MonthlyAttendance $attendance) => (float) ($attendance->payable_overtime_hours ?? $attendance->overtime_hours) > 0)) {
             $required->push('OVERTIME_RATE');
         }
 
         $missing = $required
             ->unique()
-            ->reject(fn(string $code) => array_key_exists($code, $parameters))
+            ->reject(fn (string $code) => array_key_exists($code, $parameters))
             ->values();
 
         if ($missing->isNotEmpty()) {
@@ -480,9 +504,17 @@ class PayrollService
         return $catalog->id;
     }
 
-    private function generateCode(int $month, int $year): string
+    private function generateCode(int $month, int $year, Catalog $payrollGroup): string
     {
-        return 'PLA-' . $year . '-' . str_pad((string) $month, 2, '0', STR_PAD_LEFT);
+        $groupCode = str($payrollGroup->code ?: $payrollGroup->name)
+            ->ascii()
+            ->upper()
+            ->replaceMatches('/[^A-Z0-9]+/', '-')
+            ->trim('-')
+            ->limit(10, '')
+            ->toString();
+
+        return 'PLA-'.$year.'-'.str_pad((string) $month, 2, '0', STR_PAD_LEFT).'-'.$groupCode;
     }
 
     private function missingPayrollParametersMessage(array $missingCodes): string
@@ -495,12 +527,12 @@ class PayrollService
         ];
 
         $friendlyNames = collect($missingCodes)
-            ->map(fn(string $code) => $labels[$code] ?? $code)
+            ->map(fn (string $code) => $labels[$code] ?? $code)
             ->implode(', ');
 
-        return 'Falta configurar ' . $friendlyNames
-            . ' para generar esta planilla. Solicita a soporte activar los parametros: '
-            . implode(', ', $missingCodes)
-            . '. [PAY-004]';
+        return 'Falta configurar '.$friendlyNames
+            .' para generar esta planilla. Solicita a soporte activar los parametros: '
+            .implode(', ', $missingCodes)
+            .'. [PAY-004]';
     }
 }

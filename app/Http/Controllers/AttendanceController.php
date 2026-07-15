@@ -1,89 +1,98 @@
 <?php
+
 namespace App\Http\Controllers;
 
 use App\Http\Requests\Attendance\BulkUpdateAttendanceDaysRequest;
+use App\Http\Requests\Attendance\ImportAttendanceExcelRequest;
 use App\Http\Requests\Attendance\StoreMonthlyAttendanceRequest;
 use App\Http\Requests\Attendance\UpdateAttendanceDayRequest;
 use App\Models\AttendanceDay;
+use App\Models\Catalog;
 use App\Models\MonthlyAttendance;
 use App\Services\AttendanceService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class AttendanceController extends Controller
 {
     public function __construct(
         private readonly AttendanceService $service
-    ) {
-    }
+    ) {}
 
     /**
      * Muestra el listado de asistencias mensuales.
      */
     public function index(Request $request): Response
     {
-        $period      = $request->input('period', '');
+        $period = $request->input('period', '');
         $periodParts = $this->service->parsePeriod($period);
 
         $filters = [
-            'search'    => $request->input('search', ''),
+            'search' => $request->input('search', ''),
             'status_id' => $request->input('status_id', ''),
-            'period'    => $period,
-            'month'     => $periodParts['month'],
-            'year'      => $periodParts['year'],
-            'per_page'  => $request->input('per_page', 10),
+            'period' => $period,
+            'month' => $periodParts['month'],
+            'year' => $periodParts['year'],
+            'per_page' => $request->input('per_page', 10),
         ];
 
         $attendances = $this->service
             ->paginate($filters)
             ->through(function (MonthlyAttendance $attendance) {
                 return [
-                    'id'                         => $attendance->id,
-                    'month'                      => $attendance->month,
-                    'year'                       => $attendance->year,
-                    'period'                     => $this->service->monthName($attendance->month) . ' ' . $attendance->year,
+                    'id' => $attendance->id,
+                    'month' => $attendance->month,
+                    'year' => $attendance->year,
+                    'period' => $this->service->monthName($attendance->month).' '.$attendance->year,
 
-                    'employee'                   => [
-                        'id'       => $attendance->employee?->id,
-                        'name'     => $this->service->employeeDisplayName($attendance->employee),
-                        'code'     => $this->service->employeeCode($attendance->employee),
+                    'employee' => [
+                        'id' => $attendance->employee?->id,
+                        'name' => $this->service->employeeDisplayName($attendance->employee),
+                        'code' => $this->service->employeeCode($attendance->employee),
                         'document' => $this->service->employeeDocument($attendance->employee),
                     ],
 
-                    'status'                     => [
-                        'id'   => $attendance->status?->id,
+                    'status' => [
+                        'id' => $attendance->status?->id,
                         'code' => $attendance->status?->code,
                         'name' => $attendance->status?->name ?? 'Sin estado',
                     ],
 
-                    'worked_days'                => $attendance->worked_days,
-                    'absence_days'               => $attendance->absence_days,
-                    'compensated_absence_days'   => $attendance->compensated_absence_days,
+                    'worked_days' => $attendance->worked_days,
+                    'absence_days' => $attendance->absence_days,
+                    'compensated_absence_days' => $attendance->compensated_absence_days,
                     'uncompensated_absence_days' => $attendance->uncompensated_absence_days,
-                    'exchange_days'              => $attendance->exchange_days,
-                    'rest_days'                  => $attendance->rest_days,
-                    'overtime_hours'             => $attendance->overtime_hours,
-                    'payable_overtime_hours'     => $attendance->payable_overtime_hours,
-                    'observations'               => $attendance->observations,
-                    'is_editable'                => $attendance->isEditable(),
-                    'is_closed'                  => $attendance->isClosed(),
-                    'can_reopen'                 => $this->canReopenAttendance($attendance),
+                    'exchange_days' => $attendance->exchange_days,
+                    'rest_days' => $attendance->rest_days,
+                    'overtime_hours' => $attendance->overtime_hours,
+                    'payable_overtime_hours' => $attendance->payable_overtime_hours,
+                    'observations' => $attendance->observations,
+                    'is_editable' => $attendance->isEditable(),
+                    'is_closed' => $attendance->isClosed(),
+                    'can_reopen' => $this->canReopenAttendance($attendance),
                 ];
             });
 
         return Inertia::render('Attendance/Index', [
-            'attendances'     => $attendances,
-            'filters'         => $filters,
-            'employees'       => $this->service->employeeOptions(),
+            'attendances' => $attendances,
+            'filters' => $filters,
+            'employees' => $this->service->employeeOptions(),
             'monthlyStatuses' => $this->service->monthlyStatuses(),
-            'monthOptions'    => $this->service->monthOptions(),
-            'yearOptions'     => $this->service->yearOptions(),
-            'allowedPeriods'  => $this->service->allowedPeriodOptions(),
-            'defaultPeriod'   => now()->format('Y-m'),
-            'defaultMonth'    => now()->month,
-            'defaultYear'     => now()->year,
+            'monthOptions' => $this->service->monthOptions(),
+            'yearOptions' => $this->service->yearOptions(),
+            'payrollGroupOptions' => Catalog::query()
+                ->where('type', 'PAYROLL_GROUP')
+                ->where('status', true)
+                ->orderBy('name')
+                ->get(['id', 'code', 'name']),
+            'allowedPeriods' => $this->service->allowedPeriodOptions(),
+            'defaultPeriod' => now()->format('Y-m'),
+            'defaultMonth' => now()->month,
+            'defaultYear' => now()->year,
         ]);
     }
 
@@ -123,84 +132,84 @@ class AttendanceController extends Controller
         ]);
 
         return Inertia::render('Attendance/Edit', [
-            'attendance'  => [
-                'id'             => $monthlyAttendance->id,
-                'period'         => $this->service->monthName((int) $monthlyAttendance->month) . ' ' . $monthlyAttendance->year,
+            'attendance' => [
+                'id' => $monthlyAttendance->id,
+                'period' => $this->service->monthName((int) $monthlyAttendance->month).' '.$monthlyAttendance->year,
 
-                'employee'       => [
-                    'id'         => $monthlyAttendance->employee?->id,
-                    'name'       => $this->service->employeeDisplayName($monthlyAttendance->employee),
-                    'code'       => $this->service->employeeCode($monthlyAttendance->employee),
-                    'document'   => $this->service->employeeDocument($monthlyAttendance->employee),
-                    'position'   => $monthlyAttendance->employee?->position?->name ?? 'Sin cargo',
-                    'work_area'  => $monthlyAttendance->employee?->workArea?->name ?? 'Sin area',
+                'employee' => [
+                    'id' => $monthlyAttendance->employee?->id,
+                    'name' => $this->service->employeeDisplayName($monthlyAttendance->employee),
+                    'code' => $this->service->employeeCode($monthlyAttendance->employee),
+                    'document' => $this->service->employeeDocument($monthlyAttendance->employee),
+                    'position' => $monthlyAttendance->employee?->position?->name ?? 'Sin cargo',
+                    'work_area' => $monthlyAttendance->employee?->workArea?->name ?? 'Sin area',
                     'employment_status' => $monthlyAttendance->employee?->employmentStatus?->name ?? 'Sin estado laboral',
                     'pension_system' => $monthlyAttendance->employee?->pensionSystem?->name ?? 'Sin regimen',
 
                     'work_shift' => $monthlyAttendance->employee?->workShift
                         ? [
-                        'id'          => $monthlyAttendance->employee->workShift->id,
-                        'name'        => $monthlyAttendance->employee->workShift->name,
-                        'start_time'  => optional($monthlyAttendance->employee->workShift->start_time)->format('H:i'),
-                        'end_time'    => optional($monthlyAttendance->employee->workShift->end_time)->format('H:i'),
-                        'daily_hours' => $monthlyAttendance->employee->workShift->daily_hours,
-                        'rotation_enabled' => $monthlyAttendance->employee->workShift->rotation_enabled,
-                        'rotation_work_days' => $monthlyAttendance->employee->workShift->rotation_work_days,
-                        'rotation_rest_days' => $monthlyAttendance->employee->workShift->rotation_rest_days,
-                    ]
+                            'id' => $monthlyAttendance->employee->workShift->id,
+                            'name' => $monthlyAttendance->employee->workShift->name,
+                            'start_time' => optional($monthlyAttendance->employee->workShift->start_time)->format('H:i'),
+                            'end_time' => optional($monthlyAttendance->employee->workShift->end_time)->format('H:i'),
+                            'daily_hours' => $monthlyAttendance->employee->workShift->daily_hours,
+                            'rotation_enabled' => $monthlyAttendance->employee->workShift->rotation_enabled,
+                            'rotation_work_days' => $monthlyAttendance->employee->workShift->rotation_work_days,
+                            'rotation_rest_days' => $monthlyAttendance->employee->workShift->rotation_rest_days,
+                        ]
                         : null,
                 ],
 
-                'status'         => [
-                    'id'   => $monthlyAttendance->status?->id,
+                'status' => [
+                    'id' => $monthlyAttendance->status?->id,
                     'code' => $monthlyAttendance->status?->code,
                     'name' => $monthlyAttendance->status?->name,
                 ],
 
-                'month'          => $monthlyAttendance->month,
-                'year'           => $monthlyAttendance->year,
-                'worked_days'    => $monthlyAttendance->worked_days,
-                'absence_days'   => $monthlyAttendance->absence_days,
+                'month' => $monthlyAttendance->month,
+                'year' => $monthlyAttendance->year,
+                'worked_days' => $monthlyAttendance->worked_days,
+                'absence_days' => $monthlyAttendance->absence_days,
                 'compensated_absence_days' => $monthlyAttendance->compensated_absence_days,
                 'uncompensated_absence_days' => $monthlyAttendance->uncompensated_absence_days,
-                'exchange_days'  => $monthlyAttendance->exchange_days,
-                'rest_days'      => $monthlyAttendance->rest_days,
+                'exchange_days' => $monthlyAttendance->exchange_days,
+                'rest_days' => $monthlyAttendance->rest_days,
                 'overtime_hours' => $monthlyAttendance->overtime_hours,
                 'payable_overtime_hours' => $monthlyAttendance->payable_overtime_hours,
-                'can_reopen'     => $this->canReopenAttendance($monthlyAttendance),
+                'can_reopen' => $this->canReopenAttendance($monthlyAttendance),
 
-                'days'           => $monthlyAttendance->days
+                'days' => $monthlyAttendance->days
                     ->sortBy('attendance_date')
                     ->values()
                     ->map(function ($day) {
                         return [
-                            'id'               => $day->id,
-                            'attendance_date'  => $day->attendance_date?->toDateString(),
-                            'day_number'       => $day->attendance_date?->format('d'),
-                            'weekday'          => $day->attendance_date?->locale('es')->translatedFormat('D'),
+                            'id' => $day->id,
+                            'attendance_date' => $day->attendance_date?->toDateString(),
+                            'day_number' => $day->attendance_date?->format('d'),
+                            'weekday' => $day->attendance_date?->locale('es')->translatedFormat('D'),
 
-                            'status'           => [
-                                'id'   => $day->status?->id,
+                            'status' => [
+                                'id' => $day->status?->id,
                                 'code' => $day->status?->code,
                                 'name' => $day->status?->name,
                             ],
 
-                            'work_shift'       => $day->workShift
+                            'work_shift' => $day->workShift
                                 ? [
-                                'id'   => $day->workShift->id,
-                                'name' => $day->workShift->name,
-                            ]
+                                    'id' => $day->workShift->id,
+                                    'name' => $day->workShift->name,
+                                ]
                                 : null,
 
-                            'entry_time'       => $day->entry_time,
-                            'exit_time'        => $day->exit_time,
-                            'worked_hours'     => $day->worked_hours,
-                            'overtime_hours'   => $day->overtime_hours,
+                            'entry_time' => $day->entry_time,
+                            'exit_time' => $day->exit_time,
+                            'worked_hours' => $day->worked_hours,
+                            'overtime_hours' => $day->overtime_hours,
                             'payable_overtime_hours' => $day->payable_overtime_hours,
-                            'observation'      => $day->observation,
+                            'observation' => $day->observation,
 
                             'absence_exchange' => $day->absenceExchange,
-                            'worked_exchange'  => $day->workedExchange,
+                            'worked_exchange' => $day->workedExchange,
                         ];
                     }),
             ],
@@ -238,6 +247,46 @@ class AttendanceController extends Controller
         return back()->with('success', 'Los días seleccionados fueron actualizados correctamente.');
     }
 
+    public function importExcel(ImportAttendanceExcelRequest $request): RedirectResponse
+    {
+        $result = $this->service->importBulkFromSpreadsheet(
+            $request->validated(),
+            $request->file('file')->getRealPath(),
+            $request->user()?->id
+        );
+
+        return back()->with(
+            'success',
+            "Importacion masiva completada: {$result['attendances']} controles preparados, {$result['imported']} filas aplicadas, {$result['skipped']} omitidas."
+        );
+    }
+
+    public function downloadImportTemplate(Request $request): StreamedResponse
+    {
+        $request->merge([
+            'period' => $this->normalizePeriodInput($request->input('period')),
+        ]);
+
+        $validated = $request->validate([
+            'period' => ['required', 'regex:/^\d{4}-\d{2}$/'],
+            'payroll_group_id' => ['required', 'integer', 'exists:catalogs,id'],
+        ]);
+
+        $spreadsheet = $this->service->attendanceImportTemplate(
+            $validated['period'],
+            (int) $validated['payroll_group_id']
+        );
+
+        $filename = 'formato-asistencia-masiva-'.$validated['period'].'.xlsx';
+
+        return response()->streamDownload(function () use ($spreadsheet) {
+            (new Xlsx($spreadsheet))->save('php://output');
+            $spreadsheet->disconnectWorksheets();
+        }, $filename, [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        ]);
+    }
+
     /**
      * Cierra la asistencia mensual.
      */
@@ -269,5 +318,18 @@ class AttendanceController extends Controller
         $payroll = $attendance->payrollDetail?->payroll;
 
         return ! $payroll || $payroll->isObserved() || $payroll->isRejected();
+    }
+
+    private function normalizePeriodInput(?string $period): string
+    {
+        $period = trim(str_replace('/', '-', (string) $period));
+
+        if (preg_match('/^\d{2}-\d{4}$/', $period)) {
+            [$month, $year] = explode('-', $period);
+
+            return "{$year}-{$month}";
+        }
+
+        return $period;
     }
 }

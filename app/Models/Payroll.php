@@ -10,15 +10,21 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class Payroll extends Model
 {
     public const CATALOG_TYPE_STATUS = 'PAYROLL_STATUS';
+
     public const STATUS_IN_REVIEW = 'IN_REVIEW';
+
     public const STATUS_OBSERVED = 'OBSERVED';
+
     public const STATUS_APPROVED = 'APPROVED';
+
     public const STATUS_REJECTED = 'REJECTED';
+
     public const STATUS_PAID = 'PAID';
 
     protected $fillable = [
         'code',
         'status_id',
+        'payroll_group_id',
         'month',
         'year',
         'payment_date',
@@ -59,6 +65,11 @@ class Payroll extends Model
         return $this->belongsTo(Catalog::class, 'status_id');
     }
 
+    public function payrollGroup(): BelongsTo
+    {
+        return $this->belongsTo(Catalog::class, 'payroll_group_id');
+    }
+
     public function details(): HasMany
     {
         return $this->hasMany(PayrollDetail::class);
@@ -82,6 +93,11 @@ class Payroll extends Model
     public function scopePeriod(Builder $query, int $month, int $year): Builder
     {
         return $query->where('month', $month)->where('year', $year);
+    }
+
+    public function scopePeriodGroup(Builder $query, int $month, int $year, int $payrollGroupId): Builder
+    {
+        return $query->period($month, $year)->where('payroll_group_id', $payrollGroupId);
     }
 
     public function isInReview(): bool

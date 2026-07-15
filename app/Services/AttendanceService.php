@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Services;
 
 use App\Models\AttendanceDay;
@@ -12,9 +13,17 @@ use Carbon\CarbonInterface;
 use Carbon\CarbonPeriod;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\ValidationException;
+use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
+use PhpOffice\PhpSpreadsheet\IOFactory;
+use PhpOffice\PhpSpreadsheet\Shared\Date as ExcelDate;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Style\Alignment;
+use PhpOffice\PhpSpreadsheet\Style\Border;
+use PhpOffice\PhpSpreadsheet\Style\Fill;
 
 class AttendanceService
 {
@@ -23,11 +32,11 @@ class AttendanceService
      */
     public function paginate(array $filters): LengthAwarePaginator
     {
-        $search   = trim($filters['search'] ?? '');
+        $search = trim($filters['search'] ?? '');
         $statusId = $filters['status_id'] ?? null;
-        $month    = $filters['month'] ?? null;
-        $year     = $filters['year'] ?? null;
-        $perPage  = (int) ($filters['per_page'] ?? 10);
+        $month = $filters['month'] ?? null;
+        $year = $filters['year'] ?? null;
+        $perPage = (int) ($filters['per_page'] ?? 10);
 
         return MonthlyAttendance::query()
             ->with(['employee', 'status'])
@@ -80,12 +89,12 @@ class AttendanceService
             );
 
             $attendance = MonthlyAttendance::create([
-                'employee_id'  => $data['employee_id'],
-                'status_id'    => $draftStatusId,
-                'month'        => $data['month'],
-                'year'         => $data['year'],
+                'employee_id' => $data['employee_id'],
+                'status_id' => $draftStatusId,
+                'month' => $data['month'],
+                'year' => $data['year'],
                 'observations' => $data['observations'] ?? null,
-                'created_by'   => $userId,
+                'created_by' => $userId,
             ]);
 
             $this->generateMonthDays($attendance);
@@ -114,7 +123,7 @@ class AttendanceService
 
             $this->ensureDayCanBeUpdated($day);
 
-            $status     = $this->attendanceDayStatus((int) $data['status_id']);
+            $status = $this->attendanceDayStatus((int) $data['status_id']);
             $statusCode = $status->code;
 
             if ($statusCode !== AttendanceDay::STATUS_ABSENT) {
@@ -132,14 +141,14 @@ class AttendanceService
                 );
 
                 $day->update([
-                    'status_id'      => $status->id,
-                    'work_shift_id'  => $workShift->id,
-                    'entry_time'     => $data['entry_time'],
-                    'exit_time'      => $data['exit_time'],
-                    'worked_hours'   => $calculatedHours['worked_hours'],
+                    'status_id' => $status->id,
+                    'work_shift_id' => $workShift->id,
+                    'entry_time' => $data['entry_time'],
+                    'exit_time' => $data['exit_time'],
+                    'worked_hours' => $calculatedHours['worked_hours'],
                     'overtime_hours' => $calculatedHours['overtime_hours'],
                     'payable_overtime_hours' => $calculatedHours['payable_overtime_hours'],
-                    'observation'    => $data['observation'] ?? null,
+                    'observation' => $data['observation'] ?? null,
                 ]);
 
                 if ($statusCode === AttendanceDay::STATUS_EXCHANGE_WORKED) {
@@ -154,14 +163,14 @@ class AttendanceService
                 $day->workedExchange()->delete();
 
                 $day->update([
-                    'status_id'      => $status->id,
-                    'work_shift_id'  => null,
-                    'entry_time'     => null,
-                    'exit_time'      => null,
-                    'worked_hours'   => 0,
+                    'status_id' => $status->id,
+                    'work_shift_id' => null,
+                    'entry_time' => null,
+                    'exit_time' => null,
+                    'worked_hours' => 0,
                     'overtime_hours' => 0,
                     'payable_overtime_hours' => 0,
-                    'observation'    => $data['observation'] ?? null,
+                    'observation' => $data['observation'] ?? null,
                 ]);
             }
 
@@ -236,7 +245,7 @@ class AttendanceService
         );
     }
 
-        /**
+    /**
      * Actualiza varios días del calendario con un mismo estado.
      *
      * Esta función está pensada para carga rápida desde cuaderno:
@@ -342,6 +351,341 @@ class AttendanceService
         });
     }
 
+    public function importBulkFromSpreadsheet(array $data, string $path, ?int $userId = null): array
+    {
+        return DB::transaction(function () use ($data, $path, $userId) {
+            $period = $this->parsePeriod($data['period']);
+            $month = (int) $period['month'];
+            $year = (int) $period['year'];
+            $payrollGroupId = (int) $data['payroll_group_id'];
+
+            $this->ensureAllowedPeriod($month, $year);
+
+            $spreadsheet = IOFactory::load($path);
+            $worksheet = $spreadsheet->getSheetByName('Asistencia') ?? $spreadsheet->getActiveSheet();
+            $rows = $worksheet->toArray(null, true, true, true);
+
+            if (count($rows) < 2) {
+                throw ValidationException::withMessages([
+                    'file' => 'El archivo no contiene filas de asistencia para importar. [ATT-022]',
+                ]);
+            }
+
+            [$header, $rows] = $this->spreadsheetHeaderAndDataRows($rows);
+
+            if (! array_key_exists('documento', $header)) {
+                throw ValidationException::withMessages([
+                    'file' => 'La hoja Asistencia debe incluir la columna documento. [ATT-023]',
+                ]);
+            }
+
+            $dayColumns = $this->spreadsheetDayColumns($header, $month, $year);
+
+            if ($dayColumns === []) {
+                throw ValidationException::withMessages([
+                    'file' => 'La hoja Asistencia debe incluir columnas de dias con encabezados 01, 02, 03... segun el mes. [ATT-033]',
+                ]);
+            }
+
+            $employees = Employee::query()
+                ->with(['workShift.rules', 'position', 'workArea', 'payrollGroup'])
+                ->where('payroll_group_id', $payrollGroupId)
+                ->where('status', true)
+                ->get();
+
+            $selectedPayrollGroupName = Catalog::query()
+                ->where('id', $payrollGroupId)
+                ->value('name') ?? 'el grupo de planilla seleccionado';
+
+            $employeesByDocument = Employee::query()
+                ->with(['workArea', 'payrollGroup'])
+                ->get()
+                ->filter(fn (Employee $employee) => filled($employee->document_number))
+                ->keyBy(fn (Employee $employee) => $this->normalizeSpreadsheetKey($employee->document_number));
+
+            $byDocument = $employees
+                ->filter(fn (Employee $employee) => filled($employee->document_number))
+                ->keyBy(fn (Employee $employee) => $this->normalizeSpreadsheetKey($employee->document_number));
+
+            $rowsByKey = [];
+            $seenDocuments = [];
+            $errors = [];
+            $skipped = 0;
+
+            foreach ($rows as $rowNumber => $row) {
+                $document = $this->normalizeSpreadsheetKey($this->spreadsheetCell($row, $header, 'documento'));
+
+                if (! $document && $this->spreadsheetRowIsEmpty($row)) {
+                    $skipped++;
+
+                    continue;
+                }
+
+                if (! $document) {
+                    $errors[] = "Fila {$rowNumber}: falta el DNI del trabajador.";
+
+                    continue;
+                }
+
+                if (isset($seenDocuments[$document])) {
+                    $skipped++;
+
+                    continue;
+                }
+                $seenDocuments[$document] = true;
+
+                $employee = $byDocument->get($document);
+
+                if (! $employee) {
+                    $errors[] = "Fila {$rowNumber}: ".$this->employeeImportLookupMessage($document, $employeesByDocument, $selectedPayrollGroupName);
+
+                    continue;
+                }
+
+                if (! $employee->work_shift_id) {
+                    $errors[] = "Fila {$rowNumber}: {$employee->full_name} no tiene un turno asignado.";
+
+                    continue;
+                }
+
+                $observation = $this->spreadsheetCell($row, $header, 'observacion_general')
+                    ?? $this->spreadsheetCell($row, $header, 'observacion');
+
+                foreach ($dayColumns as $column => $day) {
+                    $rawStatus = $this->spreadsheetCellByColumn($row, $column);
+
+                    if ($rawStatus === null) {
+                        continue;
+                    }
+
+                    try {
+                        $statusCode = $this->normalizeMatrixStatusCode($rawStatus);
+                    } catch (ValidationException $exception) {
+                        $errors[] = "Fila {$rowNumber}, dia ".str_pad((string) $day, 2, '0', STR_PAD_LEFT).': '.$this->firstValidationMessage($exception);
+
+                        continue;
+                    }
+
+                    $attendanceDate = Carbon::create($year, $month, $day)->toDateString();
+                    $rowKey = "{$document}|{$attendanceDate}";
+                    $rowsByKey[$rowKey] = [
+                        'row' => $rowNumber,
+                        'employee' => $employee,
+                        'attendance_date' => $attendanceDate,
+                        'status_code' => $statusCode,
+                        'entry_time' => null,
+                        'exit_time' => null,
+                        'observation' => $observation,
+                        'compensated_date' => null,
+                    ];
+                }
+            }
+
+            $this->mergeSpreadsheetOvertimeRows($spreadsheet, $rowsByKey, $byDocument, $employeesByDocument, $selectedPayrollGroupName, $month, $year, $errors, $skipped);
+            $this->mergeSpreadsheetExchangeRows($spreadsheet, $rowsByKey, $byDocument, $employeesByDocument, $selectedPayrollGroupName, $month, $year, $errors, $skipped);
+
+            foreach ($rowsByKey as $validatedRow) {
+                if ($validatedRow['status_code'] === AttendanceDay::STATUS_EXCHANGE_WORKED && ! $validatedRow['compensated_date']) {
+                    $errors[] = 'Fila '.$validatedRow['row'].': el codigo C requiere registrar el detalle en la hoja Canjes.';
+                }
+            }
+
+            if ($errors !== []) {
+                throw ValidationException::withMessages([
+                    'file' => $this->spreadsheetErrorMessage($errors),
+                ]);
+            }
+
+            if ($rowsByKey === []) {
+                throw ValidationException::withMessages([
+                    'file' => 'El archivo no contiene marcas de asistencia validas para importar. Revisa que tenga DNI y codigos A, F, D, C o S en los dias. [ATT-031]',
+                ]);
+            }
+
+            $imported = 0;
+            $attendances = [];
+
+            foreach ($rowsByKey as $validatedRow) {
+                /** @var Employee $employee */
+                $employee = $validatedRow['employee'];
+
+                if (! isset($attendances[$employee->id])) {
+                    $existingAttendance = MonthlyAttendance::query()
+                        ->with(['status'])
+                        ->where('employee_id', $employee->id)
+                        ->where('month', $month)
+                        ->where('year', $year)
+                        ->first();
+
+                    if ($existingAttendance && ! $existingAttendance->isEditable()) {
+                        throw ValidationException::withMessages([
+                            'file' => "La asistencia de {$employee->full_name} ya esta cerrada. Reabre el periodo antes de importar cambios. [ATT-021]",
+                        ]);
+                    }
+                }
+
+                $attendance = $attendances[$employee->id] ??= $this->draftAttendanceForImport(
+                    employee: $employee,
+                    month: $month,
+                    year: $year,
+                    userId: $userId
+                );
+
+                $day = $attendance->days
+                    ->first(fn (AttendanceDay $candidate) => $candidate->attendance_date->toDateString() === $validatedRow['attendance_date']);
+
+                if (! $day) {
+                    throw ValidationException::withMessages([
+                        'file' => 'La fila '.$validatedRow['row'].' no pudo ubicarse en el calendario mensual del trabajador. [ATT-030]',
+                    ]);
+                }
+
+                $data = [
+                    'status_id' => $this->catalogId(AttendanceDay::CATALOG_TYPE_STATUS, $validatedRow['status_code']),
+                    'entry_time' => $validatedRow['entry_time'],
+                    'exit_time' => $validatedRow['exit_time'],
+                    'observation' => $validatedRow['observation'],
+                ];
+
+                if ($this->isWorkedStatus($validatedRow['status_code']) && (! $data['entry_time'] || ! $data['exit_time'])) {
+                    $schedule = $this->workScheduleForDate($employee->workShift, $validatedRow['attendance_date']);
+                    $data['entry_time'] = $schedule['start_time'];
+                    $data['exit_time'] = $schedule['end_time'];
+                }
+
+                if ($validatedRow['status_code'] === AttendanceDay::STATUS_EXCHANGE_WORKED) {
+                    $absenceDay = $attendance->days
+                        ->first(fn (AttendanceDay $candidate) => $candidate->attendance_date->toDateString() === $validatedRow['compensated_date']);
+
+                    $data['absence_attendance_day_id'] = $absenceDay?->id;
+                }
+
+                $this->updateDay($day, $data);
+                $attendance->load('days.status');
+                $imported++;
+            }
+
+            return [
+                'attendances' => count($attendances),
+                'imported' => $imported,
+                'skipped' => $skipped,
+            ];
+        });
+    }
+
+    public function attendanceImportTemplate(string $period, int $payrollGroupId): Spreadsheet
+    {
+        $periodParts = $this->parsePeriod($period);
+        $year = (int) $periodParts['year'];
+        $month = (int) $periodParts['month'];
+        $periodDate = Carbon::create($year, $month, 1);
+        $daysInMonth = $periodDate->daysInMonth;
+
+        $payrollGroup = Catalog::query()
+            ->where('id', $payrollGroupId)
+            ->where('type', 'PAYROLL_GROUP')
+            ->where('status', true)
+            ->firstOrFail();
+
+        $employees = Employee::query()
+            ->with(['position', 'workArea', 'workShift'])
+            ->where('payroll_group_id', $payrollGroupId)
+            ->where('status', true)
+            ->orderBy('last_name')
+            ->orderBy('first_name')
+            ->get();
+
+        $spreadsheet = new Spreadsheet;
+        $sheet = $spreadsheet->getActiveSheet();
+        $sheet->setTitle('Asistencia');
+
+        $fixedHeaders = ['documento', 'apellidos_nombres', 'cargo', 'area', 'turno'];
+        $lastColumnIndex = count($fixedHeaders) + $daysInMonth + 1;
+        $lastColumn = Coordinate::stringFromColumnIndex($lastColumnIndex);
+
+        $sheet->mergeCells("A1:{$lastColumn}1");
+        $sheet->setCellValue('A1', 'Formato de asistencia masiva');
+        $sheet->mergeCells("A2:{$lastColumn}2");
+        $sheet->setCellValue('A2', 'Periodo: '.$this->monthName($month)." {$year} | Grupo: {$payrollGroup->name}");
+        $sheet->mergeCells("A3:{$lastColumn}3");
+        $sheet->setCellValue('A3', 'Codigos permitidos: A=Asistio, F=Falto, D=Descanso, C=Canje, S=Sin marcar. En Horas extras y Canjes usa fechas DD-MM-YYYY.');
+
+        $headers = $fixedHeaders;
+        for ($day = 1; $day <= $daysInMonth; $day++) {
+            $headers[] = str_pad((string) $day, 2, '0', STR_PAD_LEFT);
+        }
+        $headers[] = 'observacion_general';
+
+        $weekdayRow = array_fill(0, count($fixedHeaders), '');
+        for ($day = 1; $day <= $daysInMonth; $day++) {
+            $weekdayRow[] = str($periodDate->copy()->day($day)->locale('es')->translatedFormat('D'))
+                ->ascii()
+                ->replace('.', '')
+                ->ucfirst()
+                ->toString();
+        }
+        $weekdayRow[] = '';
+
+        $sheet->fromArray($weekdayRow, null, 'A4');
+        $sheet->fromArray($headers, null, 'A5');
+
+        $rowNumber = 6;
+        foreach ($employees as $employee) {
+            $row = [
+                $employee->document_number,
+                $employee->full_name,
+                $employee->position?->name ?? '',
+                $employee->workArea?->name ?? '',
+                $employee->workShift?->name ?? '',
+            ];
+
+            for ($day = 1; $day <= $daysInMonth; $day++) {
+                $row[] = '';
+            }
+
+            $row[] = '';
+            $sheet->fromArray($row, null, "A{$rowNumber}");
+            $rowNumber++;
+        }
+
+        $this->addTemplateAuxiliarySheets($spreadsheet);
+
+        $lastRow = max($rowNumber - 1, 6);
+        $headerRange = "A5:{$lastColumn}5";
+        $weekdayRange = "A4:{$lastColumn}4";
+        $tableRange = "A5:{$lastColumn}{$lastRow}";
+
+        $sheet->getStyle('A1')->getFont()->setBold(true)->setSize(16)->getColor()->setARGB('FF111827');
+        $sheet->getStyle('A2:A3')->getFont()->setSize(10)->getColor()->setARGB('FF475569');
+        $sheet->getStyle($weekdayRange)->applyFromArray([
+            'font' => ['bold' => true, 'color' => ['argb' => 'FF334155']],
+            'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['argb' => 'FFE2E8F0']],
+            'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER],
+        ]);
+        $sheet->getStyle($headerRange)->applyFromArray([
+            'font' => ['bold' => true, 'color' => ['argb' => 'FFFFFFFF']],
+            'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['argb' => 'FF0F766E']],
+            'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER],
+        ]);
+        $sheet->getStyle($tableRange)->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_THIN)->getColor()->setARGB('FFE5E7EB');
+        $sheet->getStyle("A6:E{$lastRow}")->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setARGB('FFF8FAFC');
+        $sheet->getStyle("F6:{$lastColumn}{$lastRow}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+        $sheet->freezePane('F6');
+        $sheet->setAutoFilter($tableRange);
+
+        for ($column = 1; $column <= $lastColumnIndex; $column++) {
+            $letter = Coordinate::stringFromColumnIndex($column);
+            $sheet->getColumnDimension($letter)->setAutoSize($column <= 5 || $column === $lastColumnIndex);
+            if ($column > 5 && $column < $lastColumnIndex) {
+                $sheet->getColumnDimension($letter)->setWidth(5);
+            }
+        }
+
+        $spreadsheet->setActiveSheetIndex(0);
+
+        return $spreadsheet;
+    }
+
     /**
      * Verifica si un día del calendario puede modificarse.
      */
@@ -358,7 +702,549 @@ class AttendanceService
         if ($day->attendance_date->startOfDay()->greaterThan(now()->startOfDay())) {
             throw ValidationException::withMessages([
                 'attendance_date' => 'Todavia no puedes registrar asistencia para una fecha futura. Selecciona una fecha de hoy o anterior. [ATT-005]',
-                'status_id'       => 'Todavia no puedes registrar asistencia para una fecha futura. Selecciona una fecha de hoy o anterior. [ATT-005]',
+                'status_id' => 'Todavia no puedes registrar asistencia para una fecha futura. Selecciona una fecha de hoy o anterior. [ATT-005]',
+            ]);
+        }
+    }
+
+    private function spreadsheetHeader(array $row): array
+    {
+        $header = [];
+
+        foreach ($row as $column => $value) {
+            $key = str((string) $value)
+                ->ascii()
+                ->lower()
+                ->replaceMatches('/[^a-z0-9]+/', '_')
+                ->trim('_')
+                ->toString();
+
+            if ($key !== '') {
+                $header[$key] = $column;
+            }
+        }
+
+        return $header;
+    }
+
+    private function spreadsheetHeaderAndDataRows(array $rows): array
+    {
+        foreach ($rows as $rowNumber => $row) {
+            $header = $this->spreadsheetHeader($row);
+
+            if (array_key_exists('documento', $header)) {
+                return [
+                    $header,
+                    array_filter(
+                        $rows,
+                        fn (int|string $key) => (int) $key > (int) $rowNumber,
+                        ARRAY_FILTER_USE_KEY
+                    ),
+                ];
+            }
+        }
+
+        return [[], []];
+    }
+
+    private function addTemplateAuxiliarySheets(Spreadsheet $spreadsheet): void
+    {
+        $overtimeSheet = $spreadsheet->createSheet();
+        $overtimeSheet->setTitle('Horas extras');
+        $overtimeSheet->fromArray([
+            ['documento', 'fecha', 'entrada', 'salida', 'observacion'],
+        ], null, 'A1');
+        $overtimeSheet->getStyle('B:B')->getNumberFormat()->setFormatCode('dd-mm-yyyy');
+
+        $exchangeSheet = $spreadsheet->createSheet();
+        $exchangeSheet->setTitle('Canjes');
+        $exchangeSheet->fromArray([
+            ['documento', 'fecha_canje', 'compensa_fecha', 'entrada', 'salida', 'observacion'],
+        ], null, 'A1');
+        $exchangeSheet->getStyle('B:C')->getNumberFormat()->setFormatCode('dd-mm-yyyy');
+
+        foreach ([$overtimeSheet, $exchangeSheet] as $sheet) {
+            $lastColumn = $sheet->getHighestColumn();
+            $sheet->getStyle("A1:{$lastColumn}1")->applyFromArray([
+                'font' => ['bold' => true, 'color' => ['argb' => 'FFFFFFFF']],
+                'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['argb' => 'FF0F766E']],
+                'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER],
+            ]);
+            $sheet->getStyle("A1:{$lastColumn}1")->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_THIN)->getColor()->setARGB('FFE5E7EB');
+
+            foreach (range('A', $lastColumn) as $column) {
+                $sheet->getColumnDimension($column)->setAutoSize(true);
+            }
+        }
+    }
+
+    private function spreadsheetCell(array $row, array $header, string $key): ?string
+    {
+        $column = $header[$key] ?? null;
+
+        if (! $column) {
+            return null;
+        }
+
+        $value = $row[$column] ?? null;
+
+        return $value === null || $value === '' ? null : trim((string) $value);
+    }
+
+    private function spreadsheetCellByColumn(array $row, string $column): ?string
+    {
+        $value = $row[$column] ?? null;
+
+        return $value === null || $value === '' ? null : trim((string) $value);
+    }
+
+    private function spreadsheetRowIsEmpty(array $row): bool
+    {
+        foreach ($row as $value) {
+            if ($value !== null && trim((string) $value) !== '') {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private function spreadsheetRowIsExamplePlaceholder(array $row): bool
+    {
+        $values = collect($row)
+            ->map(fn ($value) => str((string) $value)->ascii()->lower()->trim()->toString())
+            ->filter()
+            ->values();
+
+        if ($values->isEmpty()) {
+            return false;
+        }
+
+        return $values->contains(fn (string $value) => str_contains($value, 'ej:'))
+            || $values->contains(fn (string $value) => str_contains($value, 'yyyy-mm-dd'))
+            || $values->contains(fn (string $value) => str_contains($value, 'dd-mm-yyyy'))
+            || $values->contains(fn (string $value) => str_contains($value, 'dd/mm/yyyy'));
+    }
+
+    private function spreadsheetDayColumns(array $header, int $month, int $year): array
+    {
+        $daysInMonth = Carbon::create($year, $month, 1)->daysInMonth;
+        $columns = [];
+
+        foreach ($header as $key => $column) {
+            if (! preg_match('/^(0?[1-9]|[12][0-9]|3[01])$/', $key)) {
+                continue;
+            }
+
+            $day = (int) $key;
+
+            if ($day >= 1 && $day <= $daysInMonth) {
+                $columns[$column] = $day;
+            }
+        }
+
+        ksort($columns);
+
+        return $columns;
+    }
+
+    private function mergeSpreadsheetOvertimeRows(
+        Spreadsheet $spreadsheet,
+        array &$rowsByKey,
+        Collection $byDocument,
+        Collection $employeesByDocument,
+        string $selectedPayrollGroupName,
+        int $month,
+        int $year,
+        array &$errors,
+        int &$skipped
+    ): void {
+        $worksheet = $spreadsheet->getSheetByName('Horas extras');
+
+        if (! $worksheet) {
+            return;
+        }
+
+        $rows = $worksheet->toArray(null, true, true, true);
+
+        if (count($rows) < 2) {
+            return;
+        }
+
+        $header = $this->spreadsheetHeader(array_shift($rows));
+
+        foreach (['documento', 'fecha', 'entrada', 'salida'] as $column) {
+            if (! array_key_exists($column, $header)) {
+                $errors[] = "Hoja Horas extras: falta la columna {$column}.";
+
+                return;
+            }
+        }
+
+        foreach ($rows as $index => $row) {
+            $rowNumber = $index + 2;
+            $document = $this->normalizeSpreadsheetKey($this->spreadsheetCell($row, $header, 'documento'));
+            $dateValue = $this->spreadsheetCell($row, $header, 'fecha');
+
+            if (! $document && ! $dateValue && $this->spreadsheetRowIsEmpty($row)) {
+                $skipped++;
+
+                continue;
+            }
+
+            if ($this->spreadsheetRowIsExamplePlaceholder($row)) {
+                $skipped++;
+
+                continue;
+            }
+
+            try {
+                $attendanceDate = $this->parseSpreadsheetDate($dateValue);
+                $entryTime = $this->normalizeSpreadsheetTime($this->spreadsheetCell($row, $header, 'entrada'));
+                $exitTime = $this->normalizeSpreadsheetTime($this->spreadsheetCell($row, $header, 'salida'));
+            } catch (ValidationException $exception) {
+                $errors[] = "Hoja Horas extras fila {$rowNumber}: ".$this->firstValidationMessage($exception);
+
+                continue;
+            }
+
+            $employee = $document ? $byDocument->get($document) : null;
+            if (! $attendanceDate || ! $entryTime || ! $exitTime) {
+                $errors[] = "Hoja Horas extras fila {$rowNumber}: documento, fecha, entrada y salida son obligatorios.";
+
+                continue;
+            }
+
+            $date = Carbon::parse($attendanceDate);
+
+            if (! $employee) {
+                $errors[] = "Hoja Horas extras fila {$rowNumber}: ".$this->employeeImportLookupMessage($document, $employeesByDocument, $selectedPayrollGroupName);
+
+                continue;
+            }
+
+            if ($date->month !== $month || $date->year !== $year) {
+                $errors[] = "Hoja Horas extras fila {$rowNumber}: la fecha no pertenece al periodo seleccionado.";
+
+                continue;
+            }
+
+            $key = "{$document}|{$attendanceDate}";
+            $rowsByKey[$key] = array_merge($rowsByKey[$key] ?? [
+                'row' => $rowNumber,
+                'employee' => $employee,
+                'attendance_date' => $attendanceDate,
+                'status_code' => AttendanceDay::STATUS_PRESENT,
+                'entry_time' => null,
+                'exit_time' => null,
+                'observation' => null,
+                'compensated_date' => null,
+            ], [
+                'status_code' => ($rowsByKey[$key]['status_code'] ?? AttendanceDay::STATUS_PRESENT) === AttendanceDay::STATUS_EXCHANGE_WORKED
+                    ? AttendanceDay::STATUS_EXCHANGE_WORKED
+                    : AttendanceDay::STATUS_PRESENT,
+                'entry_time' => $entryTime,
+                'exit_time' => $exitTime,
+                'observation' => $this->spreadsheetCell($row, $header, 'observacion') ?? ($rowsByKey[$key]['observation'] ?? null),
+            ]);
+        }
+    }
+
+    private function mergeSpreadsheetExchangeRows(
+        Spreadsheet $spreadsheet,
+        array &$rowsByKey,
+        Collection $byDocument,
+        Collection $employeesByDocument,
+        string $selectedPayrollGroupName,
+        int $month,
+        int $year,
+        array &$errors,
+        int &$skipped
+    ): void {
+        $worksheet = $spreadsheet->getSheetByName('Canjes');
+
+        if (! $worksheet) {
+            return;
+        }
+
+        $rows = $worksheet->toArray(null, true, true, true);
+
+        if (count($rows) < 2) {
+            return;
+        }
+
+        $header = $this->spreadsheetHeader(array_shift($rows));
+
+        foreach (['documento', 'fecha_canje', 'compensa_fecha'] as $column) {
+            if (! array_key_exists($column, $header)) {
+                $errors[] = "Hoja Canjes: falta la columna {$column}.";
+
+                return;
+            }
+        }
+
+        foreach ($rows as $index => $row) {
+            $rowNumber = $index + 2;
+            $document = $this->normalizeSpreadsheetKey($this->spreadsheetCell($row, $header, 'documento'));
+            $exchangeDateValue = $this->spreadsheetCell($row, $header, 'fecha_canje');
+
+            if (! $document && ! $exchangeDateValue && $this->spreadsheetRowIsEmpty($row)) {
+                $skipped++;
+
+                continue;
+            }
+
+            if ($this->spreadsheetRowIsExamplePlaceholder($row)) {
+                $skipped++;
+
+                continue;
+            }
+
+            try {
+                $exchangeDate = $this->parseSpreadsheetDate($exchangeDateValue);
+                $compensatedDate = $this->parseSpreadsheetDate($this->spreadsheetCell($row, $header, 'compensa_fecha'));
+                $entryTime = $this->normalizeSpreadsheetTime($this->spreadsheetCell($row, $header, 'entrada'));
+                $exitTime = $this->normalizeSpreadsheetTime($this->spreadsheetCell($row, $header, 'salida'));
+            } catch (ValidationException $exception) {
+                $errors[] = "Hoja Canjes fila {$rowNumber}: ".$this->firstValidationMessage($exception);
+
+                continue;
+            }
+
+            $employee = $document ? $byDocument->get($document) : null;
+            if (! $exchangeDate || ! $compensatedDate) {
+                $errors[] = "Hoja Canjes fila {$rowNumber}: documento, fecha_canje y compensa_fecha son obligatorios.";
+
+                continue;
+            }
+
+            $date = Carbon::parse($exchangeDate);
+            $absenceDate = Carbon::parse($compensatedDate);
+
+            if (! $employee) {
+                $errors[] = "Hoja Canjes fila {$rowNumber}: ".$this->employeeImportLookupMessage($document, $employeesByDocument, $selectedPayrollGroupName);
+
+                continue;
+            }
+
+            if ($date->month !== $month || $date->year !== $year || $absenceDate->month !== $month || $absenceDate->year !== $year) {
+                $errors[] = "Hoja Canjes fila {$rowNumber}: fecha_canje y compensa_fecha deben pertenecer al periodo seleccionado.";
+
+                continue;
+            }
+
+            $key = "{$document}|{$exchangeDate}";
+            $rowsByKey[$key] = array_merge($rowsByKey[$key] ?? [
+                'row' => $rowNumber,
+                'employee' => $employee,
+                'attendance_date' => $exchangeDate,
+                'status_code' => AttendanceDay::STATUS_EXCHANGE_WORKED,
+                'entry_time' => null,
+                'exit_time' => null,
+                'observation' => null,
+                'compensated_date' => null,
+            ], [
+                'status_code' => AttendanceDay::STATUS_EXCHANGE_WORKED,
+                'entry_time' => $entryTime,
+                'exit_time' => $exitTime,
+                'observation' => $this->spreadsheetCell($row, $header, 'observacion') ?? ($rowsByKey[$key]['observation'] ?? null),
+                'compensated_date' => $compensatedDate,
+            ]);
+
+            $absenceKey = "{$document}|{$compensatedDate}";
+            $rowsByKey[$absenceKey] = array_merge($rowsByKey[$absenceKey] ?? [
+                'row' => $rowNumber,
+                'employee' => $employee,
+                'attendance_date' => $compensatedDate,
+                'status_code' => AttendanceDay::STATUS_ABSENT,
+                'entry_time' => null,
+                'exit_time' => null,
+                'observation' => 'Falta compensada por canje.',
+                'compensated_date' => null,
+            ], [
+                'status_code' => AttendanceDay::STATUS_ABSENT,
+            ]);
+        }
+    }
+
+    private function draftAttendanceForImport(Employee $employee, int $month, int $year, ?int $userId): MonthlyAttendance
+    {
+        $attendance = MonthlyAttendance::query()
+            ->with(['status', 'days.status'])
+            ->where('employee_id', $employee->id)
+            ->where('month', $month)
+            ->where('year', $year)
+            ->first();
+
+        if ($attendance) {
+            if (! $attendance->isEditable()) {
+                throw ValidationException::withMessages([
+                    'file' => "La asistencia de {$employee->full_name} ya esta cerrada. Reabre el periodo antes de importar cambios. [ATT-021]",
+                ]);
+            }
+
+            return $attendance;
+        }
+
+        $attendance = MonthlyAttendance::create([
+            'employee_id' => $employee->id,
+            'status_id' => $this->catalogId(MonthlyAttendance::CATALOG_TYPE_STATUS, MonthlyAttendance::STATUS_DRAFT),
+            'month' => $month,
+            'year' => $year,
+            'observations' => 'Creada por importacion masiva de asistencia.',
+            'created_by' => $userId,
+        ]);
+
+        $attendance->setRelation('employee', $employee);
+        $this->generateMonthDays($attendance);
+        $this->recalculateTotals($attendance);
+
+        return $attendance->refresh()->load(['status', 'days.status']);
+    }
+
+    private function normalizeSpreadsheetKey(?string $value): ?string
+    {
+        if (! $value) {
+            return null;
+        }
+
+        $normalized = str($value)->ascii()->upper()->replaceMatches('/[^A-Z0-9]+/', '')->toString();
+
+        return $normalized === '' ? null : $normalized;
+    }
+
+    private function employeeImportLookupMessage(
+        string $document,
+        Collection $employeesByDocument,
+        string $selectedPayrollGroupName
+    ): string {
+        /** @var Employee|null $employee */
+        $employee = $employeesByDocument->get($document);
+
+        if (! $employee) {
+            return "el DNI {$document} no esta registrado en trabajadores.";
+        }
+
+        if (! $employee->status) {
+            return "el DNI {$document} pertenece a {$employee->full_name}, pero el trabajador esta inactivo. Activalo o retira esa fila del Excel.";
+        }
+
+        $employeeGroup = $employee->payrollGroup?->name ?? 'sin grupo de planilla asignado';
+        $employeeArea = $employee->workArea?->name ?? 'sin area';
+
+        return "el DNI {$document} pertenece a {$employee->full_name}, pero su grupo de planilla actual es {$employeeGroup} (area: {$employeeArea}). Grupo seleccionado para importar: {$selectedPayrollGroupName}. Selecciona el grupo correcto o corrige la ficha del trabajador.";
+    }
+
+    private function firstValidationMessage(ValidationException $exception): string
+    {
+        $messages = collect($exception->errors())->flatten();
+
+        return (string) ($messages->first() ?? $exception->getMessage());
+    }
+
+    private function spreadsheetErrorMessage(array $errors): string
+    {
+        $visibleErrors = array_slice($errors, 0, 8);
+        $message = 'Corrige el Excel y vuelve a subirlo. No se importo ninguna asistencia. '.implode(' ', $visibleErrors);
+
+        if (count($errors) > count($visibleErrors)) {
+            $message .= ' Hay '.(count($errors) - count($visibleErrors)).' error(es) adicional(es).';
+        }
+
+        return $message.' [ATT-032]';
+    }
+
+    private function normalizeStatusCode(?string $value): ?string
+    {
+        if (! $value) {
+            return null;
+        }
+
+        $normalized = str($value)->ascii()->upper()->replaceMatches('/[^A-Z0-9]+/', '_')->trim('_')->toString();
+
+        return match ($normalized) {
+            'PRESENT', 'ASISTIO', 'ASISTIO_' => AttendanceDay::STATUS_PRESENT,
+            'ABSENT', 'FALTO', 'FALTA' => AttendanceDay::STATUS_ABSENT,
+            'REST', 'DESCANSO' => AttendanceDay::STATUS_REST,
+            'EXCHANGE_WORKED', 'CANJE', 'TRABAJO_COMO_CANJE', 'TRABAJADO_COMO_CANJE' => AttendanceDay::STATUS_EXCHANGE_WORKED,
+            'UNMARKED', 'SIN_MARCAR' => AttendanceDay::STATUS_UNMARKED,
+            default => throw ValidationException::withMessages([
+                'file' => "El estado {$value} no es valido para importar asistencia. [ATT-025]",
+            ]),
+        };
+    }
+
+    private function normalizeMatrixStatusCode(?string $value): string
+    {
+        if (! $value) {
+            throw ValidationException::withMessages([
+                'file' => 'El estado esta vacio.',
+            ]);
+        }
+
+        $normalized = str($value)->ascii()->upper()->replaceMatches('/[^A-Z0-9]+/', '_')->trim('_')->toString();
+
+        return match ($normalized) {
+            'A', 'ASISTIO', 'ASISTENCIA', 'PRESENT' => AttendanceDay::STATUS_PRESENT,
+            'F', 'FALTO', 'FALTA', 'ABSENT' => AttendanceDay::STATUS_ABSENT,
+            'D', 'DESCANSO', 'REST' => AttendanceDay::STATUS_REST,
+            'C', 'CANJE', 'EXCHANGE_WORKED' => AttendanceDay::STATUS_EXCHANGE_WORKED,
+            'S', 'SM', 'SIN_MARCAR', 'UNMARKED' => AttendanceDay::STATUS_UNMARKED,
+            default => throw ValidationException::withMessages([
+                'file' => "El codigo {$value} no es valido. Usa A, F, D, C o S.",
+            ]),
+        };
+    }
+
+    private function parseSpreadsheetDate(?string $value): ?string
+    {
+        if (! $value) {
+            return null;
+        }
+
+        $value = trim((string) $value);
+
+        if (is_numeric($value)) {
+            try {
+                return Carbon::instance(ExcelDate::excelToDateTimeObject((float) $value))->toDateString();
+            } catch (\Throwable) {
+                // Continua con los formatos de texto para devolver el mensaje amigable.
+            }
+        }
+
+        foreach (['d-m-Y', 'd/m/Y', 'j-n-Y', 'j/n/Y', 'Y-m-d', 'Y/m/d', 'Y-n-j', 'Y/n/j'] as $format) {
+            try {
+                $date = Carbon::createFromFormat('!'.$format, $value);
+                $errors = Carbon::getLastErrors();
+
+                if ($date && ($errors === false || ($errors['warning_count'] === 0 && $errors['error_count'] === 0))) {
+                    return $date->toDateString();
+                }
+            } catch (\Throwable) {
+                continue;
+            }
+        }
+
+        throw ValidationException::withMessages([
+            'file' => "La fecha {$value} no tiene un formato valido. Usa DD-MM-YYYY, por ejemplo 16-07-2026. Tambien aceptamos DD/MM/YYYY. [ATT-026]",
+        ]);
+    }
+
+    private function normalizeSpreadsheetTime(?string $value): ?string
+    {
+        if (! $value) {
+            return null;
+        }
+
+        if (preg_match('/^\d{1,2}:\d{2}/', $value)) {
+            return substr(str_pad($value, 5, '0', STR_PAD_LEFT), 0, 5);
+        }
+
+        try {
+            return Carbon::parse($value)->format('H:i');
+        } catch (\Throwable) {
+            throw ValidationException::withMessages([
+                'file' => "La hora {$value} no tiene un formato valido. Usa HH:MM. [ATT-027]",
             ]);
         }
     }
@@ -386,7 +1272,7 @@ class AttendanceService
             }
 
             $unmarkedDays = $attendance->days
-                ->filter(fn(AttendanceDay $day) => $day->status?->code === AttendanceDay::STATUS_UNMARKED)
+                ->filter(fn (AttendanceDay $day) => $day->status?->code === AttendanceDay::STATUS_UNMARKED)
                 ->count();
 
             if ($unmarkedDays > 0) {
@@ -491,10 +1377,10 @@ class AttendanceService
 
         return $query
             ->get()
-            ->map(fn(Employee $employee) => [
-                'id'       => $employee->id,
-                'name'     => $this->employeeDisplayName($employee),
-                'code'     => $this->employeeCode($employee),
+            ->map(fn (Employee $employee) => [
+                'id' => $employee->id,
+                'name' => $this->employeeDisplayName($employee),
+                'code' => $this->employeeCode($employee),
                 'document' => $this->employeeDocument($employee),
             ])
             ->values();
@@ -529,7 +1415,7 @@ class AttendanceService
         $currentYear = (int) date('Y');
 
         return collect(range($currentYear - 2, $currentYear + 1))
-            ->map(fn(int $year) => [
+            ->map(fn (int $year) => [
                 'value' => $year,
                 'label' => (string) $year,
             ])
@@ -564,7 +1450,7 @@ class AttendanceService
         $workShift = $attendance->employee?->workShift;
 
         $startDate = Carbon::create($attendance->year, $attendance->month, 1)->startOfDay();
-        $endDate   = $startDate->copy()->endOfMonth();
+        $endDate = $startDate->copy()->endOfMonth();
 
         foreach (CarbonPeriod::create($startDate, $endDate) as $date) {
             $statusId = $unmarkedStatusId;
@@ -579,11 +1465,11 @@ class AttendanceService
                     'attendance_date' => $date->toDateString(),
                 ],
                 [
-                    'status_id'      => $statusId,
-                    'work_shift_id'  => null,
-                    'entry_time'     => null,
-                    'exit_time'      => null,
-                    'worked_hours'   => 0,
+                    'status_id' => $statusId,
+                    'work_shift_id' => null,
+                    'entry_time' => null,
+                    'exit_time' => null,
+                    'worked_hours' => 0,
                     'overtime_hours' => 0,
                     'payable_overtime_hours' => 0,
                 ]
@@ -598,10 +1484,10 @@ class AttendanceService
     {
         $attendance->loadMissing(['days.status']);
 
-        $workedDays    = 0;
-        $absenceDays   = 0;
-        $exchangeDays  = 0;
-        $restDays      = 0;
+        $workedDays = 0;
+        $absenceDays = 0;
+        $exchangeDays = 0;
+        $restDays = 0;
         $overtimeHours = 0;
         $payableOvertimeHours = 0;
 
@@ -634,7 +1520,7 @@ class AttendanceService
         );
 
         $startDate = Carbon::create($attendance->year, $attendance->month, 1)->startOfMonth();
-        $endDate   = $startDate->copy()->endOfMonth();
+        $endDate = $startDate->copy()->endOfMonth();
 
         $compensatedAbsenceDays = AttendanceExchange::query()
             ->where('employee_id', $attendance->employee_id)
@@ -646,14 +1532,14 @@ class AttendanceService
             ->count();
 
         $attendance->update([
-            'worked_days'                => $workedDays,
-            'absence_days'               => $absenceDays,
-            'compensated_absence_days'   => $compensatedAbsenceDays,
+            'worked_days' => $workedDays,
+            'absence_days' => $absenceDays,
+            'compensated_absence_days' => $compensatedAbsenceDays,
             'uncompensated_absence_days' => max($absenceDays - $compensatedAbsenceDays, 0),
-            'exchange_days'              => $exchangeDays,
-            'rest_days'                  => $restDays,
-            'overtime_hours'             => $overtimeHours,
-            'payable_overtime_hours'     => $payableOvertimeHours,
+            'exchange_days' => $exchangeDays,
+            'rest_days' => $restDays,
+            'overtime_hours' => $overtimeHours,
+            'payable_overtime_hours' => $payableOvertimeHours,
         ]);
     }
 
@@ -724,7 +1610,7 @@ class AttendanceService
      * Calcula horas trabajadas y horas extras usando el turno asignado.
      */
     private function calculateWorkedAndOvertimeHours(
-        CarbonInterface | string $attendanceDate,
+        CarbonInterface|string $attendanceDate,
         ?string $entryTime,
         ?string $exitTime,
         WorkShift $workShift
@@ -732,7 +1618,7 @@ class AttendanceService
         if (! $entryTime || ! $exitTime) {
             throw ValidationException::withMessages([
                 'entry_time' => 'Ingresa la hora de entrada y salida para calcular la asistencia del dia. [ATT-012]',
-                'exit_time'  => 'Ingresa la hora de entrada y salida para calcular la asistencia del dia. [ATT-012]',
+                'exit_time' => 'Ingresa la hora de entrada y salida para calcular la asistencia del dia. [ATT-012]',
             ]);
         }
 
@@ -742,7 +1628,7 @@ class AttendanceService
 
         $schedule = $this->workScheduleForDate($workShift, $date);
         $entryAt = Carbon::parse("{$date} {$entryTime}");
-        $exitAt  = Carbon::parse("{$date} {$exitTime}");
+        $exitAt = Carbon::parse("{$date} {$exitTime}");
 
         if ($exitAt->lessThanOrEqualTo($entryAt)) {
             if (! $schedule['crosses_midnight']) {
@@ -765,7 +1651,7 @@ class AttendanceService
 
         $workedMinutes = max($workedMinutes - $breakMinutes, 0);
 
-        $workedHours   = round($workedMinutes / 60, 2);
+        $workedHours = round($workedMinutes / 60, 2);
         $expectedHours = (float) $schedule['expected_hours'];
         $overtimeAfterHours = $schedule['overtime_after_hours'] !== null
             ? (float) $schedule['overtime_after_hours']
@@ -776,7 +1662,7 @@ class AttendanceService
             : 0.0;
 
         return [
-            'worked_hours'   => $workedHours,
+            'worked_hours' => $workedHours,
             'overtime_hours' => $overtimeHours,
             'payable_overtime_hours' => $payableOvertimeHours,
         ];
@@ -859,11 +1745,11 @@ class AttendanceService
         }
 
         $breakStartTime = $schedule['break_start_time'];
-        $breakEndTime   = $schedule['break_end_time'];
+        $breakEndTime = $schedule['break_end_time'];
         $shiftStartTime = $schedule['start_time'];
 
         $breakStartAt = Carbon::parse("{$date} {$breakStartTime}");
-        $breakEndAt   = Carbon::parse("{$date} {$breakEndTime}");
+        $breakEndAt = Carbon::parse("{$date} {$breakEndTime}");
 
         if ($schedule['crosses_midnight'] && $breakStartTime < $shiftStartTime) {
             $breakStartAt->addDay();
@@ -968,7 +1854,7 @@ class AttendanceService
         }
 
         $firstName = $employee->getAttribute('first_name') ?? '';
-        $lastName  = $employee->getAttribute('last_name') ?? '';
+        $lastName = $employee->getAttribute('last_name') ?? '';
 
         return trim("{$firstName} {$lastName}") ?: "Trabajador #{$employee->id}";
     }
@@ -1006,15 +1892,15 @@ class AttendanceService
      */
     public function allowedPeriodOptions(): array
     {
-        $currentPeriod  = now()->startOfMonth();
+        $currentPeriod = now()->startOfMonth();
         $previousPeriod = now()->subMonthNoOverflow()->startOfMonth();
 
         return collect([$previousPeriod, $currentPeriod])
-            ->map(fn($date) => [
-                'value'      => $date->format('Y-m'),
-                'month'      => (int) $date->month,
-                'year'       => (int) $date->year,
-                'label'      => $this->monthName((int) $date->month) . ' ' . $date->year,
+            ->map(fn ($date) => [
+                'value' => $date->format('Y-m'),
+                'month' => (int) $date->month,
+                'year' => (int) $date->year,
+                'label' => $this->monthName((int) $date->month).' '.$date->year,
                 'is_current' => $date->isSameMonth($currentPeriod),
             ])
             ->values()
@@ -1037,29 +1923,47 @@ class AttendanceService
         if (! in_array($selectedPeriod->format('Y-m'), $allowedPeriods, true)) {
             throw ValidationException::withMessages([
                 'period' => 'Solo puedes registrar asistencia del mes actual o del mes anterior. Selecciona uno de los periodos disponibles. [ATT-014]',
-                'month'  => 'Solo puedes registrar asistencia del mes actual o del mes anterior. Selecciona uno de los periodos disponibles. [ATT-014]',
-                'year'   => 'Solo puedes registrar asistencia del mes actual o del mes anterior. Selecciona uno de los periodos disponibles. [ATT-014]',
+                'month' => 'Solo puedes registrar asistencia del mes actual o del mes anterior. Selecciona uno de los periodos disponibles. [ATT-014]',
+                'year' => 'Solo puedes registrar asistencia del mes actual o del mes anterior. Selecciona uno de los periodos disponibles. [ATT-014]',
             ]);
         }
     }
 
     /**
-     * Convierte un periodo con formato YYYY-MM en mes y año.
+     * Convierte un periodo mensual en mes y año.
      */
     public function parsePeriod(?string $period): array
     {
-        if (! $period || ! preg_match('/^\d{4}-\d{2}$/', $period)) {
+        if (! $period) {
             return [
                 'month' => null,
-                'year'  => null,
+                'year' => null,
             ];
         }
 
-        [$year, $month] = explode('-', $period);
+        $period = trim(str_replace('/', '-', $period));
+
+        if (preg_match('/^\d{4}-\d{2}$/', $period)) {
+            [$year, $month] = explode('-', $period);
+
+            return [
+                'month' => (int) $month,
+                'year' => (int) $year,
+            ];
+        }
+
+        if (preg_match('/^\d{2}-\d{4}$/', $period)) {
+            [$month, $year] = explode('-', $period);
+
+            return [
+                'month' => (int) $month,
+                'year' => (int) $year,
+            ];
+        }
 
         return [
-            'month' => (int) $month,
-            'year'  => (int) $year,
+            'month' => null,
+            'year' => null,
         ];
     }
 }

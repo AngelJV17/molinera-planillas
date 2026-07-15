@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Services;
 
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -42,13 +43,13 @@ class RoleService
             })
             ->map(function ($permissions, string $module) {
                 return [
-                    'module'      => $module,
-                    'label'       => $this->moduleLabel($module),
+                    'module' => $module,
+                    'label' => $this->moduleLabel($module),
                     'permissions' => $permissions->map(function (Permission $permission) {
                         return [
-                            'id'         => $permission->id,
-                            'name'       => $permission->name,
-                            'label'      => $this->permissionLabel($permission->name),
+                            'id' => $permission->id,
+                            'name' => $permission->name,
+                            'label' => $this->permissionLabel($permission->name),
                             'guard_name' => $permission->guard_name,
                         ];
                     })->values(),
@@ -65,7 +66,7 @@ class RoleService
         app(PermissionRegistrar::class)->forgetCachedPermissions();
 
         $role = Role::create([
-            'name'       => $data['name'],
+            'name' => $data['name'],
             'guard_name' => 'web',
         ]);
 
@@ -104,6 +105,9 @@ class RoleService
         return in_array($role->name, [
             'Super Admin',
             'Administrador',
+            'RRHH',
+            'Contabilidad',
+            'Gerente',
         ], true);
     }
 
@@ -113,20 +117,20 @@ class RoleService
     private function moduleLabel(string $module): string
     {
         return match ($module) {
-            'dashboard'     => 'Dashboard',
-            'catalogs'      => 'Catálogos',
-            'banks'         => 'Bancos',
-            'work-shifts'   => 'Turnos de trabajo',
-            'workers'       => 'Trabajadores',
-            'attendance'    => 'Asistencia',
+            'dashboard' => 'Dashboard',
+            'catalogs' => 'Catálogos',
+            'banks' => 'Bancos',
+            'work-shifts' => 'Turnos de trabajo',
+            'workers' => 'Trabajadores',
+            'attendance' => 'Asistencia',
             'attendance-exchanges' => 'Canjes de asistencia',
-            'payrolls'      => 'Planillas',
+            'payrolls' => 'Planillas',
             'payroll-parameters' => 'Parametros de planilla',
             'payment-slips' => 'Boletas de pago',
-            'reports'       => 'Reportes',
-            'users'         => 'Usuarios',
-            'roles'         => 'Roles y permisos',
-            default         => ucfirst(str_replace('-', ' ', $module)),
+            'reports' => 'Reportes',
+            'users' => 'Usuarios',
+            'roles' => 'Roles y permisos',
+            default => ucfirst(str_replace('-', ' ', $module)),
         };
     }
 
@@ -138,25 +142,25 @@ class RoleService
         $action = str($permission)->after('.')->toString();
 
         return match ($action) {
-            'view'               => 'Ver',
-            'create'             => 'Crear',
-            'edit'               => 'Editar',
-            'update'             => 'Actualizar',
-            'delete'             => 'Eliminar',
-            'toggle-status'      => 'Cambiar estado',
-            'close'              => 'Cerrar',
-            'reopen'             => 'Reabrir',
-            'review'             => 'Revisar',
-            'approve'            => 'Aprobar',
-            'observe'            => 'Observar',
-            'reject'             => 'Rechazar',
-            'recalculate'        => 'Recalcular',
-            'pay'                => 'Marcar como pagado',
-            'generate'           => 'Generar',
-            'download'           => 'Descargar',
-            'export'             => 'Exportar',
+            'view' => 'Ver',
+            'create' => 'Crear',
+            'edit' => 'Editar',
+            'update' => 'Actualizar',
+            'delete' => 'Eliminar',
+            'toggle-status' => 'Cambiar estado',
+            'close' => 'Cerrar',
+            'reopen' => 'Reabrir',
+            'review' => 'Revisar',
+            'approve' => 'Aprobar',
+            'observe' => 'Observar',
+            'reject' => 'Rechazar',
+            'recalculate' => 'Recalcular',
+            'pay' => 'Marcar como pagado',
+            'generate' => 'Generar',
+            'download' => 'Descargar',
+            'export' => 'Exportar',
             'assign-permissions' => 'Asignar permisos',
-            default              => ucfirst(str_replace('-', ' ', $action)),
+            default => ucfirst(str_replace('-', ' ', $action)),
         };
     }
 }

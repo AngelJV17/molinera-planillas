@@ -14,6 +14,7 @@ import PerPageFilter from '@/Components/Filters/PerPageFilter.vue';
 import SearchInput from '@/Components/Table/SearchInput.vue';
 import TableActions from '@/Components/Table/TableActions.vue';
 import TableEntityCell from '@/Components/Table/TableEntityCell.vue';
+import { formatPeriod, periodForRequest } from '@/Utils/dates';
 
 const props = defineProps({
     slips: {
@@ -27,7 +28,7 @@ const props = defineProps({
 });
 
 const search = ref(props.filters.search ?? '');
-const period = ref(props.filters.period ?? '');
+const period = ref(formatPeriod(props.filters.period ?? ''));
 const perPage = ref(props.filters.per_page ?? 10);
 let filterTimeout = null;
 
@@ -50,7 +51,7 @@ const applyFilters = () => {
         route('payment-slips.index'),
         {
             search: search.value || undefined,
-            period: period.value || undefined,
+            period: periodForRequest(period.value) || undefined,
             per_page: perPage.value || 10,
         },
         {
@@ -99,7 +100,7 @@ const statusClass = (statusCode) => {
                 <template #filters>
                     <SearchInput v-model="search" placeholder="Buscar trabajador, codigo o DNI..." />
 
-                    <SearchInput v-model="period" placeholder="Periodo YYYY-MM..." />
+                    <SearchInput v-model="period" placeholder="Periodo MM-YYYY..." />
 
                     <PerPageFilter v-model="perPage" />
                 </template>

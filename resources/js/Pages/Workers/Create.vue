@@ -29,6 +29,7 @@ const form = useForm({
     termination_date: '',
     position_id: '',
     work_area_id: '',
+    payroll_group_id: '',
     work_shift_id: '',
     employment_status_id: '',
     base_salary: 0,

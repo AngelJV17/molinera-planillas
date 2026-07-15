@@ -56,6 +56,15 @@ export const catalogCategories = [
         icon: Building2,
     },
     {
+        key: "PAYROLL_GROUP",
+        label: "Grupos de planilla",
+        singular: "Grupo de planilla",
+        description:
+            "Agrupaciones usadas para generar planillas sin reemplazar el area real del trabajador.",
+        examples: "Planilla administrativa, Planilla personal de produccion",
+        icon: ListChecks,
+    },
+    {
         key: "POSITION",
         label: "Cargos",
         singular: "Cargo",

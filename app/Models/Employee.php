@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Builder;
@@ -29,6 +30,7 @@ class Employee extends Model
         'termination_date',
         'position_id',
         'work_area_id',
+        'payroll_group_id',
         'work_shift_id',
         'employment_status_id',
         'base_salary',
@@ -41,11 +43,11 @@ class Employee extends Model
     ];
 
     protected $casts = [
-        'birth_date'       => 'date',
-        'hire_date'        => 'date',
+        'birth_date' => 'date',
+        'hire_date' => 'date',
         'termination_date' => 'date',
-        'base_salary'      => 'decimal:2',
-        'status'           => 'boolean',
+        'base_salary' => 'decimal:2',
+        'status' => 'boolean',
     ];
 
     /**
@@ -102,6 +104,14 @@ class Employee extends Model
     public function workArea(): BelongsTo
     {
         return $this->belongsTo(Catalog::class, 'work_area_id');
+    }
+
+    /**
+     * Grupo usado para generar planillas.
+     */
+    public function payrollGroup(): BelongsTo
+    {
+        return $this->belongsTo(Catalog::class, 'payroll_group_id');
     }
 
     /**

@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Http\Controllers;
 
 use App\Models\Employee;
@@ -13,14 +14,13 @@ class DashboardController extends Controller
 {
     public function __construct(
         private readonly PayrollService $payrollService
-    ) {
-    }
+    ) {}
 
     public function __invoke(Request $request): Response
     {
         $period = $this->resolvePeriod($request->input('period'));
         $currentMonth = $period['month'];
-        $currentYear  = $period['year'];
+        $currentYear = $period['year'];
 
         /*
         |--------------------------------------------------------------------------
@@ -87,10 +87,10 @@ class DashboardController extends Controller
         | porque no son días laborables.
         |
         */
-        $workedDays    = (int) $closedMonthlyAttendances->sum('worked_days');
-        $absenceDays   = (int) $closedMonthlyAttendances->sum('absence_days');
-        $restDays      = (int) $closedMonthlyAttendances->sum('rest_days');
-        $exchangeDays  = (int) $closedMonthlyAttendances->sum('exchange_days');
+        $workedDays = (int) $closedMonthlyAttendances->sum('worked_days');
+        $absenceDays = (int) $closedMonthlyAttendances->sum('absence_days');
+        $restDays = (int) $closedMonthlyAttendances->sum('rest_days');
+        $exchangeDays = (int) $closedMonthlyAttendances->sum('exchange_days');
         $overtimeHours = (float) $closedMonthlyAttendances->sum('payable_overtime_hours');
 
         $totalEvaluatedDays = $workedDays + $absenceDays;
@@ -113,13 +113,13 @@ class DashboardController extends Controller
             ->latest()
             ->limit(5)
             ->get()
-            ->map(fn(Payroll $payroll) => [
-                'id'          => $payroll->id,
-                'period'      => $this->payrollService->monthName($payroll->month) . ' ' . $payroll->year,
-                'status'      => $payroll->status?->name ?? 'Sin estado',
+            ->map(fn (Payroll $payroll) => [
+                'id' => $payroll->id,
+                'period' => $this->payrollService->monthName($payroll->month).' '.$payroll->year,
+                'status' => $payroll->status?->name ?? 'Sin estado',
                 'status_code' => $payroll->status?->code,
-                'total'       => $payroll->total_net,
-                'date'        => $payroll->created_at?->format('d/m/Y'),
+                'total' => $payroll->total_net,
+                'date' => $payroll->created_at?->format('d-m-Y'),
             ])
             ->values();
 
@@ -129,42 +129,42 @@ class DashboardController extends Controller
         |--------------------------------------------------------------------------
         */
         return Inertia::render('Dashboard', [
-            'metrics'          => [
-                'active_workers'             => $activeWorkers,
+            'metrics' => [
+                'active_workers' => $activeWorkers,
 
                 /*
                 |--------------------------------------------------------------------------
                 | Asistencia mensual
                 |--------------------------------------------------------------------------
                 */
-                'attendance_rate'            => $attendanceRate,
-                'absence_rate'               => $absenceRate,
+                'attendance_rate' => $attendanceRate,
+                'absence_rate' => $absenceRate,
 
-                'monthly_attendances'        => $totalMonthlyAttendances,
-                'closed_attendances'         => $closedAttendancesCount,
-                'pending_attendances'        => $pendingAttendances,
-                'closed_attendance_rate'     => $closedAttendanceRate,
+                'monthly_attendances' => $totalMonthlyAttendances,
+                'closed_attendances' => $closedAttendancesCount,
+                'pending_attendances' => $pendingAttendances,
+                'closed_attendance_rate' => $closedAttendanceRate,
 
                 'workers_without_attendance' => $workersWithoutAttendance,
 
-                'evaluated_attendance_days'  => $totalEvaluatedDays,
-                'worked_days'                => $workedDays,
-                'absence_days'               => $absenceDays,
-                'rest_days'                  => $restDays,
-                'exchange_days'              => $exchangeDays,
-                'overtime_hours'             => $overtimeHours,
+                'evaluated_attendance_days' => $totalEvaluatedDays,
+                'worked_days' => $workedDays,
+                'absence_days' => $absenceDays,
+                'rest_days' => $restDays,
+                'exchange_days' => $exchangeDays,
+                'overtime_hours' => $overtimeHours,
 
                 /*
                 |--------------------------------------------------------------------------
                 | Planillas
                 |--------------------------------------------------------------------------
                 */
-                'current_month_payrolls'     => Payroll::query()
+                'current_month_payrolls' => Payroll::query()
                     ->where('month', $currentMonth)
                     ->where('year', $currentYear)
                     ->count(),
 
-                'paid_payrolls'              => Payroll::query()
+                'paid_payrolls' => Payroll::query()
                     ->whereHas('status', function ($query) {
                         $query->where('code', Payroll::STATUS_PAID);
                     })
@@ -176,9 +176,9 @@ class DashboardController extends Controller
             ],
 
             'periodOptions' => $this->periodOptions($period),
-            'currentPeriodLabel' => $this->payrollService->monthName($currentMonth) . ' ' . $currentYear,
+            'currentPeriodLabel' => $this->payrollService->monthName($currentMonth).' '.$currentYear,
 
-            'latestPayrolls'   => $latestPayrolls,
+            'latestPayrolls' => $latestPayrolls,
 
             'attendanceStatus' => [
                 [
@@ -255,9 +255,9 @@ class DashboardController extends Controller
             ->orderByDesc('month')
             ->limit(12)
             ->get()
-            ->map(fn(MonthlyAttendance $attendance) => [
+            ->map(fn (MonthlyAttendance $attendance) => [
                 'value' => sprintf('%04d-%02d', $attendance->year, $attendance->month),
-                'label' => $this->payrollService->monthName((int) $attendance->month) . ' ' . $attendance->year,
+                'label' => $this->payrollService->monthName((int) $attendance->month).' '.$attendance->year,
             ])
             ->values();
 
@@ -266,7 +266,7 @@ class DashboardController extends Controller
         if (! $options->contains('value', $selectedValue)) {
             $options->prepend([
                 'value' => $selectedValue,
-                'label' => $this->payrollService->monthName($selectedPeriod['month']) . ' ' . $selectedPeriod['year'],
+                'label' => $this->payrollService->monthName($selectedPeriod['month']).' '.$selectedPeriod['year'],
             ]);
         }
 
@@ -282,7 +282,7 @@ class DashboardController extends Controller
             ->toBase()
             ->map(function (Payroll $payroll) {
                 return [
-                    'date'    => $payroll->created_at,
+                    'date' => $payroll->created_at,
                     'message' => "Planilla {$payroll->code} registrada para {$this->payrollService->monthName($payroll->month)} {$payroll->year}.",
                 ];
             });
@@ -305,14 +305,14 @@ class DashboardController extends Controller
                     $employeeName = 'trabajador no disponible';
                 }
 
-                $period = $this->payrollService->monthName((int) $attendance->month) . ' ' . $attendance->year;
+                $period = $this->payrollService->monthName((int) $attendance->month).' '.$attendance->year;
 
                 $action = $attendance->status?->code === MonthlyAttendance::STATUS_CLOSED
                     ? 'cerrada'
                     : 'registrada';
 
                 return [
-                    'date'    => $attendance->updated_at ?? $attendance->created_at,
+                    'date' => $attendance->updated_at ?? $attendance->created_at,
                     'message' => "Asistencia mensual {$action} para {$employeeName} correspondiente a {$period}.",
                 ];
             });
