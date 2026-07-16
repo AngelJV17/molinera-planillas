@@ -6,6 +6,7 @@ import {
     CheckCircle2,
     ClipboardCheck,
     Database,
+    Download,
     Eye,
     FileSpreadsheet,
     Play,
@@ -285,6 +286,8 @@ const payPayroll = async (payroll) => {
 
     router.patch(route('payrolls.pay', payroll.id), {}, { preserveScroll: true });
 };
+
+const paymentFileUrl = (payroll) => route('payrolls.payment-file', payroll.id);
 </script>
 
 <template>
@@ -486,6 +489,14 @@ const payPayroll = async (payroll) => {
                                 variant="neutral"
                                 :disabled="!payroll.can_recalculate"
                                 @click="recalculatePayroll(payroll)"
+                            />
+                            <TableActionButton
+                                v-if="can('payrolls.pay')"
+                                :href="paymentFileUrl(payroll)"
+                                :icon="Download"
+                                title="Archivo de pago"
+                                variant="success"
+                                :disabled="!payroll.can_download_payment_file"
                             />
                             <TableActionButton
                                 v-if="can('payrolls.pay')"

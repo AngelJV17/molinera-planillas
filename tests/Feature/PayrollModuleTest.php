@@ -403,6 +403,61 @@ class PayrollModuleTest extends TestCase
         $this->assertEquals((float) $detail->net_pay, (float) $sheet->getCell("E{$netRow}")->getValue());
     }
 
+    public function test_approved_payroll_payment_file_contains_bank_and_payment_data(): void
+    {
+        $user = User::factory()->create();
+        $payroll = $this->generatedPayrollForPeriod($user, 5, 2026);
+        $detail = $payroll->details()->firstOrFail();
+        $employee = $detail->employee;
+        $bank = $this->bank(['name' => 'Banco Pago', 'code' => 'PAGO']);
+        $accountType = $this->catalog('ACCOUNT_TYPE', 'SAVINGS', ['name' => 'Cuenta de Ahorros']);
+        $position = $this->catalog('POSITION', 'OPERATOR', ['name' => 'Operario']);
+        $area = $this->catalog('WORK_AREA', 'PRODUCTION', ['name' => 'Produccion']);
+
+        $employee->update([
+            'position_id' => $position->id,
+            'work_area_id' => $area->id,
+        ]);
+
+        $employee->bankAccounts()->create([
+            'bank_id' => $bank->id,
+            'account_type_id' => $accountType->id,
+            'account_number' => '001234567890',
+            'cci' => '00200112345678901234',
+            'is_primary' => true,
+            'status' => true,
+        ]);
+
+        $this->actingAs($user)
+            ->get(route('payrolls.payment-file', $payroll))
+            ->assertForbidden();
+
+        $this->actingAs($user)
+            ->patch(route('payrolls.approve', $payroll))
+            ->assertSessionHasNoErrors();
+
+        $response = $this->actingAs($user)->get(route('payrolls.payment-file', $payroll));
+
+        $response
+            ->assertOk()
+            ->assertDownload('archivo-pago-'.str($payroll->code)->lower()->replace(' ', '-')->toString().'.xlsx');
+
+        $sheet = $this->sheetFromStreamedExcel($response->streamedContent());
+
+        $this->assertSame('Archivo de pago de planilla', $sheet->getCell('A1')->getValue());
+        $this->assertSame('DNI', $sheet->getCell('A4')->getValue());
+        $this->assertSame('Apellidos y nombres', $sheet->getCell('B4')->getValue());
+        $this->assertSame('Cargo', $sheet->getCell('D4')->getValue());
+        $this->assertSame('Banco', $sheet->getCell('F4')->getValue());
+        $this->assertSame('Numero de cuenta', $sheet->getCell('H4')->getValue());
+        $this->assertSame('Neto a pagar', $sheet->getCell('R4')->getValue());
+        $this->assertSame($detail->document_number, $sheet->getCell('A5')->getValue());
+        $this->assertSame('Operario', $sheet->getCell('D5')->getValue());
+        $this->assertSame('Banco Pago', $sheet->getCell('F5')->getValue());
+        $this->assertSame('001234567890', $sheet->getCell('H5')->getValue());
+        $this->assertEquals((float) $detail->net_pay, (float) $sheet->getCell('R5')->getValue());
+    }
+
     public function test_unapproved_payment_slips_cannot_be_downloaded(): void
     {
         $user = User::factory()->create();

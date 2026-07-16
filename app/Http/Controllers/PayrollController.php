@@ -10,6 +10,14 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
+use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
+use PhpOffice\PhpSpreadsheet\Cell\DataType;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Style\Alignment;
+use PhpOffice\PhpSpreadsheet\Style\Border;
+use PhpOffice\PhpSpreadsheet\Style\Fill;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class PayrollController extends Controller
 {
@@ -113,6 +121,153 @@ class PayrollController extends Controller
         return back()->with('success', 'Planilla marcada como pagada.');
     }
 
+    public function paymentFile(Payroll $payroll): StreamedResponse
+    {
+        abort_unless(
+            $payroll->isApproved() || $payroll->isPaid(),
+            403,
+            'El archivo de pago solo esta disponible para planillas aprobadas o pagadas.'
+        );
+
+        $payroll->loadMissing([
+            'status:id,code,name',
+            'payrollGroup:id,code,name',
+            'details.employee.position:id,name',
+            'details.employee.workArea:id,name',
+            'details.employee.primaryBankAccount.bank:id,name,code',
+            'details.employee.primaryBankAccount.accountType:id,name',
+            'details.monthlyAttendance:id,worked_days,absence_days,compensated_absence_days,uncompensated_absence_days,exchange_days,overtime_hours,payable_overtime_hours',
+        ]);
+
+        $spreadsheet = new Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+        $sheet->setTitle('Archivo de pago');
+
+        $columns = [
+            'DNI',
+            'Apellidos y nombres',
+            'Codigo',
+            'Cargo',
+            'Area',
+            'Banco',
+            'Tipo de cuenta',
+            'Numero de cuenta',
+            'CCI',
+            'Sueldo basico',
+            'Dias trabajados',
+            'Faltas',
+            'Faltas descontables',
+            'Canjes',
+            'Horas extra',
+            'Total ingresos',
+            'Total descuentos',
+            'Neto a pagar',
+            'Observacion bancaria',
+        ];
+
+        $lastColumn = Coordinate::stringFromColumnIndex(count($columns));
+
+        $sheet->mergeCells("A1:{$lastColumn}1");
+        $sheet->setCellValue('A1', 'Archivo de pago de planilla');
+        $sheet->mergeCells("A2:{$lastColumn}2");
+        $sheet->setCellValue('A2', sprintf(
+            'Planilla: %s | Periodo: %s %s | Grupo: %s | Estado: %s | Generado: %s',
+            $payroll->code,
+            $this->service->monthName($payroll->month),
+            $payroll->year,
+            $payroll->payrollGroup?->name ?? 'Sin grupo',
+            $payroll->status?->name ?? 'Sin estado',
+            now()->format('d-m-Y H:i')
+        ));
+
+        $sheet->fromArray($columns, null, 'A4');
+
+        $rows = $payroll->details
+            ->sortBy('employee_name')
+            ->values()
+            ->map(function ($detail) {
+                $employee = $detail->employee;
+                $attendance = $detail->monthlyAttendance;
+                $account = $employee?->primaryBankAccount;
+
+                return [
+                    $detail->document_number,
+                    $detail->employee_name,
+                    $detail->employee_code,
+                    $employee?->position?->name ?? 'Sin cargo',
+                    $employee?->workArea?->name ?? 'Sin area',
+                    $account?->bank?->name ?? 'Sin banco',
+                    $account?->accountType?->name ?? 'Sin tipo',
+                    $account?->account_number ?? 'Sin cuenta',
+                    $account?->cci ?? '',
+                    (float) $detail->base_salary,
+                    (float) ($attendance?->worked_days ?? $detail->worked_days),
+                    (float) ($attendance?->absence_days ?? $detail->absence_days),
+                    (float) ($attendance?->uncompensated_absence_days ?? $detail->uncompensated_absence_days),
+                    (float) ($attendance?->exchange_days ?? 0),
+                    (float) ($attendance?->payable_overtime_hours ?? $detail->overtime_hours),
+                    (float) $detail->total_income,
+                    (float) $detail->total_discount,
+                    (float) $detail->net_pay,
+                    $account ? '' : 'Registrar cuenta bancaria principal antes de pagar',
+                ];
+            })
+            ->all();
+
+        foreach ($rows as $rowIndex => $row) {
+            $excelRow = $rowIndex + 5;
+
+            foreach ($row as $columnIndex => $value) {
+                $excelColumn = Coordinate::stringFromColumnIndex($columnIndex + 1);
+
+                if (in_array($columnIndex, [0, 7, 8], true)) {
+                    $sheet->setCellValueExplicit("{$excelColumn}{$excelRow}", (string) $value, DataType::TYPE_STRING);
+                } else {
+                    $sheet->setCellValue("{$excelColumn}{$excelRow}", $value);
+                }
+            }
+        }
+
+        $lastRow = max(count($rows) + 4, 5);
+
+        $sheet->getStyle('A1')->getFont()->setBold(true)->setSize(16)->getColor()->setARGB('FF111827');
+        $sheet->getStyle('A2')->getFont()->setSize(10)->getColor()->setARGB('FF6B7280');
+        $sheet->getStyle("A4:{$lastColumn}4")->applyFromArray([
+            'font' => ['bold' => true, 'color' => ['argb' => 'FFFFFFFF']],
+            'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['argb' => 'FF166534']],
+            'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER],
+        ]);
+        $sheet->getStyle("A4:{$lastColumn}{$lastRow}")
+            ->getBorders()
+            ->getAllBorders()
+            ->setBorderStyle(Border::BORDER_THIN)
+            ->getColor()
+            ->setARGB('FFE5E7EB');
+        $sheet->getStyle("A5:{$lastColumn}{$lastRow}")->getAlignment()->setVertical(Alignment::VERTICAL_TOP);
+        $sheet->freezePane('A5');
+        $sheet->setAutoFilter("A4:{$lastColumn}{$lastRow}");
+
+        foreach ([10, 16, 17, 18] as $columnIndex) {
+            $letter = Coordinate::stringFromColumnIndex($columnIndex);
+            $sheet->getStyle("{$letter}5:{$letter}{$lastRow}")
+                ->getNumberFormat()
+                ->setFormatCode('"S/ " #,##0.00');
+        }
+
+        for ($column = 1; $column <= count($columns); $column++) {
+            $sheet->getColumnDimension(Coordinate::stringFromColumnIndex($column))->setAutoSize(true);
+        }
+
+        $filename = sprintf('archivo-pago-%s.xlsx', str($payroll->code)->lower()->replace(' ', '-')->toString());
+
+        return response()->streamDownload(function () use ($spreadsheet) {
+            (new Xlsx($spreadsheet))->save('php://output');
+            $spreadsheet->disconnectWorksheets();
+        }, $filename, [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        ]);
+    }
+
     private function payrollPayload(Payroll $payroll): array
     {
         $payroll->loadMissing([
@@ -150,6 +305,7 @@ class PayrollController extends Controller
             'can_observe' => $payroll->isInReview(),
             'can_reject' => $payroll->isInReview(),
             'can_pay' => $payroll->isApproved(),
+            'can_download_payment_file' => $payroll->isApproved() || $payroll->isPaid(),
             'can_recalculate' => $payroll->isObserved() || $payroll->isRejected(),
             'details' => $payroll->details
                 ->sortBy('employee_name')

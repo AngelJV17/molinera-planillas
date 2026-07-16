@@ -295,6 +295,7 @@ Route::middleware(['auth', 'verified', 'password.changed'])->group(function () {
             Route::patch('{payroll}/reject', 'reject')->middleware('permission:payrolls.reject')->name('reject');
             Route::patch('{payroll}/recalculate', 'recalculate')->middleware('permission:payrolls.recalculate')->name('recalculate');
             Route::patch('{payroll}/pay', 'pay')->middleware('permission:payrolls.pay')->name('pay');
+            Route::get('{payroll}/payment-file', 'paymentFile')->middleware('permission:payrolls.pay')->name('payment-file');
         });
 
     Route::resource('payroll-parameters', PayrollParameterController::class)
