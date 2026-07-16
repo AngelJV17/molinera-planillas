@@ -9,10 +9,13 @@ use Spatie\Permission\PermissionRegistrar;
 
 class UserService
 {
+    public const SUPPORT_ROLE = 'Super Admin';
+
     public function paginate(?string $search, ?string $status, int $perPage = 10): LengthAwarePaginator
     {
         return User::query()
             ->with('roles:id,name')
+            ->whereDoesntHave('roles', fn ($query) => $query->where('name', self::SUPPORT_ROLE))
             ->when($search, function ($query) use ($search) {
                 $query->where(function ($query) use ($search) {
                     $query->where('name', 'like', "%{$search}%")
@@ -31,6 +34,7 @@ class UserService
     public function roles(): array
     {
         return Role::query()
+            ->where('name', '!=', self::SUPPORT_ROLE)
             ->orderBy('name')
             ->get(['id', 'name'])
             ->map(fn(Role $role) => [

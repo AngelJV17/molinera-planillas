@@ -74,6 +74,8 @@ class UserController extends Controller
      */
     public function edit(User $user): Response
     {
+        $this->ensureManageableUser($user);
+
         $user->load('roles:id,name');
 
         return Inertia::render('Users/Edit', [
@@ -95,6 +97,8 @@ class UserController extends Controller
      */
     public function update(UpdateUserRequest $request, User $user): RedirectResponse
     {
+        $this->ensureManageableUser($user);
+
         $this->service->update($user, $request->validated());
 
         return redirect()
@@ -107,6 +111,8 @@ class UserController extends Controller
      */
     public function toggleStatus(User $user): RedirectResponse
     {
+        $this->ensureManageableUser($user);
+
         $this->service->toggleStatus($user);
 
         return back()->with('success', 'Estado del usuario actualizado correctamente.');
@@ -114,6 +120,8 @@ class UserController extends Controller
 
     public function resetPassword(User $user): RedirectResponse
     {
+        $this->ensureManageableUser($user);
+
         $temporaryPassword = $this->service->resetPassword($user);
 
         return redirect()
@@ -121,5 +129,14 @@ class UserController extends Controller
             ->with('success', 'Contraseña temporal restablecida correctamente.')
             ->with('temporary_username', $user->username)
             ->with('temporary_password', $temporaryPassword);
+    }
+
+    private function ensureManageableUser(User $user): void
+    {
+        abort_if(
+            $user->hasRole(UserService::SUPPORT_ROLE),
+            403,
+            'La cuenta de soporte no puede administrarse desde este modulo.'
+        );
     }
 }

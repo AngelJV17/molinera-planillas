@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\User;
+use App\Services\UserService;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
@@ -90,6 +91,67 @@ class UserRoleModuleTest extends TestCase
         $this->assertSame('rrhh_actualizado', $user->username);
         $this->assertFalse($user->status);
         $this->assertTrue($user->must_change_password);
+    }
+
+    public function test_support_user_and_role_are_hidden_from_user_administration(): void
+    {
+        $this->seed(RolePermissionSeeder::class);
+
+        $supportUser = User::firstWhere('username', 'admin');
+        $service = app(UserService::class);
+
+        $this->assertNotNull($supportUser);
+        $this->assertFalse(
+            $service->paginate(null, null)->getCollection()->contains('id', $supportUser->id)
+        );
+        $this->assertNotContains('Super Admin', collect($service->roles())->pluck('name'));
+    }
+
+    public function test_support_user_can_not_be_managed_from_user_module(): void
+    {
+        $this->seed(RolePermissionSeeder::class);
+
+        $admin = User::factory()->create();
+        $supportUser = User::firstWhere('username', 'admin');
+
+        $this->actingAs($admin)
+            ->get(route('users.edit', $supportUser))
+            ->assertForbidden();
+
+        $this->actingAs($admin)
+            ->put(route('users.update', $supportUser), [
+                'name' => 'Soporte Modificado',
+                'username' => 'soporte_modificado',
+                'email' => 'soporte.modificado@example.com',
+                'status' => false,
+                'roles' => ['Administrador'],
+            ])
+            ->assertForbidden();
+
+        $this->actingAs($admin)
+            ->patch(route('users.toggle-status', $supportUser))
+            ->assertForbidden();
+
+        $this->actingAs($admin)
+            ->patch(route('users.reset-password', $supportUser))
+            ->assertForbidden();
+    }
+
+    public function test_super_admin_role_can_not_be_assigned_from_user_module(): void
+    {
+        $this->seed(RolePermissionSeeder::class);
+
+        $admin = User::factory()->create();
+
+        $this->actingAs($admin)
+            ->post(route('users.store'), [
+                'name' => 'Soporte No Permitido',
+                'username' => 'soporte_no_permitido',
+                'email' => 'soporte.no.permitido@example.com',
+                'status' => true,
+                'roles' => ['Super Admin'],
+            ])
+            ->assertSessionHasErrors(['roles.0']);
     }
 
     public function test_authenticated_user_role_is_shared_with_the_layout(): void

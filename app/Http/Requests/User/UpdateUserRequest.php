@@ -1,6 +1,7 @@
 <?php
 namespace App\Http\Requests\User;
 
+use App\Services\UserService;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -60,6 +61,7 @@ class UpdateUserRequest extends FormRequest
 
             'roles.*'  => [
                 'string',
+                Rule::notIn([UserService::SUPPORT_ROLE]),
                 Rule::exists(Role::class, 'name')
                     ->where('guard_name', 'web'),
             ],
