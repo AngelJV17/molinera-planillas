@@ -24,18 +24,14 @@ class DatabaseSeeder extends Seeder
 
         $this->call([
             CatalogSeeder::class,
-
             BankSeeder::class,
-
+            WorkShiftSeeder::class,
             DepartmentSeeder::class,
-
             ProvinceSeeder::class,
-
             DistrictSeeder::class,
-
             RolePermissionSeeder::class,
-
             PayrollParameterSeeder::class,
+            EmployeeSeeder::class,
         ]);
     }
 }
