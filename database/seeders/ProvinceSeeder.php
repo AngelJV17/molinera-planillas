@@ -28,9 +28,12 @@ class ProvinceSeeder extends Seeder
         ])
         ->toArray();
 
-        Province::query()->delete();
-
-        Province::insert($provinces);
+        foreach ($provinces as $province) {
+            Province::updateOrCreate(
+                ['id' => $province['id']],
+                $province
+            );
+        }
 
         $this->command->info(
             count($provinces).' provincias importadas.'
