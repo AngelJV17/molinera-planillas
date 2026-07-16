@@ -315,7 +315,7 @@ class EmployeeSeeder extends Seeder
                 'pension_system_id' => $this->catalogId($catalogs, 'PENSION_SYSTEM', 'AFP_HABITAT'),
                 'status' => true,
             ],
-
+        ];
 
         foreach ($employees as $employee) {
             Employee::updateOrCreate([
