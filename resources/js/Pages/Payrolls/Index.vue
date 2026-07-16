@@ -497,6 +497,7 @@ const paymentFileUrl = (payroll) => route('payrolls.payment-file', payroll.id);
                                 title="Archivo de pago"
                                 variant="success"
                                 :disabled="!payroll.can_download_payment_file"
+                                external
                             />
                             <TableActionButton
                                 v-if="can('payrolls.pay')"

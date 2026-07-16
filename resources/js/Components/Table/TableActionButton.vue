@@ -42,6 +42,11 @@ const props = defineProps({
         type: Boolean,
         default: true,
     },
+
+    external: {
+        type: Boolean,
+        default: false,
+    },
 });
 
 const emit = defineEmits(['click']);
@@ -75,7 +80,14 @@ const handleClick = (event) => {
 </script>
 
 <template>
-    <Link v-if="href" :href="href" :method="method" :as="as" :preserve-scroll="preserveScroll" :class="baseClasses"
+    <a v-if="href && external" :href="disabled ? undefined : href" :class="baseClasses" :title="title" :aria-label="title"
+        @click="handleClick">
+        <slot>
+            <component v-if="icon" :is="icon" class="h-4 w-4" />
+        </slot>
+    </a>
+
+    <Link v-else-if="href" :href="href" :method="method" :as="as" :preserve-scroll="preserveScroll" :class="baseClasses"
         :title="title" :aria-label="title" @click="handleClick">
         <slot>
             <component v-if="icon" :is="icon" class="h-4 w-4" />

@@ -82,5 +82,12 @@ class InitialProductionDataSeederTest extends TestCase
                 ->where('work_shift_id', $morningShift->id)
                 ->count()
         );
+
+        $this->assertSame(
+            14,
+            Employee::query()
+                ->whereHas('primaryBankAccount.bank', fn ($query) => $query->where('code', 'BCP'))
+                ->count()
+        );
     }
 }

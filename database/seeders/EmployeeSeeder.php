@@ -4,6 +4,7 @@ namespace Database\Seeders;
 
 use App\Models\Catalog;
 use App\Models\Employee;
+use App\Models\Bank;
 use App\Models\User;
 use App\Models\WorkShift;
 use Illuminate\Database\Seeder;
@@ -25,12 +26,14 @@ class EmployeeSeeder extends Seeder
         $securityArea = $catalog('WORK_AREA', 'SECURITY');
         $adminPayroll = $catalog('PAYROLL_GROUP', 'ADMIN');
         $productionPayroll = $catalog('PAYROLL_GROUP', 'PRODUCTION');
+        $savingsAccount = $catalog('ACCOUNT_TYPE', 'SAVINGS');
         $onp = $catalog('PENSION_SYSTEM', 'ONP');
         $afpIntegra = $catalog('PENSION_SYSTEM', 'AFP_INTEGRA');
         $afpPrima = $catalog('PENSION_SYSTEM', 'AFP_PRIMA');
         $afpHabitat = $catalog('PENSION_SYSTEM', 'AFP_HABITAT');
         $morningShift = WorkShift::query()->where('name', 'Turno Mañana')->firstOrFail();
         $nightShift = WorkShift::query()->where('name', 'Turno Noche Rotativo 6x1')->firstOrFail();
+        $bcp = Bank::query()->where('code', 'BCP')->firstOrFail();
 
         $administrativeEmployees = [
             [
@@ -101,7 +104,7 @@ class EmployeeSeeder extends Seeder
 
             $user->syncRoles([$employee['role']]);
 
-            Employee::updateOrCreate(
+            $createdEmployee = Employee::updateOrCreate(
                 ['document_number' => $employee['document_number']],
                 [
                     'employee_code' => $employee['employee_code'],
@@ -124,6 +127,8 @@ class EmployeeSeeder extends Seeder
                     'user_id' => $user->id,
                 ]
             );
+
+            $this->syncBcpAccount($createdEmployee, $bcp->id, $savingsAccount->id);
         }
 
         $productionEmployees = [
@@ -140,7 +145,7 @@ class EmployeeSeeder extends Seeder
         ];
 
         foreach ($productionEmployees as [$code, $document, $firstName, $lastName, $positionCode, $areaId, $salary, $pensionId, $shiftId]) {
-            Employee::updateOrCreate(
+            $createdEmployee = Employee::updateOrCreate(
                 ['document_number' => $document],
                 [
                     'employee_code' => $code,
@@ -163,6 +168,26 @@ class EmployeeSeeder extends Seeder
                     'user_id' => null,
                 ]
             );
+
+            $this->syncBcpAccount($createdEmployee, $bcp->id, $savingsAccount->id);
         }
+    }
+
+    private function syncBcpAccount(Employee $employee, int $bankId, int $accountTypeId): void
+    {
+        $document = preg_replace('/\D+/', '', $employee->document_number);
+        $accountNumber = '191'.$document.str_pad((string) ($employee->id % 100), 2, '0', STR_PAD_LEFT);
+        $cci = '002191'.str_pad($document, 12, '0', STR_PAD_LEFT).str_pad((string) ($employee->id % 100), 2, '0', STR_PAD_LEFT);
+
+        $employee->bankAccounts()->updateOrCreate(
+            ['is_primary' => true],
+            [
+                'bank_id' => $bankId,
+                'account_type_id' => $accountTypeId,
+                'account_number' => $accountNumber,
+                'cci' => $cci,
+                'status' => true,
+            ]
+        );
     }
 }
