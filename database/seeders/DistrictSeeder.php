@@ -28,18 +28,21 @@ class DistrictSeeder extends Seeder
         ])
         ->toArray();
 
-        District::query()->delete();
-
         /*
         |--------------------------------------------------------------------------
-        | Insert por lotes
+        | Upsert por lotes
         |--------------------------------------------------------------------------
         | Evita problemas de memoria
-        | cuando existen más de 1800 distritos.
+        | cuando existen más de 1800 distritos y permite repetir el seeder
+        | en producción sin romper llaves foráneas.
         */
 
         foreach (array_chunk($districts, 500) as $chunk) {
-            District::insert($chunk);
+            District::query()->upsert(
+                $chunk,
+                ['id'],
+                ['province_id', 'name', 'updated_at']
+            );
         }
 
         $this->command->info(

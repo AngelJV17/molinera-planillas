@@ -25,9 +25,11 @@ class DepartmentSeeder extends Seeder
             ])
             ->toArray();
 
-        Department::query()->delete();
-
-        Department::insert($departments);
+        Department::query()->upsert(
+            $departments,
+            ['id'],
+            ['name', 'updated_at']
+        );
 
         $this->command->info(
             count($departments) . ' departamentos importados.'
