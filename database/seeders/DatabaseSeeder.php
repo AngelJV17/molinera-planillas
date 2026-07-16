@@ -35,7 +35,11 @@ class DatabaseSeeder extends Seeder
 
             RolePermissionSeeder::class,
 
+            WorkShiftSeeder::class,
+
             PayrollParameterSeeder::class,
+
+            EmployeeSeeder::class,
         ]);
     }
 }

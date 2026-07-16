@@ -163,9 +163,21 @@ class CatalogSeeder extends Seeder
             ],
             [
                 'type' => 'POSITION',
+                'code' => 'HUMAN_RESOURCES',
+                'name' => 'Responsable de RRHH',
+                'description' => 'Responsable de la gestión del personal y asistencia',
+            ],
+            [
+                'type' => 'POSITION',
                 'code' => 'ACCOUNTANT',
                 'name' => 'Contador',
                 'description' => 'Responsable de la contabilidad de la empresa',
+            ],
+            [
+                'type' => 'POSITION',
+                'code' => 'GENERAL_MANAGER',
+                'name' => 'Gerente',
+                'description' => 'Responsable de la revisión y aprobación gerencial',
             ],
             [
                 'type' => 'POSITION',
