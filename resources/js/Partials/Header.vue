@@ -1,6 +1,7 @@
 <script setup>
 import { usePage } from '@inertiajs/vue3';
 import { Menu } from 'lucide-vue-next';
+import { computed } from 'vue';
 import Dropdown from '@/Components/Dropdown.vue';
 import DropdownLink from '@/Components/DropdownLink.vue';
 
@@ -14,6 +15,22 @@ defineProps({
 defineEmits(['open-mobile-sidebar']);
 
 const page = usePage();
+const user = computed(() => page.props.auth?.user);
+const userName = computed(() => user.value?.name ?? 'Usuario');
+const userRoles = computed(() => {
+    const roles = user.value?.roles ?? [];
+
+    return roles
+        .map((role) => (typeof role === 'string' ? role : role?.name))
+        .filter(Boolean);
+});
+const userLabel = computed(() => {
+    return user.value?.display_label
+        || user.value?.employee?.position
+        || userRoles.value.join(', ')
+        || 'Usuario sin rol';
+});
+const userInitial = computed(() => userName.value.charAt(0).toUpperCase());
 </script>
 
 <template>
@@ -40,10 +57,10 @@ const page = usePage();
             <div class="flex items-center gap-4">
                 <div class="hidden text-right md:block">
                     <p class="text-sm font-semibold text-gray-700">
-                        {{ page.props.auth?.user?.name ?? 'Usuario' }}
+                        {{ userName }}
                     </p>
                     <p class="text-xs text-gray-500">
-                        Usuario del sistema
+                        {{ userLabel }}
                     </p>
                 </div>
 
@@ -51,7 +68,7 @@ const page = usePage();
                     <template #trigger>
                         <button
                             class="flex h-10 w-10 items-center justify-center rounded-full bg-primary text-sm font-bold text-white shadow-sm transition hover:bg-primary-dark sm:h-11 sm:w-11">
-                            {{ (page.props.auth?.user?.name ?? 'U').charAt(0).toUpperCase() }}
+                            {{ userInitial }}
                         </button>
                     </template>
 

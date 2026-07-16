@@ -1,6 +1,6 @@
 <script setup>
-import { Head, router } from '@inertiajs/vue3';
-import { ref, watch } from 'vue';
+import { Head, router, usePage } from '@inertiajs/vue3';
+import { computed, ref, watch } from 'vue';
 
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import EmptyState from '@/Components/Common/EmptyState.vue';
@@ -47,14 +47,18 @@ const props = defineProps({
     },
 });
 
+const page = usePage();
 const search = ref(props.filters.search ?? '');
 const status = ref(props.filters.status ?? '');
 const workShiftId = ref(props.filters.work_shift_id ?? '');
 const perPage = ref(props.filters.per_page ?? 10);
 
 let filterTimeout = null;
+const permissions = computed(() => page.props.auth?.permissions ?? []);
+const can = (permission) => permissions.value.includes(permission);
+const canManageWorkers = computed(() => can('workers.edit') || can('workers.toggle-status'));
 
-const columns = [
+const baseColumns = [
     { key: 'worker', label: 'Trabajador' },
     { key: 'position', label: 'Cargo / Área' },
     { key: 'payroll_group', label: 'Planilla' },
@@ -63,6 +67,12 @@ const columns = [
     { key: 'status', label: 'Estado' },
     { key: 'actions', label: 'Acciones', align: 'right' },
 ];
+
+const columns = computed(() => {
+    return canManageWorkers.value
+        ? baseColumns
+        : baseColumns.filter((column) => column.key !== 'actions');
+});
 
 const applyFilters = () => {
     router.get(
@@ -175,7 +185,7 @@ const money = (amount) => {
                 </template>
 
                 <template #actions>
-                    <PrimaryActionButton :href="route('workers.create')">
+                    <PrimaryActionButton v-if="can('workers.create')" :href="route('workers.create')">
                         <Plus class="h-4 w-4" />
                         Nuevo trabajador
                     </PrimaryActionButton>
@@ -250,12 +260,12 @@ const money = (amount) => {
                         <StatusBadge :status="worker.status" />
                     </td>
 
-                    <td class="px-6 py-4">
+                    <td v-if="canManageWorkers" class="px-6 py-4">
                         <TableActions>
-                            <TableActionButton :href="route('workers.edit', worker.id)" :icon="Edit"
+                            <TableActionButton v-if="can('workers.edit')" :href="route('workers.edit', worker.id)" :icon="Edit"
                                 title="Editar trabajador" />
 
-                            <TableActionButton :icon="Power" title="Cambiar estado" variant="danger"
+                            <TableActionButton v-if="can('workers.toggle-status')" :icon="Power" title="Cambiar estado" variant="danger"
                                 @click="toggleStatus(worker)" />
                         </TableActions>
                     </td>
@@ -266,7 +276,7 @@ const money = (amount) => {
                         <EmptyState title="No se encontraron trabajadores"
                             description="Modifica los filtros o registra un nuevo trabajador.">
                             <template #action>
-                                <PrimaryActionButton :href="route('workers.create')">
+                                <PrimaryActionButton v-if="can('workers.create')" :href="route('workers.create')">
                                     <Plus class="h-4 w-4" />
                                     Nuevo trabajador
                                 </PrimaryActionButton>

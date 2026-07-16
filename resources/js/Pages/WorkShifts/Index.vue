@@ -1,6 +1,6 @@
 <script setup>
-import { Head, Link, router } from '@inertiajs/vue3';
-import { ref, watch } from 'vue';
+import { Head, Link, router, usePage } from '@inertiajs/vue3';
+import { computed, ref, watch } from 'vue';
 import { Clock3, Database, Edit, Moon, Plus, Power } from 'lucide-vue-next';
 
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
@@ -27,11 +27,15 @@ const props = defineProps({
     },
 });
 
+const page = usePage();
 const search = ref(props.filters.search ?? '');
 const status = ref(props.filters.status ?? '');
 const perPage = ref(props.filters.per_page ?? 10);
+const permissions = computed(() => page.props.auth?.permissions ?? []);
+const can = (permission) => permissions.value.includes(permission);
+const canManageWorkShifts = computed(() => can('work-shifts.edit') || can('work-shifts.toggle-status'));
 
-const columns = [
+const baseColumns = [
     { key: 'name', label: 'Turno' },
     { key: 'schedule', label: 'Horario' },
     { key: 'daily_hours', label: 'Jornada' },
@@ -39,6 +43,12 @@ const columns = [
     { key: 'status', label: 'Estado' },
     { key: 'actions', label: 'Acciones', align: 'right' },
 ];
+
+const columns = computed(() => {
+    return canManageWorkShifts.value
+        ? baseColumns
+        : baseColumns.filter((column) => column.key !== 'actions');
+});
 
 const applyFilters = () => {
     router.get(
@@ -103,7 +113,7 @@ const rotationLabel = (workShift) => {
                 </template>
 
                 <template #actions>
-                    <PrimaryActionButton :href="route('work-shifts.create')">
+                    <PrimaryActionButton v-if="can('work-shifts.create')" :href="route('work-shifts.create')">
                         <Plus class="h-4 w-4" />
                         Nuevo turno
                     </PrimaryActionButton>
@@ -178,15 +188,15 @@ const rotationLabel = (workShift) => {
                         <StatusBadge :status="workShift.status" />
                     </td>
 
-                    <td class="px-6 py-4">
+                    <td v-if="canManageWorkShifts" class="px-6 py-4">
                         <div class="flex justify-end gap-2">
-                            <Link :href="route('work-shifts.edit', workShift.id)"
+                            <Link v-if="can('work-shifts.edit')" :href="route('work-shifts.edit', workShift.id)"
                                 class="rounded-xl border border-slate-300 bg-white p-2 text-gray-700 shadow-sm transition hover:border-primary hover:bg-primary/10 hover:text-primary"
                                 title="Editar">
                                 <Edit class="h-4 w-4" />
                             </Link>
 
-                            <button type="button"
+                            <button v-if="can('work-shifts.toggle-status')" type="button"
                                 class="rounded-xl border border-slate-300 bg-white p-2 text-gray-700 shadow-sm transition hover:border-danger hover:bg-danger/10 hover:text-danger"
                                 title="Cambiar estado" @click="toggleStatus(workShift)">
                                 <Power class="h-4 w-4" />
@@ -200,7 +210,7 @@ const rotationLabel = (workShift) => {
                         <EmptyState title="No se encontraron turnos registrados"
                             description="Intenta modificar los filtros o registra un nuevo turno.">
                             <template #action>
-                                <PrimaryActionButton :href="route('work-shifts.create')">
+                                <PrimaryActionButton v-if="can('work-shifts.create')" :href="route('work-shifts.create')">
                                     <Plus class="h-4 w-4" />
                                     Nuevo turno
                                 </PrimaryActionButton>

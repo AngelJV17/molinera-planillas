@@ -1,6 +1,6 @@
 <script setup>
-import { Head, router } from '@inertiajs/vue3';
-import { ref, watch } from 'vue';
+import { Head, router, usePage } from '@inertiajs/vue3';
+import { computed, ref, watch } from 'vue';
 import { Database, Edit, Plus, Power, SlidersHorizontal } from 'lucide-vue-next';
 
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
@@ -32,18 +32,28 @@ const props = defineProps({
     },
 });
 
+const page = usePage();
 const search = ref(props.filters.search ?? '');
 const status = ref(props.filters.status ?? '');
 const perPage = ref(props.filters.per_page ?? 10);
 let filterTimeout = null;
+const permissions = computed(() => page.props.auth?.permissions ?? []);
+const can = (permission) => permissions.value.includes(permission);
+const canManageParameters = computed(() => can('payroll-parameters.edit') || can('payroll-parameters.toggle-status'));
 
-const columns = [
+const baseColumns = [
     { key: 'parameter', label: 'Parametro' },
     { key: 'value', label: 'Valor' },
     { key: 'effective_from', label: 'Vigencia' },
     { key: 'status', label: 'Estado' },
     { key: 'actions', label: 'Acciones', align: 'right' },
 ];
+
+const columns = computed(() => {
+    return canManageParameters.value
+        ? baseColumns
+        : baseColumns.filter((column) => column.key !== 'actions');
+});
 
 const applyFilters = () => {
     router.get(
@@ -105,7 +115,7 @@ const toggleStatus = async (parameter) => {
                 </template>
 
                 <template #actions>
-                    <PrimaryActionButton :href="route('payroll-parameters.create')">
+                    <PrimaryActionButton v-if="can('payroll-parameters.create')" :href="route('payroll-parameters.create')">
                         <Plus class="h-4 w-4" />
                         Nuevo parametro
                     </PrimaryActionButton>
@@ -156,14 +166,16 @@ const toggleStatus = async (parameter) => {
                         <StatusBadge :status="parameter.status" />
                     </td>
 
-                    <td class="px-6 py-4">
+                    <td v-if="canManageParameters" class="px-6 py-4">
                         <TableActions>
                             <TableActionButton
+                                v-if="can('payroll-parameters.edit')"
                                 :href="route('payroll-parameters.edit', parameter.id)"
                                 :icon="Edit"
                                 title="Editar parametro"
                             />
                             <TableActionButton
+                                v-if="can('payroll-parameters.toggle-status')"
                                 :icon="Power"
                                 title="Cambiar estado"
                                 variant="danger"
@@ -180,7 +192,7 @@ const toggleStatus = async (parameter) => {
                             description="Registra los valores necesarios para calcular planillas."
                         >
                             <template #action>
-                                <PrimaryActionButton :href="route('payroll-parameters.create')">
+                                <PrimaryActionButton v-if="can('payroll-parameters.create')" :href="route('payroll-parameters.create')">
                                     <Plus class="h-4 w-4" />
                                     Nuevo parametro
                                 </PrimaryActionButton>

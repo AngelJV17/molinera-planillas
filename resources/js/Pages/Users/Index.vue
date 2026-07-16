@@ -55,13 +55,22 @@ const copied = ref(false);
 const copyError = ref('');
 
 let filterTimeout = null;
+const permissions = computed(() => page.props.auth?.permissions ?? []);
+const can = (permission) => permissions.value.includes(permission);
+const canManageUsers = computed(() => can('users.edit') || can('users.toggle-status'));
 
-const columns = [
+const baseColumns = [
     { key: 'user', label: 'Usuario' },
     { key: 'role', label: 'Rol asignado' },
     { key: 'status', label: 'Estado' },
     { key: 'actions', label: 'Acciones', align: 'right' },
 ];
+
+const columns = computed(() => {
+    return canManageUsers.value
+        ? baseColumns
+        : baseColumns.filter((column) => column.key !== 'actions');
+});
 
 const temporaryCredentials = computed(() => {
     return {
@@ -231,7 +240,7 @@ const userRoles = (user) => {
                 </template>
 
                 <template #actions>
-                    <PrimaryActionButton :href="route('users.create')">
+                    <PrimaryActionButton v-if="can('users.create')" :href="route('users.create')">
                         <Plus class="h-4 w-4" />
                         Nuevo usuario
                     </PrimaryActionButton>
@@ -341,15 +350,15 @@ const userRoles = (user) => {
                         <StatusBadge :status="user.status" />
                     </td>
 
-                    <td class="px-6 py-4">
+                    <td v-if="canManageUsers" class="px-6 py-4">
                         <TableActions>
-                            <TableActionButton :href="route('users.edit', user.id)" :icon="Edit"
+                            <TableActionButton v-if="can('users.edit')" :href="route('users.edit', user.id)" :icon="Edit"
                                 title="Editar usuario" />
 
-                            <TableActionButton :icon="KeyRound" title="Restablecer contraseña" variant="warning"
+                            <TableActionButton v-if="can('users.edit')" :icon="KeyRound" title="Restablecer contrasena" variant="warning"
                                 @click="resetPassword(user)" />
 
-                            <TableActionButton :icon="Power" title="Cambiar estado" variant="danger"
+                            <TableActionButton v-if="can('users.toggle-status')" :icon="Power" title="Cambiar estado" variant="danger"
                                 @click="toggleStatus(user)" />
                         </TableActions>
                     </td>
@@ -360,7 +369,7 @@ const userRoles = (user) => {
                         <EmptyState title="No se encontraron usuarios"
                             description="Modifica los filtros o registra un nuevo usuario para el sistema.">
                             <template #action>
-                                <PrimaryActionButton :href="route('users.create')">
+                                <PrimaryActionButton v-if="can('users.create')" :href="route('users.create')">
                                     <Plus class="h-4 w-4" />
                                     Nuevo usuario
                                 </PrimaryActionButton>

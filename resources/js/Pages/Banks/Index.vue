@@ -1,6 +1,6 @@
 <script setup>
-import { Head, Link, router } from '@inertiajs/vue3';
-import { ref, watch } from 'vue';
+import { Head, Link, router, usePage } from '@inertiajs/vue3';
+import { computed, ref, watch } from 'vue';
 import { Building2, Database, Edit, Plus, Power } from 'lucide-vue-next';
 
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
@@ -27,16 +27,26 @@ const props = defineProps({
     },
 });
 
+const page = usePage();
 const search = ref(props.filters.search ?? '');
 const status = ref(props.filters.status ?? '');
 const perPage = ref(props.filters.per_page ?? 10);
+const permissions = computed(() => page.props.auth?.permissions ?? []);
+const can = (permission) => permissions.value.includes(permission);
+const canManageBanks = computed(() => can('banks.edit') || can('banks.toggle-status'));
 
-const columns = [
+const baseColumns = [
     { key: 'name', label: 'Banco' },
     { key: 'code', label: 'Código' },
     { key: 'status', label: 'Estado' },
     { key: 'actions', label: 'Acciones', align: 'right' },
 ];
+
+const columns = computed(() => {
+    return canManageBanks.value
+        ? baseColumns
+        : baseColumns.filter((column) => column.key !== 'actions');
+});
 
 const applyFilters = () => {
     router.get(
@@ -92,7 +102,7 @@ const toggleStatus = async (bank) => {
                 </template>
 
                 <template #actions>
-                    <PrimaryActionButton :href="route('banks.create')">
+                    <PrimaryActionButton v-if="can('banks.create')" :href="route('banks.create')">
                         <Plus class="h-4 w-4" />
                         Nuevo registro
                     </PrimaryActionButton>
@@ -149,9 +159,10 @@ const toggleStatus = async (bank) => {
                         <StatusBadge :status="bank.status" />
                     </td>
 
-                    <td class="px-6 py-4">
+                    <td v-if="canManageBanks" class="px-6 py-4">
                         <div class="flex justify-end gap-2">
                             <Link
+                                v-if="can('banks.edit')"
                                 :href="route('banks.edit', bank.id)"
                                 class="rounded-xl border border-slate-300 bg-white p-2 text-gray-700 shadow-sm transition hover:border-primary hover:bg-primary/10 hover:text-primary"
                                 title="Editar"
@@ -160,6 +171,7 @@ const toggleStatus = async (bank) => {
                             </Link>
 
                             <button
+                                v-if="can('banks.toggle-status')"
                                 type="button"
                                 class="rounded-xl border border-slate-300 bg-white p-2 text-gray-700 shadow-sm transition hover:border-danger hover:bg-danger/10 hover:text-danger"
                                 title="Cambiar estado"
@@ -178,7 +190,7 @@ const toggleStatus = async (bank) => {
                             description="Intenta modificar los filtros o registra un nuevo banco."
                         >
                             <template #action>
-                                <PrimaryActionButton :href="route('banks.create')">
+                                <PrimaryActionButton v-if="can('banks.create')" :href="route('banks.create')">
                                     <Plus class="h-4 w-4" />
                                     Nuevo banco
                                 </PrimaryActionButton>

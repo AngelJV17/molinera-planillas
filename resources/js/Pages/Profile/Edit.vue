@@ -4,7 +4,6 @@ import { UserCog } from 'lucide-vue-next';
 
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import PageHeader from '@/Components/Common/PageHeader.vue';
-import DeleteUserForm from './Partials/DeleteUserForm.vue';
 import UpdatePasswordForm from './Partials/UpdatePasswordForm.vue';
 import UpdateProfileInformationForm from './Partials/UpdateProfileInformationForm.vue';
 
@@ -32,13 +31,11 @@ defineProps({
                 </template>
             </PageHeader>
 
-            <div class="grid gap-6 xl:grid-cols-3">
-                <div class="space-y-6 xl:col-span-2">
+            <div class="grid gap-6 xl:grid-cols-2">
+                <div class="space-y-6">
                     <UpdateProfileInformationForm :must-verify-email="mustVerifyEmail" :status="status" />
                     <UpdatePasswordForm />
                 </div>
-
-                <DeleteUserForm />
             </div>
         </section>
     </AuthenticatedLayout>

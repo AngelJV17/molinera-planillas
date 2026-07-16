@@ -301,7 +301,7 @@ const payPayroll = async (payroll) => {
                 </template>
             </PageHeader>
 
-            <SectionCard title="Generar planilla" description="Selecciona el periodo y calcula la planilla con asistencias mensuales cerradas.">
+            <SectionCard v-if="can('payrolls.create')" title="Generar planilla" description="Selecciona el periodo y calcula la planilla con asistencias mensuales cerradas.">
                 <form class="grid gap-4 lg:grid-cols-[1fr_1fr_1.4fr_1fr_2fr_auto]" @submit.prevent="generatePayroll">
                     <div>
                         <InputLabel for="month" value="Mes" />
@@ -456,38 +456,43 @@ const payPayroll = async (payroll) => {
                         <TableActions>
                             <TableActionButton :icon="Eye" title="Ver detalle" @click="selectedPayrollId = payroll.id" />
                             <TableActionButton
+                                v-if="can('payrolls.approve')"
                                 :icon="CheckCircle2"
                                 title="Aprobar"
                                 variant="success"
-                                :disabled="!payroll.can_approve || !can('payrolls.approve')"
+                                :disabled="!payroll.can_approve"
                                 @click="approvePayroll(payroll)"
                             />
                             <TableActionButton
+                                v-if="can('payrolls.observe')"
                                 :icon="TriangleAlert"
                                 title="Observar"
                                 variant="warning"
-                                :disabled="!payroll.can_observe || !can('payrolls.observe')"
+                                :disabled="!payroll.can_observe"
                                 @click="observePayroll(payroll)"
                             />
                             <TableActionButton
+                                v-if="can('payrolls.reject')"
                                 :icon="XCircle"
                                 title="Rechazar"
                                 variant="danger"
-                                :disabled="!payroll.can_reject || !can('payrolls.reject')"
+                                :disabled="!payroll.can_reject"
                                 @click="rejectPayrollWithReason(payroll)"
                             />
                             <TableActionButton
+                                v-if="can('payrolls.recalculate')"
                                 :icon="RotateCcw"
                                 title="Recalcular"
                                 variant="neutral"
-                                :disabled="!payroll.can_recalculate || !can('payrolls.recalculate')"
+                                :disabled="!payroll.can_recalculate"
                                 @click="recalculatePayroll(payroll)"
                             />
                             <TableActionButton
+                                v-if="can('payrolls.pay')"
                                 :icon="ClipboardCheck"
                                 title="Marcar pagada"
                                 variant="warning"
-                                :disabled="!payroll.can_pay || !can('payrolls.pay')"
+                                :disabled="!payroll.can_pay"
                                 @click="payPayroll(payroll)"
                             />
                         </TableActions>

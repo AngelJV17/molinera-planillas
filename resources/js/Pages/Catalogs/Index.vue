@@ -1,5 +1,5 @@
 <script setup>
-import { Head, router } from '@inertiajs/vue3';
+import { Head, router, usePage } from '@inertiajs/vue3';
 import { computed, ref, watch } from 'vue';
 
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
@@ -49,6 +49,7 @@ const props = defineProps({
  * Categorías disponibles para mostrar en la pantalla de catálogos.
  * Se importan desde un archivo centralizado para evitar duplicidad.
  */
+const page = usePage();
 const catalogGroups = catalogCategories;
 
 const activeType = ref(props.filters.type ?? catalogCategories[0].key);
@@ -57,16 +58,25 @@ const status = ref(props.filters.status ?? '');
 const perPage = ref(props.filters.per_page ?? 10);
 
 let filterTimeout = null;
+const permissions = computed(() => page.props.auth?.permissions ?? []);
+const can = (permission) => permissions.value.includes(permission);
+const canManageCatalogs = computed(() => can('catalogs.edit') || can('catalogs.toggle-status'));
 
 const activeGroup = computed(() => {
     return getCatalogCategory(activeType.value);
 });
 
-const columns = [
+const baseColumns = [
     { key: 'catalog', label: 'Opción' },
     { key: 'status', label: 'Estado' },
     { key: 'actions', label: 'Acciones', align: 'right' },
 ];
+
+const columns = computed(() => {
+    return canManageCatalogs.value
+        ? baseColumns
+        : baseColumns.filter((column) => column.key !== 'actions');
+});
 
 const applyFilters = () => {
     router.get(
@@ -143,7 +153,7 @@ const catalogCode = (catalog) => {
                 </template>
 
                 <template #actions>
-                    <PrimaryActionButton :href="route('catalogs.create', { type: activeType })">
+                    <PrimaryActionButton v-if="can('catalogs.create')" :href="route('catalogs.create', { type: activeType })">
                         <Plus class="h-4 w-4" />
                         Nuevo {{ activeGroup?.singular }}
                     </PrimaryActionButton>
@@ -216,12 +226,12 @@ const catalogCode = (catalog) => {
                         <StatusBadge :status="catalog.status" />
                     </td>
 
-                    <td class="px-6 py-4">
+                    <td v-if="canManageCatalogs" class="px-6 py-4">
                         <TableActions>
-                            <TableActionButton :href="route('catalogs.edit', catalog.id)" :icon="Edit"
+                            <TableActionButton v-if="can('catalogs.edit')" :href="route('catalogs.edit', catalog.id)" :icon="Edit"
                                 title="Editar opción" />
 
-                            <TableActionButton :icon="Power" title="Cambiar estado" variant="danger"
+                            <TableActionButton v-if="can('catalogs.toggle-status')" :icon="Power" title="Cambiar estado" variant="danger"
                                 @click="toggleStatus(catalog)" />
                         </TableActions>
                     </td>
@@ -232,7 +242,7 @@ const catalogCode = (catalog) => {
                         <EmptyState :title="`No se encontraron ${activeGroup?.label.toLowerCase()}`"
                             description="Intenta modificar los filtros o registra una nueva opción.">
                             <template #action>
-                                <PrimaryActionButton :href="route('catalogs.create', { type: activeType })">
+                                <PrimaryActionButton v-if="can('catalogs.create')" :href="route('catalogs.create', { type: activeType })">
                                     <Plus class="h-4 w-4" />
                                     Nuevo {{ activeGroup?.singular }}
                                 </PrimaryActionButton>

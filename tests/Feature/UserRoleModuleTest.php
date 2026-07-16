@@ -6,6 +6,7 @@ use App\Models\User;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
+use Inertia\Testing\AssertableInertia as Assert;
 use Spatie\Permission\Models\Role;
 use Tests\Feature\Concerns\CreatesTestData;
 use Tests\TestCase;
@@ -89,6 +90,21 @@ class UserRoleModuleTest extends TestCase
         $this->assertSame('rrhh_actualizado', $user->username);
         $this->assertFalse($user->status);
         $this->assertTrue($user->must_change_password);
+    }
+
+    public function test_authenticated_user_role_is_shared_with_the_layout(): void
+    {
+        $role = $this->role('Contador');
+        $user = User::factory()->create();
+        $user->assignRole($role);
+
+        $this
+            ->actingAs($user)
+            ->get(route('profile.edit'))
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('auth.user.roles.0', 'Contador')
+                ->where('auth.user.display_label', 'Contador')
+            );
     }
 
     public function test_role_can_be_created_and_updated_with_permissions(): void

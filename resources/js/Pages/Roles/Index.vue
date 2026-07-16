@@ -1,6 +1,6 @@
 <script setup>
-import { Head, router } from '@inertiajs/vue3';
-import { ref, watch } from 'vue';
+import { Head, router, usePage } from '@inertiajs/vue3';
+import { computed, ref, watch } from 'vue';
 
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import EmptyState from '@/Components/Common/EmptyState.vue';
@@ -39,18 +39,28 @@ const props = defineProps({
     },
 });
 
+const page = usePage();
 const search = ref(props.filters.search ?? '');
 const perPage = ref(props.filters.per_page ?? 10);
 
 let filterTimeout = null;
+const permissions = computed(() => page.props.auth?.permissions ?? []);
+const can = (permission) => permissions.value.includes(permission);
+const canManageRoles = computed(() => can('roles.edit') || can('roles.assign-permissions'));
 
-const columns = [
+const baseColumns = [
     { key: 'role', label: 'Rol' },
     { key: 'description', label: 'Descripción' },
     { key: 'permissions', label: 'Permisos' },
     { key: 'users', label: 'Usuarios' },
     { key: 'actions', label: 'Acciones', align: 'right' },
 ];
+
+const columns = computed(() => {
+    return canManageRoles.value
+        ? baseColumns
+        : baseColumns.filter((column) => column.key !== 'actions');
+});
 
 const roleDescriptions = {
     'Super Admin': 'Acceso total a todos los módulos y configuraciones del sistema.',
@@ -111,7 +121,7 @@ watch([search, perPage], () => {
                 </template>
 
                 <template #actions>
-                    <PrimaryActionButton :href="route('roles.create')">
+                    <PrimaryActionButton v-if="can('roles.create')" :href="route('roles.create')">
                         <Plus class="h-4 w-4" />
                         Nuevo rol
                     </PrimaryActionButton>
@@ -157,7 +167,7 @@ watch([search, perPage], () => {
                             subtitle="usuarios vinculados" compact />
                     </td>
 
-                    <td class="px-6 py-4">
+                    <td v-if="canManageRoles" class="px-6 py-4">
                         <TableActions>
                             <TableActionButton :href="route('roles.edit', role.id)" :icon="Edit" title="Editar rol" />
                         </TableActions>
@@ -169,7 +179,7 @@ watch([search, perPage], () => {
                         <EmptyState title="No se encontraron roles"
                             description="Modifica los filtros o registra un nuevo rol para el sistema.">
                             <template #action>
-                                <PrimaryActionButton :href="route('roles.create')">
+                                <PrimaryActionButton v-if="can('roles.create')" :href="route('roles.create')">
                                     <Plus class="h-4 w-4" />
                                     Nuevo rol
                                 </PrimaryActionButton>

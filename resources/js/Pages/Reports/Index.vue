@@ -1,6 +1,6 @@
 <script setup>
-import { Head, router } from '@inertiajs/vue3';
-import { ref, watch } from 'vue';
+import { Head, router, usePage } from '@inertiajs/vue3';
+import { computed, ref, watch } from 'vue';
 import { BarChart3, FileDown, FileSpreadsheet, FileText } from 'lucide-vue-next';
 
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
@@ -24,14 +24,24 @@ const props = defineProps({
 });
 
 const period = ref(formatPeriod(props.filters.period ?? ''));
+const page = usePage();
 let filterTimeout = null;
+const permissions = computed(() => page.props.auth?.permissions ?? []);
+const can = (permission) => permissions.value.includes(permission);
+const canExportReports = computed(() => can('reports.export'));
 
-const columns = [
+const baseColumns = [
     { key: 'report', label: 'Reporte' },
     { key: 'records', label: 'Registros' },
     { key: 'format', label: 'Formato' },
     { key: 'actions', label: 'Acciones', align: 'right' },
 ];
+
+const columns = computed(() => {
+    return canExportReports.value
+        ? baseColumns
+        : baseColumns.filter((column) => column.key !== 'actions');
+});
 
 watch(period, () => {
     clearTimeout(filterTimeout);
@@ -96,7 +106,7 @@ const exportUrl = (type, format) => route('reports.export', {
                             XLSX / PDF
                         </span>
                     </td>
-                    <td class="px-6 py-4">
+                    <td v-if="canExportReports" class="px-6 py-4">
                         <TableActions>
                             <a
                                 :href="exportUrl(report.type, 'xlsx')"

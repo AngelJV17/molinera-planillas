@@ -107,6 +107,7 @@ const entryMode = ref('manual');
 let filterTimeout = null;
 const permissions = computed(() => page.props.auth?.permissions ?? []);
 const can = (permission) => permissions.value.includes(permission);
+const canManageAttendance = computed(() => can('attendance.edit') || can('attendance.close') || can('attendance.reopen'));
 
 /**
  * Formulario para crear una asistencia mensual.
@@ -126,13 +127,19 @@ const importForm = useForm({
 /**
  * Columnas visibles de la tabla.
  */
-const columns = [
+const baseColumns = [
     { key: 'employee', label: 'Trabajador' },
     { key: 'period', label: 'Periodo' },
     { key: 'summary', label: 'Resumen mensual' },
     { key: 'status', label: 'Estado' },
     { key: 'actions', label: 'Acciones', align: 'right' },
 ];
+
+const columns = computed(() => {
+    return canManageAttendance.value
+        ? baseColumns
+        : baseColumns.filter((column) => column.key !== 'actions');
+});
 
 /**
  * Total de asistencias registradas.
@@ -301,8 +308,8 @@ const statusLabel = (status) => {
             </PageHeader>
 
             <!-- Formulario de creación de asistencia mensual -->
-            <div class="grid max-w-xl grid-cols-2 rounded-xl border border-slate-200 bg-slate-100 p-1">
-                <button type="button"
+            <div v-if="can('attendance.create') || can('attendance.edit')" class="grid max-w-xl grid-cols-2 rounded-xl border border-slate-200 bg-slate-100 p-1">
+                <button v-if="can('attendance.create')" type="button"
                     class="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-black transition"
                     :class="entryMode === 'manual' ? 'bg-white text-primary shadow-sm' : 'text-slate-600 hover:text-slate-900'"
                     @click="entryMode = 'manual'">
@@ -310,7 +317,7 @@ const statusLabel = (status) => {
                     Carga manual
                 </button>
 
-                <button type="button"
+                <button v-if="can('attendance.edit')" type="button"
                     class="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-black transition"
                     :class="entryMode === 'bulk' ? 'bg-white text-primary shadow-sm' : 'text-slate-600 hover:text-slate-900'"
                     @click="entryMode = 'bulk'">
@@ -319,7 +326,7 @@ const statusLabel = (status) => {
                 </button>
             </div>
 
-            <SectionCard v-if="entryMode === 'manual'" title="Nuevo control mensual"
+            <SectionCard v-if="entryMode === 'manual' && can('attendance.create')" title="Nuevo control mensual"
                 description="Selecciona un trabajador, mes y año para generar automáticamente su calendario de asistencia.">
                 <form class="grid gap-4 lg:grid-cols-[1fr_240px_auto]" @submit.prevent="submit">
                     <!-- Trabajador -->
@@ -381,7 +388,7 @@ const statusLabel = (status) => {
                 </form>
             </SectionCard>
 
-            <SectionCard v-if="entryMode === 'bulk'" title="Importar asistencia masiva"
+            <SectionCard v-if="entryMode === 'bulk' && can('attendance.edit')" title="Importar asistencia masiva"
                 description="Carga la matriz mensual por grupo de planilla. Cada trabajador va en una fila y los dias del mes se llenan con A, F, D, C o S.">
                 <form class="space-y-5" @submit.prevent="importBulkExcel">
                     <div class="grid gap-4 md:grid-cols-2">
@@ -565,12 +572,12 @@ const statusLabel = (status) => {
                     </td>
 
                     <!-- Acciones -->
-                    <td class="px-6 py-4">
+                    <td v-if="canManageAttendance" class="px-6 py-4">
                         <TableActions>
-                            <TableActionButton :href="route('attendance.edit', attendance.id)" :icon="CalendarDays"
+                            <TableActionButton v-if="can('attendance.edit')" :href="route('attendance.edit', attendance.id)" :icon="CalendarDays"
                                 title="Abrir calendario" />
 
-                            <TableActionButton v-if="attendance.is_editable" :icon="CheckCircle2"
+                            <TableActionButton v-if="attendance.is_editable && can('attendance.close')" :icon="CheckCircle2"
                                 title="Cerrar asistencia" variant="success" @click="closeAttendance(attendance)" />
 
                             <TableActionButton v-if="attendance.can_reopen && can('attendance.reopen')" :icon="RefreshCcw"

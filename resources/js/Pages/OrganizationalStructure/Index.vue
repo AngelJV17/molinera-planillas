@@ -1,5 +1,5 @@
 <script setup>
-import { Head, router } from '@inertiajs/vue3';
+import { Head, router, usePage } from '@inertiajs/vue3';
 import { computed, ref, watch } from 'vue';
 
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
@@ -43,6 +43,7 @@ const props = defineProps({
 });
 
 const activeTab = ref('banks');
+const page = usePage();
 
 const search = ref('');
 const status = ref('');
@@ -57,6 +58,7 @@ const tabs = [
         description: 'Entidades financieras utilizadas para pagos y cuentas de trabajadores.',
         icon: Building2,
         createRoute: 'banks.create',
+        createPermission: 'banks.create',
     },
     {
         key: 'workShifts',
@@ -65,24 +67,39 @@ const tabs = [
         description: 'Horarios laborales utilizados para asistencia, planillas y control interno.',
         icon: Clock3,
         createRoute: 'work-shifts.create',
+        createPermission: 'work-shifts.create',
     },
 ];
 
+const permissions = computed(() => page.props.auth?.permissions ?? []);
+const can = (permission) => permissions.value.includes(permission);
+const canCreateCurrentTab = computed(() => currentTab.value?.createPermission && can(currentTab.value.createPermission));
+const canManageBanks = computed(() => can('banks.edit') || can('banks.toggle-status'));
+const canManageWorkShifts = computed(() => can('work-shifts.edit') || can('work-shifts.toggle-status'));
+
 const columns = computed(() => {
     if (activeTab.value === 'banks') {
-        return [
+        const bankColumns = [
             { key: 'entity', label: 'Banco' },
             { key: 'status', label: 'Estado' },
             { key: 'actions', label: 'Acciones', align: 'right' },
         ];
+
+        return canManageBanks.value
+            ? bankColumns
+            : bankColumns.filter((column) => column.key !== 'actions');
     }
 
-    return [
+    const workShiftColumns = [
         { key: 'entity', label: 'Turno' },
         { key: 'schedule', label: 'Horario / Jornada' },
         { key: 'status', label: 'Estado' },
         { key: 'actions', label: 'Acciones', align: 'right' },
     ];
+
+    return canManageWorkShifts.value
+        ? workShiftColumns
+        : workShiftColumns.filter((column) => column.key !== 'actions');
 });
 
 const currentTab = computed(() => {
@@ -222,7 +239,7 @@ const toggleStatus = async (record) => {
                 </template>
 
                 <template #actions>
-                    <PrimaryActionButton v-if="currentTab?.createRoute" :href="route(currentTab.createRoute)">
+                    <PrimaryActionButton v-if="currentTab?.createRoute && canCreateCurrentTab" :href="route(currentTab.createRoute)">
                         <Plus class="h-4 w-4" />
                         Nuevo registro
                     </PrimaryActionButton>
@@ -285,12 +302,12 @@ const toggleStatus = async (record) => {
                             <StatusBadge :status="bank.status" />
                         </td>
 
-                        <td class="px-6 py-4">
+                        <td v-if="canManageBanks" class="px-6 py-4">
                             <TableActions>
-                                <TableActionButton :href="route('banks.edit', bank.id)" :icon="Edit"
+                                <TableActionButton v-if="can('banks.edit')" :href="route('banks.edit', bank.id)" :icon="Edit"
                                     title="Editar banco" />
 
-                                <TableActionButton :icon="Power" title="Cambiar estado" variant="danger"
+                                <TableActionButton v-if="can('banks.toggle-status')" :icon="Power" title="Cambiar estado" variant="danger"
                                     @click="toggleStatus(bank)" />
                             </TableActions>
                         </td>
@@ -319,12 +336,12 @@ const toggleStatus = async (record) => {
                             <StatusBadge :status="shift.status" />
                         </td>
 
-                        <td class="px-6 py-4">
+                        <td v-if="canManageWorkShifts" class="px-6 py-4">
                             <TableActions>
-                                <TableActionButton :href="route('work-shifts.edit', shift.id)" :icon="Edit"
+                                <TableActionButton v-if="can('work-shifts.edit')" :href="route('work-shifts.edit', shift.id)" :icon="Edit"
                                     title="Editar turno" />
 
-                                <TableActionButton :icon="Power" title="Cambiar estado" variant="danger"
+                                <TableActionButton v-if="can('work-shifts.toggle-status')" :icon="Power" title="Cambiar estado" variant="danger"
                                     @click="toggleStatus(shift)" />
                             </TableActions>
                         </td>
@@ -335,7 +352,7 @@ const toggleStatus = async (record) => {
                     <td :colspan="columns.length">
                         <EmptyState :title="`No se encontraron ${currentTab?.label.toLowerCase()}`"
                             description="Intenta modificar los filtros o registra un nuevo elemento.">
-                            <template v-if="currentTab?.createRoute" #action>
+                            <template v-if="currentTab?.createRoute && canCreateCurrentTab" #action>
                                 <PrimaryActionButton :href="route(currentTab.createRoute)">
                                     <Plus class="h-4 w-4" />
                                     Nuevo registro

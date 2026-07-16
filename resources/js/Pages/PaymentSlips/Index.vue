@@ -1,5 +1,5 @@
 <script setup>
-import { Head, router } from '@inertiajs/vue3';
+import { Head, router, usePage } from '@inertiajs/vue3';
 import { computed, ref, watch } from 'vue';
 import { Eye, FileDown, FileSpreadsheet, ReceiptText, SearchCheck } from 'lucide-vue-next';
 
@@ -30,9 +30,13 @@ const props = defineProps({
 const search = ref(props.filters.search ?? '');
 const period = ref(formatPeriod(props.filters.period ?? ''));
 const perPage = ref(props.filters.per_page ?? 10);
+const page = usePage();
 let filterTimeout = null;
+const permissions = computed(() => page.props.auth?.permissions ?? []);
+const can = (permission) => permissions.value.includes(permission);
+const canDownloadSlips = computed(() => can('payment-slips.download'));
 
-const columns = [
+const baseColumns = [
     { key: 'worker', label: 'Trabajador' },
     { key: 'period', label: 'Periodo' },
     { key: 'income', label: 'Ingresos' },
@@ -41,6 +45,12 @@ const columns = [
     { key: 'status', label: 'Estado' },
     { key: 'actions', label: 'Acciones', align: 'right' },
 ];
+
+const columns = computed(() => {
+    return canDownloadSlips.value
+        ? baseColumns
+        : baseColumns.filter((column) => column.key !== 'actions');
+});
 
 const totalNet = computed(() => {
     return props.slips.data.reduce((sum, slip) => sum + Number(slip.net_pay ?? 0), 0);
@@ -142,7 +152,7 @@ const statusClass = (statusCode) => {
                             {{ slip.status?.name ?? 'Sin estado' }}
                         </span>
                     </td>
-                    <td class="px-6 py-4">
+                    <td v-if="canDownloadSlips" class="px-6 py-4">
                         <TableActions>
                             <a
                                 :href="route('payment-slips.print', slip.id)"
