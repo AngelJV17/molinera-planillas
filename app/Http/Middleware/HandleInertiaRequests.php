@@ -2,8 +2,11 @@
 
 namespace App\Http\Middleware;
 
+use Closure;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
+use Inertia\Support\Header;
+use Symfony\Component\HttpFoundation\Response;
 
 class HandleInertiaRequests extends Middleware
 {
@@ -20,6 +23,16 @@ class HandleInertiaRequests extends Middleware
     public function version(Request $request): ?string
     {
         return parent::version($request);
+    }
+
+    public function handle(Request $request, Closure $next): Response
+    {
+        if ($this->isDocumentNavigation($request)) {
+            $request->headers->remove(Header::INERTIA);
+            $request->headers->remove(Header::VERSION);
+        }
+
+        return parent::handle($request, $next);
     }
 
     /**
@@ -84,5 +97,15 @@ class HandleInertiaRequests extends Middleware
             ] : null,
             'display_label' => $position ?: $roles->join(', ') ?: 'Usuario sin rol',
         ];
+    }
+
+    private function isDocumentNavigation(Request $request): bool
+    {
+        if (! $request->isMethod('GET') || ! $request->header(Header::INERTIA)) {
+            return false;
+        }
+
+        return $request->headers->get('Sec-Fetch-Dest') === 'document'
+            || $request->headers->get('Sec-Fetch-Mode') === 'navigate';
     }
 }
