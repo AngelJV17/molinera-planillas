@@ -61,7 +61,7 @@ const updatePassword = () => {
 
         <form class="space-y-5 p-6" @submit.prevent="updatePassword">
             <div>
-                <InputLabel for="current_password" value="Contraseña actual" />
+                <InputLabel for="current_password" value="Contraseña actual" required />
 
                 <div class="relative mt-2">
                     <LockKeyhole class="absolute left-3 top-3 h-5 w-5 text-gray-400" />
@@ -77,7 +77,7 @@ const updatePassword = () => {
 
             <div class="grid gap-5 md:grid-cols-2">
                 <div>
-                    <InputLabel for="password" value="Nueva contraseña" />
+                    <InputLabel for="password" value="Nueva contraseña" required />
 
                     <div class="relative mt-2">
                         <LockKeyhole class="absolute left-3 top-3 h-5 w-5 text-gray-400" />
@@ -91,7 +91,7 @@ const updatePassword = () => {
                 </div>
 
                 <div>
-                    <InputLabel for="password_confirmation" value="Confirmar contraseña" />
+                    <InputLabel for="password_confirmation" value="Confirmar contraseña" required />
 
                     <div class="relative mt-2">
                         <LockKeyhole class="absolute left-3 top-3 h-5 w-5 text-gray-400" />

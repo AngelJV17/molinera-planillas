@@ -146,7 +146,7 @@ const submit = () => {
 
                         <form class="space-y-4" @submit.prevent="submit">
                             <div>
-                                <InputLabel for="password" value="Contraseña actual" />
+                                <InputLabel for="password" value="Contraseña actual" required />
 
                                 <div class="relative mt-2">
                                     <LockKeyhole

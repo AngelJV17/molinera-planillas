@@ -227,7 +227,7 @@ const handleSubmit = () => {
                 description="Define el nombre del perfil de acceso que será asignado a los usuarios del sistema.">
                 <div class="grid gap-6 lg:grid-cols-2">
                     <div>
-                        <InputLabel for="name" value="Nombre del rol" />
+                        <InputLabel for="name" value="Nombre del rol" required />
 
                         <TextInput id="name" v-model="form.name" type="text" class="mt-2 block w-full"
                             placeholder="Ej. Supervisor de asistencia" :disabled="isProtected" autofocus />

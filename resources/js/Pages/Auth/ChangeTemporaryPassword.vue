@@ -191,7 +191,7 @@ const submit = () => {
                         <form class="space-y-5" @submit.prevent="submit">
                             <!-- Contraseña temporal -->
                             <div>
-                                <InputLabel for="current_password" value="Contraseña temporal" />
+                                <InputLabel for="current_password" value="Contraseña temporal" required />
 
                                 <div class="relative mt-2">
                                     <KeyRound class="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
@@ -217,7 +217,7 @@ const submit = () => {
 
                             <!-- Nueva contraseña -->
                             <div>
-                                <InputLabel for="password" value="Nueva contraseña" />
+                                <InputLabel for="password" value="Nueva contraseña" required />
 
                                 <div class="relative mt-2">
                                     <LockKeyhole
@@ -243,7 +243,7 @@ const submit = () => {
 
                             <!-- Confirmar nueva contraseña -->
                             <div>
-                                <InputLabel for="password_confirmation" value="Confirmar nueva contraseña" />
+                                <InputLabel for="password_confirmation" value="Confirmar nueva contraseña" required />
 
                                 <div class="relative mt-2">
                                     <LockKeyhole

@@ -14,7 +14,7 @@ defineProps({
 <template>
     <div class="grid gap-5 md:grid-cols-2">
         <div>
-            <InputLabel for="name" value="Nombre del banco" />
+            <InputLabel for="name" value="Nombre del banco" required />
             <TextInput
                 id="name"
                 v-model="form.name"
@@ -25,7 +25,7 @@ defineProps({
         </div>
 
         <div>
-            <InputLabel for="code" value="Código" />
+            <InputLabel for="code" value="Código" optional />
             <TextInput
                 id="code"
                 v-model="form.code"

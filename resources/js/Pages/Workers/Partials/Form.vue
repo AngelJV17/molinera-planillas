@@ -114,7 +114,7 @@ watch(
                 </div>
 
                 <div>
-                    <InputLabel for="document_type_id" value="Tipo de documento" />
+                    <InputLabel for="document_type_id" value="Tipo de documento" required />
                     <select id="document_type_id" v-model="form.document_type_id"
                         class="mt-1 block w-full rounded-xl border-gray-300 text-sm shadow-sm focus:border-primary focus:ring-primary">
                         <option value="">Seleccionar</option>
@@ -126,14 +126,14 @@ watch(
                 </div>
 
                 <div>
-                    <InputLabel for="document_number" value="Número de documento" />
+                    <InputLabel for="document_number" value="Número de documento" required />
                     <TextInput id="document_number" v-model="form.document_number" class="mt-1 block w-full"
                         placeholder="Ej: 45871236" />
                     <InputError class="mt-2" :message="form.errors.document_number" />
                 </div>
 
                 <div>
-                    <InputLabel for="birth_date" value="Fecha de nacimiento" />
+                    <InputLabel for="birth_date" value="Fecha de nacimiento" optional />
                     <TextInput id="birth_date" v-model="form.birth_date" type="date" class="mt-1 block w-full" />
                     <InputError class="mt-2" :message="form.errors.birth_date" />
                 </div>
@@ -143,21 +143,21 @@ watch(
         <SectionCard title="Datos personales" description="Nombres, contacto y ubicación del trabajador.">
             <div class="grid gap-5 md:grid-cols-2">
                 <div>
-                    <InputLabel for="first_name" value="Nombres" />
+                    <InputLabel for="first_name" value="Nombres" required />
                     <TextInput id="first_name" v-model="form.first_name" class="mt-1 block w-full"
                         placeholder="Ej: Juan Carlos" />
                     <InputError class="mt-2" :message="form.errors.first_name" />
                 </div>
 
                 <div>
-                    <InputLabel for="last_name" value="Apellidos" />
+                    <InputLabel for="last_name" value="Apellidos" required />
                     <TextInput id="last_name" v-model="form.last_name" class="mt-1 block w-full"
                         placeholder="Ej: Pérez Huamán" />
                     <InputError class="mt-2" :message="form.errors.last_name" />
                 </div>
 
                 <div>
-                    <InputLabel for="gender_id" value="Género" />
+                    <InputLabel for="gender_id" value="Género" optional />
                     <select id="gender_id" v-model="form.gender_id"
                         class="mt-1 block w-full rounded-xl border-gray-300 text-sm shadow-sm focus:border-primary focus:ring-primary">
                         <option value="">Seleccionar</option>
@@ -169,7 +169,7 @@ watch(
                 </div>
 
                 <div>
-                    <InputLabel for="marital_status_id" value="Estado civil" />
+                    <InputLabel for="marital_status_id" value="Estado civil" optional />
                     <select id="marital_status_id" v-model="form.marital_status_id"
                         class="mt-1 block w-full rounded-xl border-gray-300 text-sm shadow-sm focus:border-primary focus:ring-primary">
                         <option value="">Seleccionar</option>
@@ -181,27 +181,27 @@ watch(
                 </div>
 
                 <div>
-                    <InputLabel for="phone" value="Teléfono" />
+                    <InputLabel for="phone" value="Teléfono" optional />
                     <TextInput id="phone" v-model="form.phone" class="mt-1 block w-full" placeholder="Ej: 987654321" />
                     <InputError class="mt-2" :message="form.errors.phone" />
                 </div>
 
                 <div>
-                    <InputLabel for="email" value="Correo" />
+                    <InputLabel for="email" value="Correo" optional />
                     <TextInput id="email" v-model="form.email" type="email" class="mt-1 block w-full"
                         placeholder="correo@empresa.com" />
                     <InputError class="mt-2" :message="form.errors.email" />
                 </div>
 
                 <div class="md:col-span-2">
-                    <InputLabel for="address" value="Dirección" />
+                    <InputLabel for="address" value="Dirección" optional />
                     <TextInput id="address" v-model="form.address" class="mt-1 block w-full"
                         placeholder="Dirección del trabajador" />
                     <InputError class="mt-2" :message="form.errors.address" />
                 </div>
 
                 <div>
-                    <InputLabel for="department_id" value="Departamento" />
+                    <InputLabel for="department_id" value="Departamento" optional />
                     <select id="department_id" v-model="selectedDepartmentId"
                         class="mt-1 block w-full rounded-xl border-gray-300 text-sm shadow-sm focus:border-primary focus:ring-primary">
                         <option value="">Seleccionar</option>
@@ -212,7 +212,7 @@ watch(
                 </div>
 
                 <div>
-                    <InputLabel for="province_id" value="Provincia" />
+                    <InputLabel for="province_id" value="Provincia" optional />
                     <select id="province_id" v-model="selectedProvinceId"
                         class="mt-1 block w-full rounded-xl border-gray-300 text-sm shadow-sm focus:border-primary focus:ring-primary">
                         <option value="">Seleccionar</option>
@@ -223,7 +223,7 @@ watch(
                 </div>
 
                 <div class="md:col-span-2">
-                    <InputLabel for="district_id" value="Distrito" />
+                    <InputLabel for="district_id" value="Distrito" optional />
                     <select id="district_id" v-model="form.district_id"
                         class="mt-1 block w-full rounded-xl border-gray-300 text-sm shadow-sm focus:border-primary focus:ring-primary">
                         <option value="">Seleccionar</option>
@@ -239,20 +239,20 @@ watch(
         <SectionCard title="Datos laborales" description="Asignación, turno, remuneración y estado laboral.">
             <div class="grid gap-5 md:grid-cols-2">
                 <div>
-                    <InputLabel for="hire_date" value="Fecha de ingreso" />
+                    <InputLabel for="hire_date" value="Fecha de ingreso" required />
                     <TextInput id="hire_date" v-model="form.hire_date" type="date" class="mt-1 block w-full" />
                     <InputError class="mt-2" :message="form.errors.hire_date" />
                 </div>
 
                 <div>
-                    <InputLabel for="termination_date" value="Fecha de cese" />
+                    <InputLabel for="termination_date" value="Fecha de cese" optional />
                     <TextInput id="termination_date" v-model="form.termination_date" type="date"
                         class="mt-1 block w-full" />
                     <InputError class="mt-2" :message="form.errors.termination_date" />
                 </div>
 
                 <div>
-                    <InputLabel for="position_id" value="Cargo" />
+                    <InputLabel for="position_id" value="Cargo" optional />
                     <select id="position_id" v-model="form.position_id"
                         class="mt-1 block w-full rounded-xl border-gray-300 text-sm shadow-sm focus:border-primary focus:ring-primary">
                         <option value="">Seleccionar</option>
@@ -264,7 +264,7 @@ watch(
                 </div>
 
                 <div>
-                    <InputLabel for="work_area_id" value="Área" />
+                    <InputLabel for="work_area_id" value="Área" optional />
                     <select id="work_area_id" v-model="form.work_area_id"
                         class="mt-1 block w-full rounded-xl border-gray-300 text-sm shadow-sm focus:border-primary focus:ring-primary">
                         <option value="">Seleccionar</option>
@@ -276,7 +276,7 @@ watch(
                 </div>
 
                 <div>
-                    <InputLabel for="payroll_group_id" value="Grupo de planilla" />
+                    <InputLabel for="payroll_group_id" value="Grupo de planilla" optional />
                     <select id="payroll_group_id" v-model="form.payroll_group_id"
                         class="mt-1 block w-full rounded-xl border-gray-300 text-sm shadow-sm focus:border-primary focus:ring-primary">
                         <option value="">Seleccionar</option>
@@ -288,7 +288,7 @@ watch(
                 </div>
 
                 <div>
-                    <InputLabel for="work_shift_id" value="Turno" />
+                    <InputLabel for="work_shift_id" value="Turno" optional />
                     <select id="work_shift_id" v-model="form.work_shift_id"
                         class="mt-1 block w-full rounded-xl border-gray-300 text-sm shadow-sm focus:border-primary focus:ring-primary">
                         <option value="">Seleccionar</option>
@@ -300,7 +300,7 @@ watch(
                 </div>
 
                 <div>
-                    <InputLabel for="employment_status_id" value="Estado laboral" />
+                    <InputLabel for="employment_status_id" value="Estado laboral" optional />
                     <select id="employment_status_id" v-model="form.employment_status_id"
                         class="mt-1 block w-full rounded-xl border-gray-300 text-sm shadow-sm focus:border-primary focus:ring-primary">
                         <option value="">Seleccionar</option>
@@ -312,14 +312,14 @@ watch(
                 </div>
 
                 <div>
-                    <InputLabel for="base_salary" value="Sueldo básico" />
+                    <InputLabel for="base_salary" value="Sueldo básico" required />
                     <TextInput id="base_salary" v-model="form.base_salary" type="number" min="0" step="0.01"
                         class="mt-1 block w-full" placeholder="Ej: 1130.00" />
                     <InputError class="mt-2" :message="form.errors.base_salary" />
                 </div>
 
                 <div>
-                    <InputLabel for="pension_system_id" value="Sistema pensionario" />
+                    <InputLabel for="pension_system_id" value="Sistema pensionario" optional />
                     <select id="pension_system_id" v-model="form.pension_system_id"
                         class="mt-1 block w-full rounded-xl border-gray-300 text-sm shadow-sm focus:border-primary focus:ring-primary">
                         <option value="">Seleccionar</option>
@@ -331,7 +331,7 @@ watch(
                 </div>
 
                 <div v-if="showCuspp">
-                    <InputLabel for="cuspp" value="CUSPP" />
+                    <InputLabel for="cuspp" value="CUSPP" optional />
                     <TextInput id="cuspp" v-model="form.cuspp" class="mt-1 block w-full"
                         placeholder="Código AFP si corresponde" />
                     <InputError class="mt-2" :message="form.errors.cuspp" />
@@ -359,7 +359,7 @@ watch(
                 >
                     <div class="grid gap-4 md:grid-cols-2">
                         <div>
-                            <InputLabel :for="`bank_id_${index}`" value="Banco" />
+                            <InputLabel :for="`bank_id_${index}`" value="Banco" optional />
                             <select
                                 :id="`bank_id_${index}`"
                                 v-model="account.bank_id"
@@ -374,7 +374,7 @@ watch(
                         </div>
 
                         <div>
-                            <InputLabel :for="`account_type_id_${index}`" value="Tipo de cuenta" />
+                            <InputLabel :for="`account_type_id_${index}`" value="Tipo de cuenta" optional />
                             <select
                                 :id="`account_type_id_${index}`"
                                 v-model="account.account_type_id"
@@ -389,7 +389,7 @@ watch(
                         </div>
 
                         <div>
-                            <InputLabel :for="`account_number_${index}`" value="Numero de cuenta" />
+                            <InputLabel :for="`account_number_${index}`" value="Numero de cuenta" optional />
                             <TextInput
                                 :id="`account_number_${index}`"
                                 v-model="account.account_number"
@@ -400,7 +400,7 @@ watch(
                         </div>
 
                         <div>
-                            <InputLabel :for="`cci_${index}`" value="CCI" />
+                            <InputLabel :for="`cci_${index}`" value="CCI" optional />
                             <TextInput
                                 :id="`cci_${index}`"
                                 v-model="account.cci"

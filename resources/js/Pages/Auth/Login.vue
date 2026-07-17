@@ -176,7 +176,7 @@ const submit = () => {
                         <form class="space-y-5" @submit.prevent="submit">
                             <!-- Usuario -->
                             <div>
-                                <InputLabel for="username" value="Usuario" />
+                                <InputLabel for="username" value="Usuario" required />
 
                                 <div class="relative mt-2">
                                     <UserRound class="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
@@ -191,7 +191,7 @@ const submit = () => {
 
                             <!-- Contraseña -->
                             <div>
-                                <InputLabel for="password" value="Contraseña" />
+                                <InputLabel for="password" value="Contraseña" required />
 
                                 <div class="relative mt-2">
                                     <LockKeyhole

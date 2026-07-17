@@ -307,7 +307,7 @@ const paymentFileUrl = (payroll) => route('payrolls.payment-file', payroll.id);
             <SectionCard v-if="can('payrolls.create')" title="Generar planilla" description="Selecciona el periodo y calcula la planilla con asistencias mensuales cerradas.">
                 <form class="grid gap-4 lg:grid-cols-[1fr_1fr_1.4fr_1fr_2fr_auto]" @submit.prevent="generatePayroll">
                     <div>
-                        <InputLabel for="month" value="Mes" />
+                        <InputLabel for="month" value="Mes" required />
                         <select
                             id="month"
                             v-model="form.month"
@@ -321,7 +321,7 @@ const paymentFileUrl = (payroll) => route('payrolls.payment-file', payroll.id);
                     </div>
 
                     <div>
-                        <InputLabel for="year" value="Año" />
+                        <InputLabel for="year" value="Año" required />
                         <select
                             id="year"
                             v-model="form.year"
@@ -335,7 +335,7 @@ const paymentFileUrl = (payroll) => route('payrolls.payment-file', payroll.id);
                     </div>
 
                     <div>
-                        <InputLabel for="payroll_group_id" value="Grupo de planilla" />
+                        <InputLabel for="payroll_group_id" value="Grupo de planilla" required />
                         <select
                             id="payroll_group_id"
                             v-model="form.payroll_group_id"
@@ -350,7 +350,7 @@ const paymentFileUrl = (payroll) => route('payrolls.payment-file', payroll.id);
                     </div>
 
                     <div>
-                        <InputLabel for="payment_date" value="Fecha de pago" />
+                        <InputLabel for="payment_date" value="Fecha de pago" optional />
                         <input
                             id="payment_date"
                             v-model="form.payment_date"
@@ -361,7 +361,7 @@ const paymentFileUrl = (payroll) => route('payrolls.payment-file', payroll.id);
                     </div>
 
                     <div>
-                        <InputLabel for="observations" value="Observacion" />
+                        <InputLabel for="observations" value="Observacion" optional />
                         <input
                             id="observations"
                             v-model="form.observations"

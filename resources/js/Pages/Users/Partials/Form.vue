@@ -56,7 +56,7 @@ const selectedRole = computed({
             description="Registra la información principal de la cuenta de acceso al sistema.">
             <div class="grid gap-6 lg:grid-cols-2">
                 <div>
-                    <InputLabel for="name" value="Nombre completo" />
+                    <InputLabel for="name" value="Nombre completo" required />
 
                     <div class="relative mt-2">
                         <UserRound
@@ -70,7 +70,7 @@ const selectedRole = computed({
                 </div>
 
                 <div>
-                    <InputLabel for="username" value="Usuario" />
+                    <InputLabel for="username" value="Usuario" required />
 
                     <div class="relative mt-2">
                         <User
@@ -84,7 +84,7 @@ const selectedRole = computed({
                 </div>
 
                 <div>
-                    <InputLabel for="email" value="Correo electrónico" />
+                    <InputLabel for="email" value="Correo electrónico" optional />
 
                     <div class="relative mt-2">
                         <Mail
@@ -98,7 +98,7 @@ const selectedRole = computed({
                 </div>
 
                 <div>
-                    <InputLabel for="status" value="Estado" />
+                    <InputLabel for="status" value="Estado" required />
 
                     <select id="status" v-model="form.status"
                         class="mt-2 block w-full rounded-xl border-slate-300 bg-white text-sm font-medium text-gray-700 shadow-sm focus:border-primary focus:ring-primary">
@@ -150,7 +150,7 @@ const selectedRole = computed({
             description="Selecciona el perfil de acceso que tendrá este usuario dentro del sistema.">
             <div class="grid gap-6 lg:grid-cols-[1fr_0.8fr]">
                 <div>
-                    <InputLabel for="role" value="Rol asignado" />
+                    <InputLabel for="role" value="Rol asignado" required />
 
                     <div class="relative mt-2">
                         <ShieldCheck

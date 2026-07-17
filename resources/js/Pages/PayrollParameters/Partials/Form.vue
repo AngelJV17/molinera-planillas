@@ -14,7 +14,7 @@ defineProps({
 <template>
     <div class="grid gap-5 md:grid-cols-2">
         <div>
-            <InputLabel for="code" value="Codigo tecnico" />
+            <InputLabel for="code" value="Codigo tecnico" required />
             <TextInput
                 id="code"
                 v-model="form.code"
@@ -28,7 +28,7 @@ defineProps({
         </div>
 
         <div>
-            <InputLabel for="name" value="Nombre visible" />
+            <InputLabel for="name" value="Nombre visible" required />
             <TextInput
                 id="name"
                 v-model="form.name"
@@ -39,7 +39,7 @@ defineProps({
         </div>
 
         <div>
-            <InputLabel for="value" value="Valor" />
+            <InputLabel for="value" value="Valor" required />
             <TextInput
                 id="value"
                 v-model="form.value"
@@ -53,7 +53,7 @@ defineProps({
         </div>
 
         <div>
-            <InputLabel for="effective_from" value="Vigente desde" />
+            <InputLabel for="effective_from" value="Vigente desde" optional />
             <TextInput
                 id="effective_from"
                 v-model="form.effective_from"
@@ -64,7 +64,7 @@ defineProps({
         </div>
 
         <div>
-            <InputLabel for="status" value="Estado" />
+            <InputLabel for="status" value="Estado" required />
             <select
                 id="status"
                 v-model="form.status"
@@ -77,7 +77,7 @@ defineProps({
         </div>
 
         <div class="md:col-span-2">
-            <InputLabel for="description" value="Descripcion" />
+            <InputLabel for="description" value="Descripcion" optional />
             <textarea
                 id="description"
                 v-model="form.description"

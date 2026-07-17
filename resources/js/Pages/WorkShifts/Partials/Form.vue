@@ -14,44 +14,44 @@ defineProps({
 <template>
     <div class="grid gap-5 md:grid-cols-2">
         <div>
-            <InputLabel for="name" value="Nombre del turno" />
+            <InputLabel for="name" value="Nombre del turno" required />
             <TextInput id="name" v-model="form.name" class="mt-1 block w-full" placeholder="Ej: Turno administrativo" />
             <InputError class="mt-2" :message="form.errors.name" />
         </div>
 
         <div>
-            <InputLabel for="daily_hours" value="Horas base del turno" />
+            <InputLabel for="daily_hours" value="Horas base del turno" required />
             <TextInput id="daily_hours" v-model="form.daily_hours" type="number" min="0.5" max="24" step="0.25"
                 class="mt-1 block w-full" placeholder="Ej: 8" />
             <InputError class="mt-2" :message="form.errors.daily_hours" />
         </div>
 
         <div>
-            <InputLabel for="start_time" value="Hora de entrada base" />
+            <InputLabel for="start_time" value="Hora de entrada base" required />
             <TextInput id="start_time" v-model="form.start_time" type="time" class="mt-1 block w-full" />
             <InputError class="mt-2" :message="form.errors.start_time" />
         </div>
 
         <div>
-            <InputLabel for="end_time" value="Hora de salida base" />
+            <InputLabel for="end_time" value="Hora de salida base" required />
             <TextInput id="end_time" v-model="form.end_time" type="time" class="mt-1 block w-full" />
             <InputError class="mt-2" :message="form.errors.end_time" />
         </div>
 
         <div>
-            <InputLabel for="break_start_time" value="Inicio de descanso base" />
+            <InputLabel for="break_start_time" value="Inicio de descanso base" optional />
             <TextInput id="break_start_time" v-model="form.break_start_time" type="time" class="mt-1 block w-full" />
             <InputError class="mt-2" :message="form.errors.break_start_time" />
         </div>
 
         <div>
-            <InputLabel for="break_end_time" value="Fin de descanso base" />
+            <InputLabel for="break_end_time" value="Fin de descanso base" optional />
             <TextInput id="break_end_time" v-model="form.break_end_time" type="time" class="mt-1 block w-full" />
             <InputError class="mt-2" :message="form.errors.break_end_time" />
         </div>
 
         <div>
-            <InputLabel for="tolerance_minutes" value="Minutos de tolerancia" />
+            <InputLabel for="tolerance_minutes" value="Minutos de tolerancia" required />
             <TextInput id="tolerance_minutes" v-model="form.tolerance_minutes" type="number" min="0" max="240" step="1"
                 class="mt-1 block w-full" placeholder="Ej: 10" />
             <InputError class="mt-2" :message="form.errors.tolerance_minutes" />
@@ -90,21 +90,21 @@ defineProps({
 
         <div v-if="form.rotation_enabled" class="grid gap-4 rounded-2xl border border-blue-200 bg-blue-50 p-4 md:col-span-2 md:grid-cols-3">
             <div>
-                <InputLabel for="rotation_work_days" value="Dias de trabajo" />
+                <InputLabel for="rotation_work_days" value="Dias de trabajo" required />
                 <TextInput id="rotation_work_days" v-model="form.rotation_work_days" type="number" min="1" max="31"
                     class="mt-1 block w-full" />
                 <InputError class="mt-2" :message="form.errors.rotation_work_days" />
             </div>
 
             <div>
-                <InputLabel for="rotation_rest_days" value="Dias de descanso" />
+                <InputLabel for="rotation_rest_days" value="Dias de descanso" required />
                 <TextInput id="rotation_rest_days" v-model="form.rotation_rest_days" type="number" min="1" max="31"
                     class="mt-1 block w-full" />
                 <InputError class="mt-2" :message="form.errors.rotation_rest_days" />
             </div>
 
             <div>
-                <InputLabel for="rotation_start_date" value="Inicio del ciclo" />
+                <InputLabel for="rotation_start_date" value="Inicio del ciclo" required />
                 <TextInput id="rotation_start_date" v-model="form.rotation_start_date" type="date"
                     class="mt-1 block w-full" />
                 <InputError class="mt-2" :message="form.errors.rotation_start_date" />
@@ -117,7 +117,7 @@ defineProps({
         </div>
 
         <div class="md:col-span-2">
-            <InputLabel for="description" value="Descripcion" />
+            <InputLabel for="description" value="Descripcion" optional />
             <textarea id="description" v-model="form.description" rows="4" placeholder="Detalle opcional del turno..."
                 class="mt-1 block w-full rounded-xl border-gray-300 text-sm shadow-sm focus:border-primary focus:ring-primary"></textarea>
             <InputError class="mt-2" :message="form.errors.description" />
@@ -140,25 +140,25 @@ defineProps({
                         </div>
 
                         <div>
-                            <InputLabel :for="`rule-start-${index}`" value="Entrada" />
+                            <InputLabel :for="`rule-start-${index}`" value="Entrada" optional />
                             <TextInput :id="`rule-start-${index}`" v-model="rule.start_time" type="time"
                                 class="mt-1 block w-full" :disabled="!rule.is_working_day" />
                         </div>
 
                         <div>
-                            <InputLabel :for="`rule-end-${index}`" value="Salida" />
+                            <InputLabel :for="`rule-end-${index}`" value="Salida" optional />
                             <TextInput :id="`rule-end-${index}`" v-model="rule.end_time" type="time"
                                 class="mt-1 block w-full" :disabled="!rule.is_working_day" />
                         </div>
 
                         <div>
-                            <InputLabel :for="`rule-hours-${index}`" value="Horas esperadas" />
+                            <InputLabel :for="`rule-hours-${index}`" value="Horas esperadas" required />
                             <TextInput :id="`rule-hours-${index}`" v-model="rule.expected_hours" type="number"
                                 min="0" max="24" step="0.25" class="mt-1 block w-full" />
                         </div>
 
                         <div>
-                            <InputLabel :for="`rule-overtime-after-${index}`" value="Extra desde" />
+                            <InputLabel :for="`rule-overtime-after-${index}`" value="Extra desde" optional />
                             <TextInput :id="`rule-overtime-after-${index}`" v-model="rule.overtime_after_hours"
                                 type="number" min="0" max="24" step="0.25" class="mt-1 block w-full"
                                 placeholder="Horas" />
@@ -187,19 +187,19 @@ defineProps({
 
                     <div class="mt-3 grid gap-3 sm:grid-cols-3">
                         <div>
-                            <InputLabel :for="`rule-break-start-${index}`" value="Inicio descanso" />
+                            <InputLabel :for="`rule-break-start-${index}`" value="Inicio descanso" optional />
                             <TextInput :id="`rule-break-start-${index}`" v-model="rule.break_start_time" type="time"
                                 class="mt-1 block w-full" :disabled="!rule.is_working_day" />
                         </div>
 
                         <div>
-                            <InputLabel :for="`rule-break-end-${index}`" value="Fin descanso" />
+                            <InputLabel :for="`rule-break-end-${index}`" value="Fin descanso" optional />
                             <TextInput :id="`rule-break-end-${index}`" v-model="rule.break_end_time" type="time"
                                 class="mt-1 block w-full" :disabled="!rule.is_working_day" />
                         </div>
 
                         <div>
-                            <InputLabel :for="`rule-tolerance-${index}`" value="Tolerancia" />
+                            <InputLabel :for="`rule-tolerance-${index}`" value="Tolerancia" required />
                             <TextInput :id="`rule-tolerance-${index}`" v-model="rule.tolerance_minutes" type="number"
                                 min="0" max="240" class="mt-1 block w-full" />
                         </div>

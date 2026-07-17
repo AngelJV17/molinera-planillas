@@ -142,7 +142,7 @@ const submit = () => {
                         <form class="space-y-4" @submit.prevent="submit">
                             <!-- Email -->
                             <div>
-                                <InputLabel for="email" value="Correo electrónico" />
+                                <InputLabel for="email" value="Correo electrónico" required />
 
                                 <div class="relative mt-2">
                                     <Mail class="absolute left-3 top-3 h-5 w-5 text-gray-400" />

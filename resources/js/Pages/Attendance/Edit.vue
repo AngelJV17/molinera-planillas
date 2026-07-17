@@ -1088,7 +1088,7 @@ const monthlyStatusClasses = computed(() => {
 
             <!-- Estado del día -->
             <div>
-              <InputLabel for="status_id" value="Estado del día" />
+              <InputLabel for="status_id" value="Estado del día" required />
 
               <select
                 id="status_id"
@@ -1111,7 +1111,7 @@ const monthlyStatusClasses = computed(() => {
               v-if="selectedStatusIsExchange"
               class="rounded-2xl border border-blue-200 bg-blue-50 p-4"
             >
-              <InputLabel for="absence_attendance_day_id" value="Falta que compensa" />
+              <InputLabel for="absence_attendance_day_id" value="Falta que compensa" optional />
 
               <select
                 id="absence_attendance_day_id"
@@ -1166,7 +1166,7 @@ const monthlyStatusClasses = computed(() => {
 
               <div class="grid gap-3 sm:grid-cols-2">
                 <div>
-                  <InputLabel for="entry_time" value="Hora de ingreso" />
+                  <InputLabel for="entry_time" value="Hora de ingreso" optional />
 
                   <input
                     id="entry_time"
@@ -1181,7 +1181,7 @@ const monthlyStatusClasses = computed(() => {
                 </div>
 
                 <div>
-                  <InputLabel for="exit_time" value="Hora de salida" />
+                  <InputLabel for="exit_time" value="Hora de salida" optional />
 
                   <input
                     id="exit_time"
@@ -1254,7 +1254,7 @@ const monthlyStatusClasses = computed(() => {
 
             <!-- Observación -->
             <div>
-              <InputLabel for="observation" value="Observación" />
+              <InputLabel for="observation" value="Observación" optional />
 
               <textarea
                 id="observation"

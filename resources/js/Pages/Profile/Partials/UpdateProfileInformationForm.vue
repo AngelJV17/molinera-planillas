@@ -45,7 +45,7 @@ const form = useForm({
 
         <form class="space-y-5 p-6" @submit.prevent="form.patch(route('profile.update'))">
             <div>
-                <InputLabel for="name" value="Nombre completo" />
+                <InputLabel for="name" value="Nombre completo" required />
 
                 <div class="relative mt-2">
                     <UserRound class="absolute left-3 top-3 h-5 w-5 text-gray-400" />
@@ -59,7 +59,7 @@ const form = useForm({
             </div>
 
             <div>
-                <InputLabel for="email" value="Correo electrónico" />
+                <InputLabel for="email" value="Correo electrónico" required />
 
                 <div class="relative mt-2">
                     <Mail class="absolute left-3 top-3 h-5 w-5 text-gray-400" />

@@ -175,6 +175,7 @@ const submit = () => {
                                 <InputLabel
                                     for="name"
                                     value="Nombre completo"
+                                    required
                                 />
 
                                 <div class="relative mt-2">
@@ -202,6 +203,7 @@ const submit = () => {
                                 <InputLabel
                                     for="username"
                                     value="Usuario"
+                                    required
                                 />
 
                                 <div class="relative mt-2">
@@ -228,6 +230,7 @@ const submit = () => {
                                 <InputLabel
                                     for="email"
                                     value="Correo electrónico (opcional)"
+                                    optional
                                 />
 
                                 <div class="relative mt-2">
@@ -253,6 +256,7 @@ const submit = () => {
                                 <InputLabel
                                     for="password"
                                     value="Contraseña"
+                                    required
                                 />
 
                                 <div class="relative mt-2">
@@ -293,6 +297,7 @@ const submit = () => {
                                 <InputLabel
                                     for="password_confirmation"
                                     value="Confirmar contraseña"
+                                    required
                                 />
 
                                 <div class="relative mt-2">

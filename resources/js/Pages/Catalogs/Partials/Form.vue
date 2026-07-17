@@ -35,7 +35,7 @@ defineProps({
 
         <!-- Código -->
         <div>
-            <InputLabel for="code" value="Código" />
+            <InputLabel for="code" value="Código" required />
 
             <TextInput id="code" v-model="form.code" class="mt-1 block w-full" placeholder="Ej: ACTIVE" />
 
@@ -44,7 +44,7 @@ defineProps({
 
         <!-- Nombre -->
         <div>
-            <InputLabel for="name" value="Nombre" />
+            <InputLabel for="name" value="Nombre" required />
 
             <TextInput id="name" v-model="form.name" class="mt-1 block w-full" placeholder="Ej: Activo" />
 
@@ -53,7 +53,7 @@ defineProps({
 
         <!-- Estado -->
         <div>
-            <InputLabel for="status" value="Estado" />
+            <InputLabel for="status" value="Estado" required />
 
             <select id="status" v-model="form.status"
                 class="mt-1 block w-full rounded-xl border-gray-300 text-sm shadow-sm focus:border-primary focus:ring-primary">
@@ -66,7 +66,7 @@ defineProps({
 
         <!-- Descripción -->
         <div class="md:col-span-2">
-            <InputLabel for="description" value="Descripción" />
+            <InputLabel for="description" value="Descripción" optional />
 
             <textarea id="description" v-model="form.description" rows="4" placeholder="Descripción opcional..."
                 class="mt-1 block w-full rounded-xl border-gray-300 text-sm shadow-sm focus:border-primary focus:ring-primary"></textarea>

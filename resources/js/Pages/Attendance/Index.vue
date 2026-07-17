@@ -331,7 +331,7 @@ const statusLabel = (status) => {
                 <form class="grid gap-4 lg:grid-cols-[1fr_240px_auto]" @submit.prevent="submit">
                     <!-- Trabajador -->
                     <div>
-                        <InputLabel for="employee_id" value="Trabajador" />
+                        <InputLabel for="employee_id" value="Trabajador" required />
 
                         <select id="employee_id" v-model="form.employee_id"
                             class="mt-2 block w-full rounded-xl border-slate-300 text-sm shadow-sm focus:border-primary focus:ring-primary"
@@ -350,7 +350,7 @@ const statusLabel = (status) => {
 
                     <!-- Periodo permitido -->
                     <div>
-                        <InputLabel for="period" value="Periodo permitido" />
+                        <InputLabel for="period" value="Periodo permitido" required />
 
                         <select id="period" v-model="form.period"
                             class="mt-2 block w-full rounded-xl border-slate-300 text-sm shadow-sm focus:border-primary focus:ring-primary"
@@ -377,7 +377,7 @@ const statusLabel = (status) => {
 
                     <!-- Observaciones -->
                     <div class="lg:col-span-3">
-                        <InputLabel for="observations" value="Observaciones generales" />
+                        <InputLabel for="observations" value="Observaciones generales" optional />
 
                         <textarea id="observations" v-model="form.observations" rows="2"
                             class="mt-2 block w-full rounded-xl border-slate-300 text-sm shadow-sm focus:border-primary focus:ring-primary"
@@ -393,7 +393,7 @@ const statusLabel = (status) => {
                 <form class="space-y-5" @submit.prevent="importBulkExcel">
                     <div class="grid gap-4 md:grid-cols-2">
                         <div>
-                            <InputLabel for="bulk_period" value="Periodo" />
+                            <InputLabel for="bulk_period" value="Periodo" required />
 
                             <select id="bulk_period" v-model="importForm.period"
                                 class="mt-2 block w-full rounded-xl border-slate-300 text-sm shadow-sm focus:border-primary focus:ring-primary"
@@ -405,7 +405,7 @@ const statusLabel = (status) => {
                         </div>
 
                         <div>
-                            <InputLabel for="bulk_payroll_group_id" value="Grupo de planilla" />
+                            <InputLabel for="bulk_payroll_group_id" value="Grupo de planilla" required />
 
                             <select id="bulk_payroll_group_id" v-model="importForm.payroll_group_id"
                                 class="mt-2 block w-full rounded-xl border-slate-300 text-sm shadow-sm focus:border-primary focus:ring-primary"
@@ -421,7 +421,7 @@ const statusLabel = (status) => {
 
                     <div>
                         <div>
-                            <InputLabel for="bulk_attendance_file" value="Archivo Excel" />
+                            <InputLabel for="bulk_attendance_file" value="Archivo Excel" required />
 
                             <div class="mt-2 grid gap-3 xl:grid-cols-[minmax(0,1fr)_150px]">
                                 <div class="flex h-12 min-w-0 overflow-hidden rounded-xl border border-slate-300 bg-white shadow-sm focus-within:border-primary focus-within:ring-1 focus-within:ring-primary">
